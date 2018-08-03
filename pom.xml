@@ -6,11 +6,10 @@
 
     <groupId>com.yss</groupId>
     <artifactId>GuZhi</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <packaging>jar</packaging>
 
-    <name>spark-guzhi-demo</name>
 
     <!-- FIXME change it to the project's website -->
     <url>http://maven.apache.org</url>
@@ -34,22 +33,12 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming_${scala.version}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_${scala.version}</artifactId>
             <version>${spark.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-hive_${scala.version}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-mllib_${scala.version}</artifactId>
             <version>${spark.version}</version>
         </dependency>
 
@@ -83,8 +72,6 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src</sourceDirectory>
-        <!-- <outputDirectory>src/target/classes</outputDirectory>-->
         <plugins>
 
             <!--mvn打包跳过测试-->
@@ -119,28 +106,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <!--<configuration>
-                    <scalaVersion>${scala.lib.version}</scalaVersion>
-                    &lt;!&ndash;<args>
-                        <arg>-target:jvm-1.8</arg>
-                    </args>&ndash;&gt;
-                    <jvmArgs>
-                        <jvmArg>-Xss3072K</jvmArg>
-                    </jvmArgs>
-                </configuration>-->
             </plugin>
 
         </plugins>

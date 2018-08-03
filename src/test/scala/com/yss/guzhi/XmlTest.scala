@@ -1,4 +1,4 @@
-package main.java.com.yss.guzhi
+package com.yss.guzhi
 
 import org.apache.spark.sql.SparkSession
 
@@ -6,7 +6,7 @@ import org.apache.spark.sql.SparkSession
   * @author yupan
   *         2018/8/2 15:04
   **/
-object xml {
+object XmlTest {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().master("local[*]").getOrCreate()
 //    val customSchema = StructType(Array(
