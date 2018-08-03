@@ -70,69 +70,13 @@ public class DBFField implements Serializable
         final byte bytes[] = new byte[fieldLength];
         dataInputStream.readFully(bytes);
         return new String(bytes).trim();
-//        switch (dataType)
-//        {
-//            case 'C':
-//                return new String(bytes).trim();
-//            case 'D':
-//                return readTimeInMillis(bytes);
-//            case 'F':
-//                return readFloat(bytes);
-//            case 'L':
-//                return readLogical(bytes);
-//            case 'N':
-//                if (decimalCount == 0)
-//                {
-//                    if (fieldLength < 5)
-//                    {
-//                        return readShort(bytes);
-//                    }
-//                    if (fieldLength < 8)
-//                    {
-//                        return readInteger(bytes);
-//                    }
-//                    return readLong(bytes);
-//                }
-//                else
-//                {
-//                    return readDouble(bytes);
-//                }
-//            default:
-//                return null;
-//        }
     }
 
     public Writable readWritable(final DataInputStream dataInputStream) throws IOException
     {
         final byte bytes[] = new byte[fieldLength];
         dataInputStream.readFully(bytes);
-        //return new Text(bytes);
-        switch (dataType)
-        {
-            case 'C':
-                return new Text(bytes);
-            case 'D':
-                return new Text(readTimeInMillis(bytes));
-            case 'F':
-                return new FloatWritable(readFloat(bytes));
-            case 'L':
-                return new BooleanWritable(readLogical(bytes));
-            case 'N':
-                if (decimalCount == 0)
-                {
-                    if (fieldLength < 8)
-                    {
-                        return new IntWritable(readInteger(bytes));
-                    }
-                    return new LongWritable(readLong(bytes));
-                }
-                else
-                {
-                    return new DoubleWritable(readDouble(bytes));
-                }
-            default:
-                return NullWritable.get();
-        }
+        return new Text(bytes);
     }
 
     private int parseInt(

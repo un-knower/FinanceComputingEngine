@@ -12,10 +12,11 @@ import scala.collection.JavaConverters._
 
 /**
   * Extends `PrunedScan` to map the RDD to specified columns.
-  * @param location the location of the dbf file
+  *
+  * @param location   the location of the dbf file
   * @param sqlContext the SQL context
   *
-  * TODO - extend PrunedFilterScan to apply 'smart' filter !
+  *                   TODO - extend PrunedFilterScan to apply 'smart' filter !
   */
 case class DBFRelation(location: String)(@transient val sqlContext: SQLContext) extends BaseRelation with PrunedScan {
 
@@ -35,26 +36,20 @@ case class DBFRelation(location: String)(@transient val sqlContext: SQLContext) 
   }
 
   private[dbf] def toDataType(field: DBFField): DataType = {
-    field.dataType match {
-      case 'C' => StringType
-      case 'D' => StringType
-      case 'F' => FloatType
-      case 'L' => BooleanType
-      case 'N' => toNumeType(field)
-      case other => sys.error(s"Unsupported type $other")
-    }
+    StringType
   }
 
   private[dbf] def toNumeType(field: DBFField): DataType = {
-//    println(field.fieldLength)
+    //    println(field.fieldLength)
     if (field.decimalCount > 0) DoubleType
     else if (field.fieldLength < 3) ShortType
     else if (field.fieldLength < 5) IntegerType
-    else if (field.fieldLength < 8) IntegerType  else LongType
+    else if (field.fieldLength < 8) IntegerType else LongType
   }
 
   /**
     * Determine the RDD Schema based on the DBF header info.
+    *
     * @return StructType instance
     */
   override def schema = {
@@ -91,7 +86,7 @@ case class DBFRelation(location: String)(@transient val sqlContext: SQLContext) 
   }
 
   override def buildScan(requiredColumns: Array[String]) = baseRDD.map(record => {
-    Row.fromSeq(requiredColumns.map { col => toValue(record, col)})
+    Row.fromSeq(requiredColumns.map { col => toValue(record, col) })
   })
 
 }
