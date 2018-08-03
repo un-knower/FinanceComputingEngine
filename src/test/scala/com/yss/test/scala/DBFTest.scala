@@ -1,4 +1,4 @@
-package com.yss.guzhi
+package com.yss.test.scala
 
 import org.apache.spark.sql.SparkSession
 
@@ -9,7 +9,7 @@ object DBFTest {
 
   def main(args: Array[String]): Unit = {
     //注意引入隐式转换
-    import com.yss.dbf._
+    import com.yss.scala.dbf._
     val spark = SparkSession.builder().appName("mytest").master("local[*]").getOrCreate()
     spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\gh00001.dbf").show()
     spark.stop()

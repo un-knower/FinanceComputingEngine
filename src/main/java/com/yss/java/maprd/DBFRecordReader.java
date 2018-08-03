@@ -1,8 +1,8 @@
-package com.yss.maprd;
+package com.yss.java.maprd;
 
-import com.yss.dbf.DBFField;
-import com.yss.dbf.DBFReader;
-import com.yss.dbf.DBFType;
+import com.yss.java.dbf.DBFField;
+import com.yss.java.dbf.DBFReader;
+import com.yss.java.dbf.DBFType;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;

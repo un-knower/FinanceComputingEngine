@@ -1,4 +1,4 @@
-package com.yss.guzhi
+package com.yss.test.scala
 
 import org.apache.spark.sql.SparkSession
 

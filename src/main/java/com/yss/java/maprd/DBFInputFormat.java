@@ -1,4 +1,4 @@
-package com.yss.maprd;
+package com.yss.java.maprd;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;

@@ -1,6 +1,7 @@
-package com.yss.dbf
+package com.yss.scala.dbf
 
-import com.yss.maprd.DBFInputFormat
+import com.yss.java.dbf.{DBFField, DBFHeader}
+import com.yss.java.maprd.DBFInputFormat
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io._
 import org.apache.spark.sql._

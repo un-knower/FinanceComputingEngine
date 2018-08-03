@@ -74,7 +74,7 @@
     <build>
         <plugins>
 
-            <!--mvn打包跳过测试-->
+            <!--&lt;!&ndash;mvn打包跳过测试&ndash;&gt;
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -82,7 +82,7 @@
                 <configuration>
                     <skipTests>true</skipTests>
                 </configuration>
-            </plugin>
+            </plugin>-->
             <!--声明jdk版本-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -107,6 +107,7 @@
                     </execution>
                 </executions>
             </plugin>
+
 
         </plugins>
         <pluginManagement>

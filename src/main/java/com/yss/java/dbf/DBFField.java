@@ -1,4 +1,4 @@
-package com.yss.dbf;
+package com.yss.java.dbf;
 
 import org.apache.hadoop.io.*;
 
