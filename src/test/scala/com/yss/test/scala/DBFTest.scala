@@ -11,7 +11,7 @@ object DBFTest {
     //注意引入隐式转换
     import com.yss.scala.dbf._
     val spark = SparkSession.builder().appName("mytest").master("local[*]").getOrCreate()
-    spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\gh00001.dbf").show()
+    spark.sqlContext.dbfFile("C:\\Users\\YZM\\Desktop\\test2.dbf").show()
     spark.stop()
 
     //    sess.sparkContext.hadoopFile("C:\\Users\\wuson\\Desktop\\new\\reff040704.txt", classOf[TextInputFormat], classOf[LongWritable], classOf[Text])
