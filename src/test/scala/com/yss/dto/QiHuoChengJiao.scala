@@ -2,17 +2,24 @@ package com.yss.dto
 
 case class QiHuoChengJiao(
                                   fdate:String,
-                                  market:String,
-                                  currency:String,
+                                  accountid:String,
+                                  tradeid:String,
                                   instrid:String,
                                   direction:String,
-                                  tprice:String,
                                   tvolume:String,
-                                  offsetflag:String,
-                                  trade:String,
+                                  tprice:String,
                                   tamt:String,
+                                  ttime:String,
+                                  offsetflag:String,
+                                  tzbz:String,
+                                  pcyk_zr:String,
+                                  pcyh_zb:String,
                                   transfee:String,
-                                  trade2:String,
-                                  member:String,
-                                  brokerage:String
+                                  clientid:String,
+                                  market:String,
+                                  hyflag:String,
+                                  orderid:String,
+                                  userid:String,
+                                  jshy:String,
+                                  partid:String
                                 )
