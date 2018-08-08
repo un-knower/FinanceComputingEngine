@@ -160,6 +160,7 @@ object GuoHu_DBF {
         , FSghf, FBgzlx, FSgzlx, FBfxj, FSfxj, Fbsfje, Fsssje, FHggain, FZqbz, Fywbz, FQsbz, FBQTF, FSQTF, ZQDM, FJYFS, Fsh, FZZR, FCHK, fzlh, ftzbz
         , FBQsghf, FsQsghf, fgddm)
     })
+
     import spark.implicits._
     v.toDF()
       .write.format("jdbc")
