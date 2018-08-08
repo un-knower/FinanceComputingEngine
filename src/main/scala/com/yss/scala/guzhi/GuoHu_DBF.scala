@@ -1,21 +1,59 @@
-package com.yss.test.scala
+package com.yss.scala.guzhi
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{RelationalGroupedDataset, Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 /**
   * @author 张锴
-  * @version  2018-08-08
+  * @version 2018-08-08
   *  描述：上海过户表
-  *
+  *   源文件：gh.dbf
+  *   结果表：HZJKQS
   */
 object GuoHu_DBF {
 
-  case class HZJKQS(FDATE: String, FINDATE: String, FZQDM: String, FSZSH: String, FJYXWH: String, FBJE: BigDecimal, FSJE: BigDecimal, FBSL: BigDecimal, FSSL: BigDecimal
-                    , FBYJ: BigDecimal, FSYJ: BigDecimal, FBJSF: BigDecimal, FSJSF: BigDecimal, FBYHS: BigDecimal, FSYHS: BigDecimal, FBZGF: BigDecimal, FSZGF: BigDecimal, FBGHF: BigDecimal
-                    , FSGHF: BigDecimal, FBGZLX: BigDecimal, FSGZLX: BigDecimal, FBFXJ: BigDecimal, FSFXJ: BigDecimal, FBSFJE: BigDecimal, FSSSJE: BigDecimal, FZQBZ: String, FYWBZ: String
-                    , FQSBZ: String, FBQTF: String, FSQTF: String, ZQDM: String, FJYFS: String, FSH: String, FZZR: String, FCHK: String, FZLH: String, FTZBZ: String
-                    , FBQSGHF: BigDecimal, FSQSGHF: BigDecimal, FGDDM: String)
+  case class HZJKQS(FDATE: String,
+                    FINDATE: String,
+                    FZQDM: String,
+                    FSZSH: String,
+                    FJYXWH: String,
+                    FBJE: BigDecimal,
+                    FSJE: BigDecimal,
+                    FBSL: BigDecimal,
+                    FSSL: BigDecimal,
+                    FBYJ: BigDecimal,
+                    FSYJ: BigDecimal,
+                    FBJSF: BigDecimal,
+                    FSJSF: BigDecimal,
+                    FBYHS: BigDecimal,
+                    FSYHS: BigDecimal,
+                    FBZGF: BigDecimal,
+                    FSZGF: BigDecimal,
+                    FBGHF: BigDecimal,
+                    FSGHF: BigDecimal,
+                    FBGZLX: BigDecimal,
+                    FSGZLX: BigDecimal,
+                    FBFXJ: BigDecimal,
+                    FSFXJ: BigDecimal,
+                    FBSFJE: BigDecimal,
+                    FSSSJE: BigDecimal,
+                    FHGGAIN: BigDecimal,
+                    FZQBZ: String,
+                    FYWBZ: String,
+                    FQSBZ: String,
+                    FBQTF: String,
+                    FSQTF: String,
+                    ZQDM: String,
+                    FJYFS: String,
+                    FSH: String,
+                    FZZR: String,
+                    FCHK: String,
+                    FZLH: String,
+                    FTZBZ: String,
+                    FBQSGHF: BigDecimal,
+                    FSQSGHF: BigDecimal,
+                    FGDDM: String
+                   )
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession
@@ -23,17 +61,20 @@ object GuoHu_DBF {
       .appName("mytest")
       .master("local[2]")
       .getOrCreate()
-
-    val value: RDD[(String, Iterable[Row])] = spark.sqlContext.dbfFile("E:\\DBFFILE\\InterDoc\\gh.dbf").rdd.map(x => {
-      val Fdate = x.getAs[String]("BCRQ") //日期
+    import com.yss.scala.dbf._
+    val value = spark.sqlContext.dbfFile("E:\\DBFFILE\\InterDoc\\gh.dbf").rdd.map(x => {
+      val Fdate = x.getAs[String]("BCRQ")
+      //日期
       val FinDate = x.getAs[String]("BCRQ")
       //读入日期
       val FZqdm = x.getAs[String]("ZQDM")
       //证券代码
       val Fjyxwh = x.getAs[String]("GSDM")
       //交易席位号
-      val ZQDM = x.getAs[String]("ZQDM") //证券代码
-      val fgddm = x.getAs[String]("GDDM") //股东代码
+      val ZQDM = x.getAs[String]("ZQDM")
+      //证券代码
+      val fgddm = x.getAs[String]("GDDM")
+      //股东代码
       (Fdate + "_" + FinDate + "_" + FZqdm + "_" + Fjyxwh + "_" + ZQDM + "_" + fgddm, x)
     }).groupByKey()
 
@@ -66,6 +107,7 @@ object GuoHu_DBF {
       var FSfxj = BigDecimal(0.0)
       var Fbsfje = BigDecimal(0.0)
       var Fsssje = BigDecimal(0.0)
+      var FHggain = BigDecimal(0.0)
       val FSzsh = "H"
       val FZqbz = "GP"
       val Fywbz = "PT"
@@ -116,14 +158,14 @@ object GuoHu_DBF {
         }
       }
       HZJKQS(Fdate, FinDate, FZqdm, FSzsh, Fjyxwh, Fbje, Fsje, FBsl, FSsl, Fbyj, Fsyj, FBjsf, FSjsf, Fbyhs, Fsyhs, FBzgf, FSzgf, FBghf
-        , FSghf, FBgzlx, FSgzlx, FBfxj, FSfxj, Fbsfje, Fsssje, FZqbz, Fywbz, FQsbz, FBQTF, FSQTF, ZQDM, FJYFS, Fsh, FZZR, FCHK, fzlh, ftzbz
+        , FSghf, FBgzlx, FSgzlx, FBfxj, FSfxj, Fbsfje, Fsssje, FHggain, FZqbz, Fywbz, FQsbz, FBQTF, FSQTF, ZQDM, FJYFS, Fsh, FZZR, FCHK, fzlh, ftzbz
         , FBQsghf, FsQsghf, fgddm)
     })
     import spark.implicits._
     v.toDF()
       .write.format("jdbc")
       .option("url", "jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=utf8")
-      .option("dbtable", "page_split_convert_rate1108")
+      .option("dbtable", "HZJKQS")
       .option("user", "root")
       .option("password", "root1234")
       .mode(SaveMode.Append)
