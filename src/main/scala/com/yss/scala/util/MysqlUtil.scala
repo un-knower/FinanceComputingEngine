@@ -13,12 +13,13 @@ object MysqlUtil {
   def getConn(): Connection = {
     val path = "mysqlConnectionProperties.properties"
     val properties = new Properties()
-    properties.load(new FileInputStream(path))
+    properties.load(ClassLoader.getSystemResourceAsStream(path))
     val url = properties.getProperty("url")
     val database = properties.getProperty("dataBase")
     val userName = properties.getProperty("userName", "root")
     val password = properties.getProperty("password")
-    val conn:Connection = DriverManager.getConnection(url+database, userName, password)
+    val conn: Connection = DriverManager.getConnection(url + database, userName, password)
     conn
   }
+
 }
