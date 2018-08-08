@@ -129,6 +129,7 @@ object GuoHu_DBF {
       val zhengguan = 0.00004
       val fengxianjin = 0.00003
 
+
       val fileds = t._2.mkString(",").split(",")
       val bs = fileds(13)
       var cjje = BigDecimal(fileds(11))
