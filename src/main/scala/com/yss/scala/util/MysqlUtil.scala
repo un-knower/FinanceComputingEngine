@@ -1,4 +1,4 @@
-package com.yss.test.utils
+package com.yss.scala.util
 
 import java.io.FileInputStream
 import java.sql.{Connection, DriverManager}
