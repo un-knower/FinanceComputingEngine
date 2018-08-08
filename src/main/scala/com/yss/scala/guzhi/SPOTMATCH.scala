@@ -1,4 +1,4 @@
-package com.yss.scala.dbf
+package com.yss.scala.guzhi
 
 import java.io.File
 import java.util.Properties
