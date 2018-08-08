@@ -11,7 +11,6 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
   *   结果表：HZJKQS
   */
 object GuoHu_DBF {
-
   case class HZJKQS(FDATE: String,
                     FINDATE: String,
                     FZQDM: String,
