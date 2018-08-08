@@ -1,11 +1,10 @@
-package com.yss.test.scala
+package com.yss.scala.guzhi
 
-import com.yss.test.utils.XMLReader
-import org.apache.spark.sql.{Row, SparkSession}
 import java.sql.{Connection, PreparedStatement}
 import java.util.Date
 
-import com.yss.test.utils.MysqlUtil
+import com.yss.scala.util.{MysqlUtil, XMLReader}
+import org.apache.spark.sql.{Row, SparkSession}
 
 /**
   * 将imcexchangerate.xml的数据写入mysql数据库中

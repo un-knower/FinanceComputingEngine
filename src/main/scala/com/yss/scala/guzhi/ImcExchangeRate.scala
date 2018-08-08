@@ -1,10 +1,11 @@
-package com.yss.test.scala
+package com.yss.scala.guzhi
 
-import java.util.Date
 import java.text.SimpleDateFormat
-import com.yss.test.utils.XMLReader
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import java.util.Date
+
+import com.yss.scala.util.XMLReader
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 /**
   * imcexchangerate.xml数据接口
