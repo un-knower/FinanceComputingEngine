@@ -76,7 +76,7 @@ public class DBFField implements Serializable
     {
         final byte bytes[] = new byte[fieldLength];
         dataInputStream.readFully(bytes);
-        return new Text(bytes);
+        return new Text(new String(bytes).trim());
     }
 
     private int parseInt(
