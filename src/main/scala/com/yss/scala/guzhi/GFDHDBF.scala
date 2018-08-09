@@ -45,7 +45,13 @@ case class DGH00001(FDATE: String,
                     FBQSGHF: BigDecimal,
                     FSQSGHF: BigDecimal,
                     FGDDM: String)
-
+/**
+  * @author ws
+  * @version 2018-08-08
+  *  描述：上海大宗过户
+  *   源文件：gdh.dbf
+  *   结果表：HZJKQS
+  */
 object GFDHDBF {
 
   def main(args: Array[String]): Unit = {
@@ -177,8 +183,8 @@ object GFDHDBF {
       .write.format("jdbc")
       .option("url", "jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=utf8")
       .option("dbtable", "HZJKQS")
-      .option("user", "root")
-      .option("password", "root1234")
+      .option("user", "test01")
+      .option("password", "test01")
       .mode(SaveMode.Append)
       .save()
   }
