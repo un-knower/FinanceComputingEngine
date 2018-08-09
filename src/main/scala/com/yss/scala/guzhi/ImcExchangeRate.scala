@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import com.yss.scala.util.XMLReader
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 /**
@@ -28,30 +28,28 @@ object ImcExchangeRate {
     //定义需要存入表格字段格式
     val fieldSchema = StructType(Array(
       StructField("sjlx", StringType, true),
-      StructField("mrhl", StringType, true),
-      StructField("mlhl", StringType, true),
-      StructField("zjhl", StringType, true),
+      StructField("mrhl", DoubleType, true),
+      StructField("mlhl", DoubleType, true),
+      StructField("zjhl", DoubleType, true),
       StructField("bz", StringType, true),
-      StructField("rq", StringType, true),
+      StructField("rq", LongType, true),
       StructField("BYs", StringType, true)
     ))
 
     //写出表字段与原始数据对应方式
     val rowRDD = XMLReader.readXML(inputPath, sqlContext).map(row => {
-      val BidRate = row(0).toString
+      val BidRate = row(0).toString.toDouble
       val FromCurrency = row(1).toString.trim()
-      val MidPointRate = row(2).toString
-      val OfferRate = row(3).toString
-      val date = new Date()
-      val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
-      val now = dateFormat.format(date)
+      val MidPointRate = row(2).toString.toDouble
+      val OfferRate = row(3).toString.toDouble
+      val date = new Date().getTime
       Row(
         "102",
         BidRate,
         OfferRate,
         MidPointRate,
         FromCurrency,
-        now,
+        date,
         " "
       )
     })
@@ -59,12 +57,13 @@ object ImcExchangeRate {
     //数据写出到表
     sqlContext.createDataFrame(rowRDD, fieldSchema)
       .write
-      .format("csv")
-      .mode(SaveMode.Overwrite)
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("delimiter", ",")
-      .save(outputPath.toString())
+      .format("jdbc")
+      .option("url", "jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=utf8")
+      .option("dbtable", "imcexchangerate")
+      .option("user", "test01")
+      .option("password", "test01")
+      .mode(SaveMode.Append)
+      .save()
 
     sqlContext.stop()
   }

@@ -15,10 +15,10 @@ import scala.collection.mutable
 object Execution_aggr {
   def main(args: Array[String]): Unit = {
     //1.将tsv文件读进来
-    val sparkConf = new SparkConf().setMaster("local[*]").setAppName("readDBFFile")
+    val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
     val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-    val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\估值资料\\execution_aggr_N000032F0001_1_20160825.tsv")
+    val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\估值资料\\execution_aggr_N000032F0001_1_20160825.tsv")/*execution_aggr_N000032F0001_1_20160825*/
 
 
     //2.进行map,将数据按 | 分割
@@ -60,11 +60,11 @@ object Execution_aggr {
 
     //费率 1.佣金费率，经手费率，印花费率，过户费率，证管费率，风险金费率
     val commisionRate =BigDecimal( 0.0025)//佣金费率
-    val HandingFeeRate = BigDecimal(0.00004) //经手费率
+    val HandingFeeRate = BigDecimal(0.0001475) //经手费率
     val PrintingRate = BigDecimal(0.001) //印花费率
     val TransferRate = BigDecimal(0.00004)//过户费率
     val CollectionRate = BigDecimal(0.00004) //征管费率
-    val RiskRate = BigDecimal(0.000004) //风险金费率
+    val RiskRate = BigDecimal(0.00004) //风险金费率
 
 
 
@@ -105,14 +105,14 @@ object Execution_aggr {
                 //进行计算
                 Fbje += LastPx.*(LastQty)
                 FBsl += LastQty
-                FBjsf += Fbje.*(HandingFeeRate)
-                Fbyhs += Fbje.*(PrintingRate)
-                FBzgf += Fbje.*(CollectionRate)
-                FBghf += Fbje.*(TransferRate)
-                FBfxj += Fbje.*(RiskRate)
-                Fbyj += Fbje.*(commisionRate) - FBzgf - FBghf - Fbyhs //买佣金
-                Fbsfje += Fbje + FBjsf + FBzgf + FBghf
               }
+              Fbyhs += Fbje.*(PrintingRate)
+              FBzgf += Fbje.*(CollectionRate)
+              FBghf += Fbje.*(TransferRate)
+              FBfxj += Fbje.*(RiskRate)
+              Fbyj += Fbje.*(commisionRate) - FBzgf - FBghf - Fbyhs //买佣金
+              Fbsfje += Fbje + FBjsf + FBzgf + FBghf
+              FBjsf += Fbje.*(HandingFeeRate)
               val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,Fbje.setScale(2),BigDecimal(0),FBsl
                 ,BigDecimal(0),Fbyj,BigDecimal(0),FBjsf,BigDecimal(0),Fbyhs,BigDecimal(0),FBzgf,BigDecimal(0)
                 ,FBghf,BigDecimal(0),BigDecimal(0),BigDecimal(0),FBfxj,BigDecimal(0),Fbsfje,BigDecimal(0),FZqbz,Fywbz,FQsbz,FBQTF,FSQTF,SecurityID,FJYFS,Fsh,FZZR,FCHK,fzlh,ftzbz,FBQsghf,FsQsghf,AccountID)
@@ -131,14 +131,14 @@ object Execution_aggr {
                 //进行计算
                 Fsje += LastPx.*(LastQty)  //卖金额
                 FSsl += LastQty  //卖数量
-                FSjsf += Fsje.*(HandingFeeRate)
-                Fsyhs += Fsje.*(PrintingRate)
-                FSzgf += Fsje.*(CollectionRate)
-                FSghf += Fsje.*(TransferRate)
-                FSfxj += Fsje.*(RiskRate)
-                Fsyj += Fsje.*(commisionRate) - FBzgf - FBghf - Fbyhs //卖佣金
-                Fsssje += Fbje - FSjsf - FSzgf - FSghf-Fsyhs
               }
+              Fsyhs += Fsje.*(PrintingRate)
+              FSjsf += Fsje.*(HandingFeeRate)
+              FSzgf += Fsje.*(CollectionRate)
+              FSghf += Fsje.*(TransferRate)
+              FSfxj += Fsje.*(RiskRate)
+              Fsyj += Fsje.*(commisionRate) - FSzgf - FSghf - Fsyhs //卖佣金
+              Fsssje += Fsje - FSjsf - FSzgf - FSghf-Fsyhs
               val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,BigDecimal(0),Fsje.setScale(2,BigDecimal.RoundingMode.CEILING),BigDecimal(0)
                 ,FSsl,BigDecimal(0),Fsyj,BigDecimal(0),FSjsf,BigDecimal(0),Fsyhs,BigDecimal(0),FSzgf
                 ,BigDecimal(0),FSghf,BigDecimal(0),BigDecimal(0),FBfxj,FSfxj,BigDecimal(0),Fsssje,FZqbz,Fywbz,FQsbz,FBQTF,FSQTF,SecurityID,FJYFS,Fsh,FZZR,FCHK,fzlh,ftzbz,FBQsghf,FsQsghf,AccountID)
@@ -147,14 +147,14 @@ object Execution_aggr {
             execution
           }
         }
-    import sparkSession.implicits._
-      finallData.toDF().write.format("jdbc")
-     .option("url","jdbc:mysql://192.168.102.119:3306/test")
-     .option("user","root")
-     .option("password","root1234")
-     .option("dbtable","SJSV5")
-     .mode(SaveMode.Append)
-     .save()
-    // finallData.saveAsObjectFile("C:\\Users\\hgd\\Desktop\\exe1.txt")
+  import sparkSession.implicits._
+       finallData.toDF().write.format("jdbc")
+    .option("url","jdbc:mysql://192.168.102.119:3306/JJCWGZ")
+    .option("user","root")
+    .option("password","root1234")
+    .option("dbtable","SJSV5")
+    .mode(SaveMode.Append)
+    .save()
+   // finallData.toDF().show()
   }
 }
