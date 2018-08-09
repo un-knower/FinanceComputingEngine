@@ -61,8 +61,9 @@ object SHDZGH {
   private def doIt(): Unit = {
     import com.yss.scala.dbf._
 
-    val spark = SparkSession.builder().appName("mytest").master("local[*]").getOrCreate()
-    val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
+    val spark = SparkSession.builder().appName("SHDZGH")/*.master("local[*]")*/.getOrCreate()
+    val df = spark.sqlContext.dbfFile("hdfs://nscluster/yss/guzhi/dgh00001.dbf")
+//    val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
     import spark.implicits._
 
     val value = df.rdd.map(row => {
