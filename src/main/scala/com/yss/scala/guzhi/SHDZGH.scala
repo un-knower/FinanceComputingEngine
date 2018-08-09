@@ -52,7 +52,7 @@ case class DGH00001(FDATE: String,
   *   源文件：gdh.dbf
   *   结果表：HZJKQS
   */
-object GFDHDBF {
+object SHDZGH {
 
   def main(args: Array[String]): Unit = {
     doIt()
