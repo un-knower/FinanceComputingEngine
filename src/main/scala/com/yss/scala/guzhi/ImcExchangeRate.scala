@@ -59,12 +59,13 @@ object ImcExchangeRate {
     //数据写出到表
     sqlContext.createDataFrame(rowRDD, fieldSchema)
       .write
-      .format("csv")
-      .mode(SaveMode.Overwrite)
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .option("delimiter", ",")
-      .save(outputPath.toString())
+      .format("jdbc")
+      .option("url", "jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=utf8")
+      .option("dbtable", "imcexchangerate")
+      .option("user", "test01")
+      .option("password", "test01")
+      .mode(SaveMode.Append)
+      .save()
 
     sqlContext.stop()
   }
