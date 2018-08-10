@@ -1,8 +1,6 @@
 package com.yss.scala.guzhi
 
-import java.text.SimpleDateFormat
 import java.util.Date
-
 import com.yss.scala.util.XMLReader
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
@@ -11,7 +9,6 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
   * imcexchangerate.xml数据接口
   *
   * @author zhangyl
-  * @date 2018/8/7
   *
   * 按照要求的字段格式将源文件imcexchangerate.xml文件的字段
   * 写入新的数据文件中
@@ -19,9 +16,12 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 object ImcExchangeRate {
   def main(args: Array[String]): Unit = {
 
-    val sqlContext = SparkSession.builder().master("local[*]").getOrCreate()
+    val sqlContext = SparkSession.builder()
+      .appName("imcexchangerate")
+      .getOrCreate()
 
-    val inputPath = "F:/work/evaluation/test_data/imcexchangerate.xml"
+    //val inputPath = "F:/work/evaluation/test_data/imcexchangerate.xml"
+    val inputPath ="hdfs://nscluster/yss/guzhi/imcexchangerate.xml"
 
     val outputPath = "F:/work/evaluation/test_data/ImcExchangeRateCsv"
 
