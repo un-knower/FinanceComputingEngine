@@ -3,6 +3,8 @@ package com.yss.scala.guzhi
 import java.io.File
 import java.util.Properties
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 import org.apache.spark.{SparkConf, SparkContext}
@@ -12,11 +14,11 @@ object SPOTMATCH extends App {
   val conf = new SparkConf().setAppName("SPOTMATCH")
   val sc = new SparkContext(conf)
   val sqlcontext = new SQLContext(sc)
-  val InputPath = "hdfs://nscluster/data/I202911S18061200SPOTMATCH.TXT"
-//  val InputPath = "D:\\Project\\Account\\jiekou\\I202911S18061200SPOTMATCH.TXT"
-  val file = new File(InputPath.trim)
-  val fileName = file.getName()
+  val InputPath = "hdfs://nscluster/yss/guzhi/I202911S18061200SPOTMATCH.TXT"
+//  val InputPath = "C:\\WorkSpace\\Project\\Account\\jiekou\\I202911S18061200SPOTMATCH.TXT"
+
   val value  = sc.textFile(InputPath).map(x => {
+    val InputFile = "I202911S18061200SPOTMATCH.TXT"
       val splits = x.split("[|]")
       Row(splits(0).trim.toString ,
           splits(1).trim.toString ,
@@ -30,7 +32,7 @@ object SPOTMATCH extends App {
           splits(10).trim.toString,
           splits(11).trim.toString,
           splits(12).trim.toString,
-          fileName)
+          InputFile)
     })
 
   val fieldSchema =
