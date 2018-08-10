@@ -1,5 +1,6 @@
 package com.yss.scala.guzhi
 
+import com.yss.scala.util.Util
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 import scala.math.BigDecimal.RoundingMode
@@ -62,9 +63,9 @@ object SHDZGH {
   private def doIt(): Unit = {
     import com.yss.scala.dbf._
 
-    val spark = SparkSession.builder().appName("SHDZGH")/*.master("local[*]")*/.getOrCreate()
-    val df = spark.sqlContext.dbfFile("hdfs://nscluster/yss/guzhi/dgh00001.dbf")
-//        val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
+    val spark = SparkSession.builder().appName("SHDZGH") /*.master("local[*]")*/ .getOrCreate()
+    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))
+    //        val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
     import spark.implicits._
 
     val value = df.rdd.map(row => {
@@ -180,15 +181,9 @@ object SHDZGH {
           FSgzlx.formatted("%.2f"), FHGGAIN.formatted("%.2f"), FBFxj.formatted("%.2f"), FSFxj.formatted("%.2f"), FBsfje.formatted("%.2f"), FSssje.formatted("%.2f"), FZqbz, FYwbz, FQsbz, FBQtf.formatted("%.2f"), FSQtf.formatted("%.2f"),
           ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm)
     }
+    Util.outputMySql(value.toDF(), "SHDZGH")
+    spark.stop()
 
-    value.toDF()
-      .write.format("jdbc")
-      .option("url", "jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=utf8")
-      .option("dbtable", "SHDZGH")
-      .option("user", "test01")
-      .option("password", "test01")
-      .mode(SaveMode.Overwrite)
-      .save()
   }
 
 }
