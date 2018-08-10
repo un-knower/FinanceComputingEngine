@@ -16,13 +16,13 @@ import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
 object QiHuoChengJiaoMingXi {
   def main(args: Array[String]): Unit = {
 
-    val spark = SparkSession.builder().appName("QiHuoChengJiaoMingXi").master("local[*]").getOrCreate()
+    val spark = SparkSession.builder().appName("QiHuoChengJiaoMingXi").getOrCreate()
     val sc: SparkContext = spark.sparkContext
     import spark.implicits._
 
     //读取目标文件：期货成交明细
-    //val readData: Dataset[String] = spark.read.textFile("hdfs://nscluster/yss/guzhi/09000211trddata20180420.txt")
-    val readData: Dataset[String] = spark.read.textFile("C:\\Users\\YZM\\Desktop\\test1.txt")
+    val readData: Dataset[String] = spark.read.textFile("hdfs://nscluster/yss/guzhi/09000211trddata20180420.txt")
+    //val readData: Dataset[String] = spark.read.textFile("C:\\Users\\YZM\\Desktop\\test1.txt")
 
     //处理目标文件的每一行数据，得到最终结果
     val Result: Dataset[QiHuoChengJiao] = readData.map(line => {
@@ -105,7 +105,7 @@ object QiHuoChengJiaoMingXi {
     val properties = new Properties()
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
-    Result.write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.119/JJCWGZ", "09000211trddata20180420QHCJMX", properties)
+    Result.write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.119/JJCWGZ", "QHCJMX", properties)
 
   }
 }
