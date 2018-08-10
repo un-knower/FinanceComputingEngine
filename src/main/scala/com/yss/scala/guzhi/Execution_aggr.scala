@@ -1,8 +1,6 @@
 package com.yss.scala.guzhi
 
 import java.sql.DriverManager
-
-import com.yss.scala.util.MysqlUtil
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 

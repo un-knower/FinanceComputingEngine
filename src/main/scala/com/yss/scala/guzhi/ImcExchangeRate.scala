@@ -2,8 +2,6 @@ package com.yss.scala.guzhi
 
 import java.text.SimpleDateFormat
 import java.util.Date
-
-import com.yss.scala.util.XMLReader
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
