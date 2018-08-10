@@ -16,7 +16,7 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
   **/
 object reff04 {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().master("local").appName("reff04").getOrCreate()
+    val spark = SparkSession.builder().appName("reff04").getOrCreate()
 
     val sc = spark.sparkContext
 
