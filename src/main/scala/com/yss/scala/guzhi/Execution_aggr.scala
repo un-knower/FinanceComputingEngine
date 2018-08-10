@@ -19,7 +19,7 @@ import scala.collection.mutable.ListBuffer
 object Execution_aggr {
   def main(args: Array[String]): Unit = {
     //1.将tsv文件读进来
-    val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
+    val sparkConf = new SparkConf()/*.setMaster("local[*]")*/.setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
     val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
     val exe = sc.textFile("hdfs://nscluster/yss/guzhi/execution_aggr_N000032F0001_1_20160825.tsv")/*execution_aggr_N000032F0001_1_20160825*/
