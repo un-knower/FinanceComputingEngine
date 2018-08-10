@@ -45,8 +45,14 @@ case class DGH00001(FDATE: String,
                     FBQSGHF: BigDecimal,
                     FSQSGHF: BigDecimal,
                     FGDDM: String)
-
-object GFDHDBF {
+/**
+  * @author ws
+  * @version 2018-08-08
+  *  描述：上海大宗过户
+  *   源文件：gdh.dbf
+  *   结果表：HZJKQS
+  */
+object SHDZGH {
 
   def main(args: Array[String]): Unit = {
     doIt()
@@ -55,8 +61,9 @@ object GFDHDBF {
   private def doIt(): Unit = {
     import com.yss.scala.dbf._
 
-    val spark = SparkSession.builder().appName("mytest").master("local[*]").getOrCreate()
-    val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
+    val spark = SparkSession.builder().appName("SHDZGH")/*.master("local[*]")*/.getOrCreate()
+    val df = spark.sqlContext.dbfFile("hdfs://nscluster/yss/guzhi/dgh00001.dbf")
+//    val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
     import spark.implicits._
 
     val value = df.rdd.map(row => {
@@ -177,8 +184,8 @@ object GFDHDBF {
       .write.format("jdbc")
       .option("url", "jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=utf8")
       .option("dbtable", "HZJKQS")
-      .option("user", "root")
-      .option("password", "root1234")
+      .option("user", "test01")
+      .option("password", "test01")
       .mode(SaveMode.Append)
       .save()
   }

@@ -106,11 +106,11 @@ object reff04 {
 
 
     val reff04_dataframe = spark.createDataFrame(rowRDD, schema)
-    val url ="jdbc:mysql://192.168.102.119:3306/test?useUnicode=true&characterEncoding=UTF-8"
+    val url ="jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=UTF-8"
     val table = "reff04"
     val prop = new Properties()
-    prop.setProperty("user","hive")
-    prop.setProperty("password","hive1234")
+    prop.setProperty("user","test01")
+    prop.setProperty("password","test01")
 
     reff04_dataframe.write.mode(SaveMode.Append).jdbc(url,table,prop)
 
