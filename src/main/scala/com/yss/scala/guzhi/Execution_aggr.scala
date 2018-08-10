@@ -1,9 +1,13 @@
 package com.yss.scala.guzhi
 
+import java.sql.DriverManager
+
+import com.yss.scala.util.MysqlUtil
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 /**
   * @author ChenYao
   * date 2018/8/8
@@ -18,7 +22,7 @@ object Execution_aggr {
     val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
     val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-    val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\估值资料\\execution_aggr_N000032F0001_1_20160825.tsv")/*execution_aggr_N000032F0001_1_20160825*/
+    val exe = sc.textFile("hdfs://nscluster/yss/guzhi/execution_aggr_N000032F0001_1_20160825.tsv")/*execution_aggr_N000032F0001_1_20160825*/
 
 
     //2.进行map,将数据按 | 分割
@@ -37,7 +41,7 @@ object Execution_aggr {
     }
     //3.进行分组
     val groupKey=map1.groupByKey()
-    var Fbje = BigDecimal(0.0) //买金额
+    var Fbje = BigDecimal(0.0).setScale(2,BigDecimal.RoundingMode.HALF_UP) //买金额
     var Fsje = BigDecimal(0.0) //卖金额
     var FBsl = BigDecimal(0.0) //买数量
     var FSsl = BigDecimal(0.0) //卖数量
@@ -85,7 +89,7 @@ object Execution_aggr {
     //4.进行计算
      val finallData= groupKey.flatMap{
           case(key,iterable)=>{
-             var execution=new mutable.ArrayBuffer[ExecutionAggr]()
+             var execution=new /*mutable.ArrayBuffer[ExecutionAggr]()*/ ListBuffer[ExecutionAggr]()
                  //1）将key进行切分
                     val keys=key.split("_")
                     val TransactTime = keys(0)//回报时间
@@ -113,7 +117,7 @@ object Execution_aggr {
               Fbyj += Fbje.*(commisionRate) - FBzgf - FBghf - Fbyhs //买佣金
               Fbsfje += Fbje + FBjsf + FBzgf + FBghf
               FBjsf += Fbje.*(HandingFeeRate)
-              val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,Fbje.setScale(2),BigDecimal(0),FBsl
+              val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,Fbje.setScale(2,BigDecimal.RoundingMode.DOWN),BigDecimal(0),FBsl
                 ,BigDecimal(0),Fbyj,BigDecimal(0),FBjsf,BigDecimal(0),Fbyhs,BigDecimal(0),FBzgf,BigDecimal(0)
                 ,FBghf,BigDecimal(0),BigDecimal(0),BigDecimal(0),FBfxj,BigDecimal(0),Fbsfje,BigDecimal(0),FZqbz,Fywbz,FQsbz,FBQTF,FSQTF,SecurityID,FJYFS,Fsh,FZZR,FCHK,fzlh,ftzbz,FBQsghf,FsQsghf,AccountID)
 
@@ -139,7 +143,7 @@ object Execution_aggr {
               FSfxj += Fsje.*(RiskRate)
               Fsyj += Fsje.*(commisionRate) - FSzgf - FSghf - Fsyhs //卖佣金
               Fsssje += Fsje - FSjsf - FSzgf - FSghf-Fsyhs
-              val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,BigDecimal(0),Fsje.setScale(2,BigDecimal.RoundingMode.CEILING),BigDecimal(0)
+              val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,BigDecimal(0),Fsje ,BigDecimal(0)
                 ,FSsl,BigDecimal(0),Fsyj,BigDecimal(0),FSjsf,BigDecimal(0),Fsyhs,BigDecimal(0),FSzgf
                 ,BigDecimal(0),FSghf,BigDecimal(0),BigDecimal(0),FBfxj,FSfxj,BigDecimal(0),Fsssje,FZqbz,Fywbz,FQsbz,FBQTF,FSQTF,SecurityID,FJYFS,Fsh,FZZR,FCHK,fzlh,ftzbz,FBQsghf,FsQsghf,AccountID)
               execution += executionAggr
@@ -147,7 +151,51 @@ object Execution_aggr {
             execution
           }
         }
-  import sparkSession.implicits._
+
+   /*val dbc = "jdbc:mysql://192.168.102.119:3306/test?user=root&password=root1234" /*JJCWGZ*/
+    classOf[com.mysql.jdbc.Driver]
+    val conn = DriverManager.getConnection(dbc)
+
+
+    val driver = "com.mysql.jdbc.Driver"
+    val url = "jdbc:mysql://192.168.102.119:3306/test"
+    val username = "root"
+    val password = "root1234"
+
+    // do database insert
+    try {
+      Class.forName(driver)
+      val connection = DriverManager.getConnection(url, username, password)
+
+
+      val prep = conn.prepareStatement("create table SJSV5(" +
+        "  `FDATE`   VARCHAR(30) not null,  `FINDATE` VARCHAR(30)  not null," +
+        "  `FZQDM`   VARCHAR(10) not null,  `FSZSH`   VARCHAR(1) not null," +
+        "  `FJYXWH`  VARCHAR(10) not null,  `FBJE`    decimal(18,2) not null," +
+        "  `FSJE`   decimal(18,2) not null,  `FBSL`   decimal(18,2) not null," +
+        "  `FSSL`   decimal(18,2) not null,  `FBYJ`   decimal(18,2) not null," +
+        "  `FSYJ`   decimal(18,2) not null,  `FBJSF`  decimal(18,2) not null," +
+        "  `FSJSF`  decimal(18,2) not null,  `FBYHS`  decimal(18,2) not null," +
+        "  `FSYHS`  decimal(18,2) not null, `FBZGF`  decimal(18,2) not null," +
+        "  `FSZGF`   decimal(18,2) not null,  `FBGHF`  decimal(18,2) not null, " +
+        " `FSGHF`  decimal(18,2) not null, `FBGZLX` decimal(18,2) not null," +
+        "  `FSGZLX` decimal(18,2) not null,  `FBFXJ`  decimal(18,2) not null," +
+        " `FSFXJ`  decimal(18,2) not null,  `FBSFJE` decimal(18,2) not null," +
+        "  `FSSSJE` decimal(18,2) not null,  `FZQBZ`   VARCHAR(20) not null," +
+        "  `FYWBZ`   VARCHAR(20) not null,  `FQSBZ`   VARCHAR(1) not null," +
+        "  `FBQTF`  decimal(18,2) not null,  `FSQTF`  decimal(18,2) not null," +
+        "  `ZQDM`    VARCHAR(10) not null,  `FJYFS`   VARCHAR(10) default 'PT' not null," +
+        "  `FSH`     INTEGER default 1,  `FZZR`    VARCHAR(20) default ' ' not null," +
+        "  `FCHK`    VARCHAR(20) default ' ',  `FZLH`    VARCHAR(30) default '0' not null," +
+        "  `FTZBZ`   VARCHAR(1) default ' ' not null, `FBQSGHF` decimal(18,2) default 0," +
+        "  `FSQSGHF` decimal(18,2) default 0,  `FGDDM`   VARCHAR(18) default ' ' not null) ")
+    }
+    finally {
+      conn.close
+    }*/
+
+
+ import sparkSession.implicits._
        finallData.toDF().write.format("jdbc")
     .option("url","jdbc:mysql://192.168.102.119:3306/JJCWGZ")
     .option("user","root")
@@ -155,6 +203,11 @@ object Execution_aggr {
     .option("dbtable","SJSV5")
     .mode(SaveMode.Append)
     .save()
-   // finallData.toDF().show()
+/*  import sparkSession.implicits._
+  finallData.toDF().show()*/
   }
+
+
+
+
 }
