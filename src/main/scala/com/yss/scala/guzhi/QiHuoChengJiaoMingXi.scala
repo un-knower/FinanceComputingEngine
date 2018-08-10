@@ -3,6 +3,7 @@ package com.yss.scala.guzhi
 import java.util.Properties
 
 import com.yss.scala.dto.QiHuoChengJiao
+import com.yss.scala.util.Util
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
 
@@ -16,16 +17,17 @@ import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
 object QiHuoChengJiaoMingXi {
   def main(args: Array[String]): Unit = {
 
-    val spark = SparkSession.builder().appName("QiHuoChengJiaoMingXi").master("local[*]").getOrCreate()
+    val spark = SparkSession.builder().appName("QiHuoChengJiaoMingXi").getOrCreate()
     val sc: SparkContext = spark.sparkContext
     import spark.implicits._
 
     //读取目标文件：期货成交明细
-    //val readData: Dataset[String] = spark.read.textFile("hdfs://nscluster/yss/guzhi/09000211trddata20180420.txt")
-    val readData: Dataset[String] = spark.read.textFile("C:\\Users\\YZM\\Desktop\\test1.txt")
+    val fileName = "09000211trddata20180420.txt"
+    val readData: Dataset[String] = spark.read.textFile(Util.getInputFilePath(fileName))
+    //val readData: Dataset[String] = spark.read.textFile("C:\\Users\\YZM\\Desktop\\test1.txt")
 
     //处理目标文件的每一行数据，得到最终结果
-    val Result: Dataset[QiHuoChengJiao] = readData.map(line => {
+    val dsResult: Dataset[QiHuoChengJiao] = readData.map(line => {
       //将目标文件每一行数据切分成一个字符串数组
       val arr: Array[String] = line.split("@")
       //日期
@@ -102,10 +104,8 @@ object QiHuoChengJiaoMingXi {
     })
 
     //将结果输出到Mysql数据库中
-    val properties = new Properties()
-    properties.setProperty("user", "root")
-    properties.setProperty("password", "root1234")
-    Result.write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.119/JJCWGZ", "09000211trddata20180420QHCJMX", properties)
+    val dfResult = dsResult.toDF()
+    Util.outputMySql(dfResult,"QHCJMX")
 
   }
 }
