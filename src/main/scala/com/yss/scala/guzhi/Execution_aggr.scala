@@ -20,7 +20,7 @@ object Execution_aggr {
     val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
     val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-    val exe = sc.textFile("hdfs://nscluster/yss/guzhi/execution_aggr_N000032F0001_1_20160825.tsv")/*execution_aggr_N000032F0001_1_20160825*/
+    val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\估值资料\\execution_aggr_F000995F0401_1_20180808(1).tsv")/*execution_aggr_N000032F0001_1_20160825*/
    /*hdfs://nscluster/yss/guzhi/execution_aggr_N000032F0001_1_20160825.tsv*/
     /*C:\Users\hgd\Desktop\估值资料\exe.tsv*/
 
@@ -38,56 +38,56 @@ object Execution_aggr {
         (key,text)  //key  日期 +SecurityID +市场(S)+交易席位(ReportingPBUID)+SIDE(买卖)+股东代码(AccountID)
       }
     }
+
     //3.进行分组
     val groupKey=map1.groupByKey()
-    var Fbje = BigDecimal(0.00)//买金额
-    var Fsje = BigDecimal(0.00) //卖金额
-    var FBsl = BigDecimal(0.00) //买数量
-    var FSsl = BigDecimal(0.00) //卖数量
-    var Fbyj = BigDecimal(0.00) //买佣金
-    var Fsyj = BigDecimal(0.00) //卖佣金
-    var FBjsf = BigDecimal(0.00) //买经手费
-    var FSjsf = BigDecimal(0.00) //卖经手费
-    var Fbyhs = BigDecimal(0.00) //买印花税
-    var Fsyhs = BigDecimal(0.00) //卖印花税
-    var FBzgf = BigDecimal(0.00) //买征管费
-    var FSzgf = BigDecimal(0.00) //卖征管费
-    var FBghf = BigDecimal(0.00) //买过户费
-    var FSghf = BigDecimal(0.00) //卖过户费
-    var FBfxj = BigDecimal(0.00) //买风险金
-    var FSfxj = BigDecimal(0.00) //卖风险金
-    var Fbsfje=BigDecimal(0.00) //买实付金额
-    var Fsssje=BigDecimal(0.00) //卖实收金额
-
-
-
-    //费率 1.佣金费率，经手费率，印花费率，过户费率，证管费率，风险金费率
-    val commisionRate =BigDecimal( 0.0025)//佣金费率
-    val HandingFeeRate = BigDecimal(0.0001475) //经手费率
-    val PrintingRate = BigDecimal(0.001) //印花费率
-    val TransferRate = BigDecimal(0.00004)//过户费率
-    val CollectionRate = BigDecimal(0.00004) //征管费率
-    val RiskRate = BigDecimal(0.00004) //风险金费率
-
-
-
-    val FZqbz="GP" //证券标志
-    val Fywbz="PT" //业务标志
-    val FQsbz="N"  //清算标志
-    val FBQTF=BigDecimal(0.00)  //买其他费用
-    val FSQTF=BigDecimal(0.00)//卖其他费用
-    val FJYFS="PT"
-    val Fsh=1
-    val FZZR=" "
-    val FCHK=" "
-    val fzlh="0"
-    val ftzbz=" "
-    val FBQsghf=BigDecimal(0.00)
-    val FsQsghf=BigDecimal(0.00)
-
     //4.进行计算
      val finallData= groupKey.flatMap{
           case(key,iterable)=>{
+            var Fbje = BigDecimal(0.00)//买金额
+            var Fsje = BigDecimal(0.00) //卖金额
+            var FBsl = BigDecimal(0.00) //买数量
+            var FSsl = BigDecimal(0.00) //卖数量
+            var Fbyj = BigDecimal(0.00) //买佣金
+            var Fsyj = BigDecimal(0.00) //卖佣金
+            var FBjsf = BigDecimal(0.00) //买经手费
+            var FSjsf = BigDecimal(0.00) //卖经手费
+            var Fbyhs = BigDecimal(0.00) //买印花税
+            var Fsyhs = BigDecimal(0.00) //卖印花税
+            var FBzgf = BigDecimal(0.00) //买征管费
+            var FSzgf = BigDecimal(0.00) //卖征管费
+            var FBghf = BigDecimal(0.00) //买过户费
+            var FSghf = BigDecimal(0.00) //卖过户费
+            var FBfxj = BigDecimal(0.00) //买风险金
+            var FSfxj = BigDecimal(0.00) //卖风险金
+            var Fbsfje=BigDecimal(0.00) //买实付金额
+            var Fsssje=BigDecimal(0.00) //卖实收金额
+
+
+
+            //费率 1.佣金费率，经手费率，印花费率，过户费率，证管费率，风险金费率
+            val commisionRate =BigDecimal( 0.0025)//佣金费率
+            val HandingFeeRate = BigDecimal(0.0001475) //经手费率
+            val PrintingRate = BigDecimal(0.001) //印花费率
+            val TransferRate = BigDecimal(0.00004)//过户费率
+            val CollectionRate = BigDecimal(0.00004) //征管费率
+            val RiskRate = BigDecimal(0.00004) //风险金费率
+
+
+
+            val FZqbz="GP" //证券标志
+            val Fywbz="PT" //业务标志
+            val FQsbz="N"  //清算标志
+            val FBQTF=BigDecimal(0.00)  //买其他费用
+            val FSQTF=BigDecimal(0.00)//卖其他费用
+            val FJYFS="PT"
+            val Fsh=1
+            val FZZR=" "
+            val FCHK=" "
+            val fzlh="0"
+            val ftzbz=" "
+            val FBQsghf=BigDecimal(0.00)
+            val FsQsghf=BigDecimal(0.00)
              var execution=new /*mutable.ArrayBuffer[ExecutionAggr]()*/ ListBuffer[ExecutionAggr]()
                  //1）将key进行切分
                     val keys=key.split("_")
@@ -109,7 +109,7 @@ object Execution_aggr {
                 Fbje += LastPx.*(LastQty)
                 FBsl += LastQty
               }
-              Fbyhs += Fbje.*(PrintingRate)
+              Fbyhs =BigDecimal(0.0)
               FBzgf += Fbje.*(CollectionRate)
               FBghf += Fbje.*(TransferRate)
               FBfxj += Fbje.*(RiskRate)
@@ -197,15 +197,15 @@ object Execution_aggr {
     }*/
 
 
-import sparkSession.implicits._
+/*import sparkSession.implicits._
        finallData.toDF().write.format("jdbc")
     .option("url","jdbc:mysql://192.168.102.119:3306/JJCWGZ")
     .option("user","root")
     .option("password","root1234")
     .option("dbtable","SJSV5")
     .mode(SaveMode.Append)
-    .save()
-/*import sparkSession.implicits._
-  finallData.toDF().show()*/
+    .save()*/
+import sparkSession.implicits._
+  finallData.toDF().show()
   }
 }
