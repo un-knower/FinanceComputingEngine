@@ -16,13 +16,13 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
   **/
 object reff04 {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().master("local").appName("reff04").getOrCreate()
+    val spark = SparkSession.builder().appName("reff04").getOrCreate()
 
     val sc = spark.sparkContext
 
-    val reff04_input = "C:\\Users\\yupan\\Desktop\\核算\\接口文件\\reff040704.txt"
+    val reff04_input = "hdfs://nscluster/yss/guzhi/reff040704.txt"
 //    val reff04_input = "C:\\Users\\yupan\\Desktop\\reff040704.txt"
-    val reff04_output = "C:\\Users\\yupan\\Desktop\\test"
+    val reff04_output = "hdfs://nscluster//yss/output/poc/20180810/reff04"
 //    val reff04_data = sc.textFile(reff04_input)
     val reff04_data = sc.hadoopFile(reff04_input, classOf[TextInputFormat], classOf[LongWritable], classOf[Text]).map(f => new String(f._2.getBytes,0,f._2.getLength,"GBK"))
 
