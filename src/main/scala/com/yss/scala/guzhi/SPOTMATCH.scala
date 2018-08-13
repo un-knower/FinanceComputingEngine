@@ -14,7 +14,7 @@ object SPOTMATCH {
 //  val InputPath = "hdfs://nscluster/yss/guzhi/I202911S18061200SPOTMATCH.TXT"
   val InputPath = "C:\\WorkSpace\\Project\\Account\\jiekou\\I202911S18061200SPOTMATCH.TXT"
   val value  = sc.textFile(InputPath).map(x => {
-    val InputFile = "I202911S18061200SPOTMATCH.TXT"
+      val InputFile = "I202911S18061200SPOTMATCH.TXT"
       val splits = x.split("[|]")
       Row(splits(0).trim.toString ,
           splits(1).trim.toString ,
