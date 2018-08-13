@@ -1,5 +1,6 @@
 package com.yss.scala.guzhi
 
+import com.yss.scala.util.Util
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 import scala.math.BigDecimal.RoundingMode
@@ -9,32 +10,32 @@ case class DGH00001(FDATE: String,
                     FZQDM: String,
                     FSZSH: String,
                     FJYXWH: String,
-                    FBJE: BigDecimal,
-                    FSJE: BigDecimal,
-                    FBSL: BigDecimal,
-                    FSSL: BigDecimal,
-                    FBYJ: BigDecimal,
-                    FSYJ: BigDecimal,
-                    FBJSF: BigDecimal,
-                    FSJSF: BigDecimal,
-                    FBYHS: BigDecimal,
-                    FSYHS: BigDecimal,
-                    FBZGF: BigDecimal,
-                    FSZGF: BigDecimal,
-                    FBGHF: BigDecimal,
-                    FSGHF: BigDecimal,
-                    FBGZLX: BigDecimal,
-                    FSGZLX: BigDecimal,
-                    FHGGAIN: BigDecimal,
-                    FBFXJ: BigDecimal,
-                    FSFXJ: BigDecimal,
-                    FBSFJE: BigDecimal,
-                    FSSSJE: BigDecimal,
+                    FBJE: String,
+                    FSJE: String,
+                    FBSL: String,
+                    FSSL: String,
+                    FBYJ: String,
+                    FSYJ: String,
+                    FBJSF: String,
+                    FSJSF: String,
+                    FBYHS: String,
+                    FSYHS: String,
+                    FBZGF: String,
+                    FSZGF: String,
+                    FBGHF: String,
+                    FSGHF: String,
+                    FBGZLX: String,
+                    FSGZLX: String,
+                    FHGGAIN: String,
+                    FBFXJ: String,
+                    FSFXJ: String,
+                    FBSFJE: String,
+                    FSSSJE: String,
                     FZQBZ: String,
                     FYWBZ: String,
                     FQSBZ: String,
-                    FBQTF: BigDecimal,
-                    FSQTF: BigDecimal,
+                    FBQTF: String,
+                    FSQTF: String,
                     ZQDM: String,
                     FJYFS: String,
                     FSH: String,
@@ -42,15 +43,16 @@ case class DGH00001(FDATE: String,
                     FCHK: String,
                     FZLH: String,
                     FTZBZ: String,
-                    FBQSGHF: BigDecimal,
-                    FSQSGHF: BigDecimal,
+                    FBQSGHF: String,
+                    FSQSGHF: String,
                     FGDDM: String)
+
 /**
   * @author ws
   * @version 2018-08-08
-  *  描述：上海大宗过户
-  *   源文件：gdh.dbf
-  *   结果表：HZJKQS
+  *          描述：上海大宗过户
+  *          源文件：gdh.dbf
+  *          结果表：HZJKQS
   */
 object SHDZGH {
 
@@ -61,9 +63,9 @@ object SHDZGH {
   private def doIt(): Unit = {
     import com.yss.scala.dbf._
 
-    val spark = SparkSession.builder().appName("SHDZGH")/*.master("local[*]")*/.getOrCreate()
-    val df = spark.sqlContext.dbfFile("hdfs://nscluster/yss/guzhi/dgh00001.dbf")
-//    val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
+    val spark = SparkSession.builder().appName("SHDZGH") /*.master("local[*]")*/ .getOrCreate()
+    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))
+    //        val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
     import spark.implicits._
 
     val value = df.rdd.map(row => {
@@ -174,20 +176,14 @@ object SHDZGH {
         val FGddm = fields(3)
         val FHGGAIN = BigDecimal(0)
 
-        DGH00001(bcrq, bcrq, ZqDm, FSzsh, Fjyxwh, FBje, FSje, FBsl, FSsl, FByj,
-          FSyj, FBjsf, FSjsf, FByhs, FSyhs, FBzgf, FSzgf, FBghf, FSghf, FBgzlx,
-          FSgzlx,FHGGAIN, FBFxj, FSFxj, FBsfje, FSssje, FZqbz, FYwbz, FQsbz, FBQtf, FSQtf,
-          ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf, FSQsghf, FGddm)
+        DGH00001(bcrq, bcrq, ZqDm, FSzsh, Fjyxwh, FBje.formatted("%.2f"), FSje.formatted("%.2f"), FBsl.formatted("%.2f"), FSsl.formatted("%.2f"), FByj.formatted("%.2f"),
+          FSyj.formatted("%.2f"), FBjsf.formatted("%.2f"), FSjsf.formatted("%.2f"), FByhs.formatted("%.2f"), FSyhs.formatted("%.2f"), FBzgf.formatted("%.2f"), FSzgf.formatted("%.2f"), FBghf.formatted("%.2f"), FSghf.formatted("%.2f"), FBgzlx.formatted("%.2f"),
+          FSgzlx.formatted("%.2f"), FHGGAIN.formatted("%.2f"), FBFxj.formatted("%.2f"), FSFxj.formatted("%.2f"), FBsfje.formatted("%.2f"), FSssje.formatted("%.2f"), FZqbz, FYwbz, FQsbz, FBQtf.formatted("%.2f"), FSQtf.formatted("%.2f"),
+          ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm)
     }
+    Util.outputMySql(value.toDF(), "SHDZGH")
+    spark.stop()
 
-    value.toDF()
-      .write.format("jdbc")
-      .option("url", "jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=utf8")
-      .option("dbtable", "HZJKQS")
-      .option("user", "test01")
-      .option("password", "test01")
-      .mode(SaveMode.Append)
-      .save()
   }
 
 }
