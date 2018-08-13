@@ -14,16 +14,18 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
   * @author yupan
   *         2018/8/6 10:04
   **/
-object reff04 {
+object Reff04 {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().appName("reff04").getOrCreate()
+    val spark = SparkSession.builder.master("local[*]").appName("yss").getOrCreate()
 
     val sc = spark.sparkContext
 
-    val reff04_input = "hdfs://nscluster/yss/guzhi/reff040704.txt"
-//    val reff04_input = "C:\\Users\\yupan\\Desktop\\reff040704.txt"
-    val reff04_output = "hdfs://nscluster//yss/output/poc/20180810/reff04"
-//    val reff04_data = sc.textFile(reff04_input)
+
+    //reff04数据的输入路径
+//    val reff04_input = "hdfs://nscluster/yss/guzhi/reff040704.txt"
+    val reff04_input = "C:\\Users\\yupan\\Desktop\\20180810\\reff040704.txt"
+
+
     val reff04_data = sc.hadoopFile(reff04_input, classOf[TextInputFormat], classOf[LongWritable], classOf[Text]).map(f => new String(f._2.getBytes,0,f._2.getLength,"GBK"))
 
 
@@ -72,11 +74,7 @@ object reff04 {
       value
     })
 
-    val path = new Path(reff04_output)
-    val conf = new Configuration()
-    path.getFileSystem(conf).delete(path,true)
-    reff04_final.saveAsTextFile(path.toString)
-
+    //字段名称
     val name ="RFStreamID,valSecurityID,ZhSecurityID,ISIN,Symbol,SymbolEn,SecurityDesc,UnderlyingSecurityID,MarketID,SecurityType,Currency,AmountTimes,PerValue,PerValueCurrency,Interest,IssueDate,RoundLot,PreClosePx,Text,SecurityStatusFlag"
     val field =name.split(",").map(f=>StructField(f,StringType,nullable = true))
     val schema = StructType(field)
@@ -104,22 +102,26 @@ object reff04 {
         attributes(18).trim,
         attributes(19).trim))
 
-
+    //将字段与数据连接起来，创建dataframe
     val reff04_dataframe = spark.createDataFrame(rowRDD, schema)
+
+    //数据库连接的属性，连接地址，表名、属性、用户名和密码
     val url ="jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=UTF-8"
     val table = "reff04"
     val prop = new Properties()
     prop.setProperty("user","test01")
     prop.setProperty("password","test01")
 
-    reff04_dataframe.write.mode(SaveMode.Append).jdbc(url,table,prop)
-
-
-
-
-    //    reff04_final.foreachPartition(insert)
+    //将数据写入数据库中，每次覆盖前一次写的内容
+    reff04_dataframe.write.mode(SaveMode.Overwrite).jdbc(url,table,prop)
+    spark.stop()
   }
 
+  /**
+    * 证券代码不足5位，在前面补0，有5位，不处理
+    * @param SecurityID
+    * @return
+    */
   def securityIDBu(SecurityID:String):String={
     if(SecurityID.length>=5){
       SecurityID
@@ -128,6 +130,12 @@ object reff04 {
       "0"*len+SecurityID
     }
   }
+
+  /**
+    * 不足6位补H，有6位不处理
+    * @param ZhSecurityID
+    * @return
+    */
   def zhSecurityIDBu(ZhSecurityID:String):String={
     if(ZhSecurityID.length>=6){
       ZhSecurityID
