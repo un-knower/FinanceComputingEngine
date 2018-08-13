@@ -2,21 +2,18 @@ package com.yss.scala.guzhi
 
 import java.io.File
 import java.util.Properties
-
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 import org.apache.spark.{SparkConf, SparkContext}
 
-object SPOTMATCH extends App {
+object SPOTMATCH {
 
-  val conf = new SparkConf().setAppName("SPOTMATCH")
+  def main(args: Array[String]): Unit = {
+  val conf = new SparkConf().setAppName("SPOTMATCH").setMaster("local[2]")
   val sc = new SparkContext(conf)
   val sqlcontext = new SQLContext(sc)
-  val InputPath = "hdfs://nscluster/yss/guzhi/I202911S18061200SPOTMATCH.TXT"
-//  val InputPath = "C:\\WorkSpace\\Project\\Account\\jiekou\\I202911S18061200SPOTMATCH.TXT"
-
+//  val InputPath = "hdfs://nscluster/yss/guzhi/I202911S18061200SPOTMATCH.TXT"
+  val InputPath = "C:\\WorkSpace\\Project\\Account\\jiekou\\I202911S18061200SPOTMATCH.TXT"
   val value  = sc.textFile(InputPath).map(x => {
     val InputFile = "I202911S18061200SPOTMATCH.TXT"
       val splits = x.split("[|]")
@@ -58,5 +55,7 @@ object SPOTMATCH extends App {
   prop.setProperty("user","root")
   prop.setProperty("password","root1234")
   val url = "jdbc:mysql://192.168.102.119:3306/JJCWGZ"
-  valueDataFrame.write.mode(SaveMode.Append).jdbc(url , "GoldSpotTrade" , prop)
+  valueDataFrame.write.mode(SaveMode.Overwrite).jdbc(url , "GoldSpotTrade" , prop)
+
+  }
 }
