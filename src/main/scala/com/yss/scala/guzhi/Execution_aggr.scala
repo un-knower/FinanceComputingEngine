@@ -20,9 +20,10 @@ object Execution_aggr {
     val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
     val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-    val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\估值资料\\execution_aggr_F000995F0401_1_20180808(1).tsv")/*execution_aggr_N000032F0001_1_20160825*/
+    val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\jiaoyan\\execution_aggr_F000995F0401_1_20180808.tsv")
    /*hdfs://nscluster/yss/guzhi/execution_aggr_N000032F0001_1_20160825.tsv*/
     /*C:\Users\hgd\Desktop\估值资料\exe.tsv*/
+    /*C:\Users\hgd\Desktop\估值资料\execution_aggr_F000995F0401_1_20180808(1).tsv*/
 
     //2.进行map,将数据按 | 分割
     val map1 = exe.map {
@@ -30,11 +31,11 @@ object Execution_aggr {
         val word = text.split("\t")
         val ReportingPBUID = word(3) //回报交易单元
         val SecurityID = word(5) //证券代码
-        val TransactTime = word(9) //回报时间
+        val TransactTime1 = word(9)
+       val TransactTime=TransactTime1.substring(0,8) //回报时间
         val Side = word(20) //买卖方向
-        val AccountID = word(21) //证券账户
         val Market="S"
-        val key=TransactTime+"_"+SecurityID+"_"+Market+"_"+ReportingPBUID+"_"+Side+"_"+AccountID
+        val key=TransactTime+"_"+SecurityID+"_"+Market+"_"+ReportingPBUID+"_"+Side
         (key,text)  //key  日期 +SecurityID +市场(S)+交易席位(ReportingPBUID)+SIDE(买卖)+股东代码(AccountID)
       }
     }
@@ -44,6 +45,8 @@ object Execution_aggr {
     //4.进行计算
      val finallData= groupKey.flatMap{
           case(key,iterable)=>{
+            var Fbj=BigDecimal(0.00)
+            var Fsj=BigDecimal(0.00)
             var Fbje = BigDecimal(0.00)//买金额
             var Fsje = BigDecimal(0.00) //卖金额
             var FBsl = BigDecimal(0.00) //买数量
@@ -67,7 +70,7 @@ object Execution_aggr {
 
             //费率 1.佣金费率，经手费率，印花费率，过户费率，证管费率，风险金费率
             val commisionRate =BigDecimal( 0.0025)//佣金费率
-            val HandingFeeRate = BigDecimal(0.0001475) //经手费率
+            val HandingFeeRate = BigDecimal(0.000148) //经手费率
             val PrintingRate = BigDecimal(0.001) //印花费率
             val TransferRate = BigDecimal(0.00004)//过户费率
             val CollectionRate = BigDecimal(0.00004) //征管费率
@@ -96,7 +99,7 @@ object Execution_aggr {
                     val Market=keys(2)
                     val ReportingPBUID = keys(3) //回报交易单元
                     val Side = keys(4) //买卖方向
-                    val AccountID = keys(5) //证券账户
+                   // val AccountID = keys(5) 证券账户
                  //2) 如果Side==1,将所有的进行计算，将结果输出到ExecutionAggr中
 
             if(Side=="1") {
@@ -108,19 +111,22 @@ object Execution_aggr {
                 //进行计算
                 Fbje += LastPx.*(LastQty)
                 FBsl += LastQty
+
               }
+
+
+             // Fbj = LastPx.*(LastQty)
               Fbyhs =BigDecimal(0.0)
-              FBzgf += Fbje.*(CollectionRate)
-              FBghf += Fbje.*(TransferRate)
-              FBfxj += Fbje.*(RiskRate)
-              Fbyj += Fbje.*(commisionRate) - FBzgf - FBghf - Fbyhs //买佣金
-              Fbsfje += Fbje + FBjsf + FBzgf + FBghf
               FBjsf += Fbje.*(HandingFeeRate)
+              FBzgf += Fbje.*(CollectionRate)
+              FBfxj += Fbje.*(RiskRate)
+              Fbyj += Fbje.*(commisionRate) - FBzgf - FBjsf //买佣金
+              Fbsfje = Fbje + FBjsf + FBzgf + FBghf
 
               val zero=BigDecimal(0).formatted("%.2f")
               val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,Fbje.formatted("%.2f"),zero,FBsl.formatted("%.2f")
                 ,zero,Fbyj.formatted("%.2f"),zero,FBjsf.formatted("%.2f"),zero,Fbyhs.formatted("%.2f"),zero,FBzgf.formatted("%.2f"),zero
-                ,FBghf.formatted("%.2f"),zero,zero,zero,FBfxj.formatted("%.2f"),zero,Fbsfje.formatted("%.2f"),zero,FZqbz,Fywbz,FQsbz,FBQTF.formatted("%.2f"),FSQTF.formatted("%.2f"),SecurityID,FJYFS,Fsh,FZZR,FCHK,fzlh,ftzbz,FBQsghf.formatted("%.2f"),FsQsghf.formatted("%.2f"),AccountID)
+                ,FBghf.formatted("%.2f"),zero,zero,zero,FBfxj.formatted("%.2f"),zero,Fbsfje.formatted("%.2f"),zero,FZqbz,Fywbz,FQsbz,FBQTF.formatted("%.2f"),FSQTF.formatted("%.2f"),SecurityID,FJYFS,Fsh,FZZR,FCHK,fzlh,ftzbz,FBQsghf.formatted("%.2f"),FsQsghf.formatted("%.2f"),zero)
 
               execution.append(executionAggr)
 
@@ -136,18 +142,19 @@ object Execution_aggr {
                 //进行计算
                 Fsje += LastPx.*(LastQty)  //卖金额
                 FSsl += LastQty  //卖数量
+
               }
+              //Fsj = LastPx.*(LastQty)  //卖金额
               Fsyhs += Fsje.*(PrintingRate)
               FSjsf += Fsje.*(HandingFeeRate)
               FSzgf += Fsje.*(CollectionRate)
-              FSghf += Fsje.*(TransferRate)
               FSfxj += Fsje.*(RiskRate)
-              Fsyj += Fsje.*(commisionRate) - FSzgf - FSghf - Fsyhs //卖佣金
+              Fsyj += Fsje.*(commisionRate) - FSzgf - FSjsf //卖佣金
               Fsssje += Fsje - FSjsf - FSzgf - FSghf-Fsyhs
               val zero=BigDecimal(0).formatted("%.2f")
-              val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,0.toString,Fsje.formatted("%.2f") ,zero
+              val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,zero,Fsje.formatted("%.2f") ,zero
                 ,FSsl.formatted("%.2f"),zero,Fsyj.formatted("%.2f"),zero,FSjsf.formatted("%.2f"),zero,Fsyhs.formatted("%.2f"),zero,FSzgf.formatted("%.2f")
-                ,zero,FSghf.formatted("%.2f"),zero,zero,FBfxj.formatted("%.2f"),FSfxj.formatted("%.2f"),zero,Fsssje.formatted("%.2f"),FZqbz,Fywbz,FQsbz,FBQTF.formatted("%.2f"),FSQTF.formatted("%.2f"),SecurityID,FJYFS,Fsh,FZZR,FCHK,fzlh,ftzbz,FBQsghf.formatted("%.2f"),FsQsghf.formatted("%.2f"),AccountID)
+                ,zero,FSghf.formatted("%.2f"),zero,zero,FBfxj.formatted("%.2f"),FSfxj.formatted("%.2f"),zero,Fsssje.formatted("%.2f"),FZqbz,Fywbz,FQsbz,FBQTF.formatted("%.2f"),FSQTF.formatted("%.2f"),SecurityID,FJYFS,Fsh,FZZR,FCHK,fzlh,ftzbz,FBQsghf.formatted("%.2f"),FsQsghf.formatted("%.2f"),zero)
               execution.append(executionAggr)
             }
             execution
@@ -197,15 +204,15 @@ object Execution_aggr {
     }*/
 
 
-/*import sparkSession.implicits._
+import sparkSession.implicits._
        finallData.toDF().write.format("jdbc")
-    .option("url","jdbc:mysql://192.168.102.119:3306/JJCWGZ")
+    .option("url","jdbc:mysql://192.168.102.119:3306/test")
     .option("user","root")
     .option("password","root1234")
-    .option("dbtable","SJSV5")
-    .mode(SaveMode.Append)
-    .save()*/
-import sparkSession.implicits._
-  finallData.toDF().show()
+    .option("dbtable","SJSV51")
+    .mode(SaveMode.Overwrite)
+    .save()
+/*import sparkSession.implicits._
+  finallData.toDF().show()*/
   }
 }
