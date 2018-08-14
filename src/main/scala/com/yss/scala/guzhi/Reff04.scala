@@ -23,7 +23,7 @@ object Reff04 {
 
     //reff04数据的输入路径
 //    val reff04_input = "hdfs://nscluster/yss/guzhi/reff040704.txt"
-    val reff04_input = "C:\\Users\\yupan\\Desktop\\20180810\\reff040704.txt"
+    val reff04_input = "C:\\Users\\yupan\\Desktop\\20180810\\reff*"
 
 
     val reff04_data = sc.hadoopFile(reff04_input, classOf[TextInputFormat], classOf[LongWritable], classOf[Text]).map(f => new String(f._2.getBytes,0,f._2.getLength,"GBK"))
