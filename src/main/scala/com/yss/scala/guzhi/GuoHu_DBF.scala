@@ -1,5 +1,6 @@
 package com.yss.scala.guzhi
 
+import com.yss.scala.util.Util
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -76,37 +77,37 @@ object GuoHu_DBF {
 
       val Fjyxwh = row.getAs[String]("GSDM") //交易席位号
 
-      val fgddm = row.getAs[String]("GDDM") //股东代码
+      //val fgddm = row.getAs[String]("GDDM") //股东代码
       val bs = row.getAs[String]("BS") //买卖
 
-      (Fdate + "_" + FinDate + "_" + FZqdm + "_" + Fjyxwh + "_" + fgddm + "_" + bs, row)
+      (Fdate + "_" + FinDate + "_" + FZqdm + "_" + Fjyxwh + "_" + bs, row)
     }).groupByKey().map(t => {
       val fs = t._1.split("_")
       val Fdate = fs(0)
       val FinDate = fs(1)
       val FZqdm = fs(2)
       val Fjyxwh = fs(3)
-      val fgddm = fs(4)
-      val bs = fs(5)
+      // val fgddm = fs(4)
+      val bs = fs(4)
 
-      var Fbje = BigDecimal(0.0)
-      var Fsje = BigDecimal(0.0)
-      var FBsl = BigDecimal(0.0)
-      var FSsl = BigDecimal(0.0)
-      var Fbyj = BigDecimal(0.0)
-      var Fsyj = BigDecimal(0.0)
-      var FBjsf = BigDecimal(0.0)
-      var FSjsf = BigDecimal(0.0)
-      var Fbyhs = BigDecimal(0.0)
-      var Fsyhs = BigDecimal(0.0)
-      var FBzgf = BigDecimal(0.0)
-      var FSzgf = BigDecimal(0.0)
-      var FBghf = BigDecimal(0.0)
-      var FSghf = BigDecimal(0.0)
+      var Fbje = BigDecimal(0)
+      var Fsje = BigDecimal(0)
+      var FBsl = BigDecimal(0)
+      var FSsl = BigDecimal(0)
+      var Fbyj = BigDecimal(0)
+      var Fsyj = BigDecimal(0)
+      var FBjsf = BigDecimal(0)
+      var FSjsf = BigDecimal(0)
+      var Fbyhs = BigDecimal(0)
+      var Fsyhs = BigDecimal(0)
+      var FBzgf = BigDecimal(0)
+      var FSzgf = BigDecimal(0)
+      var FBghf = BigDecimal(0)
+      var FSghf = BigDecimal(0)
       val FBgzlx = "0"
       val FSgzlx = "0"
-      var FBfxj = BigDecimal(0.0)
-      var FSfxj = BigDecimal(0.0)
+      var FBfxj = BigDecimal(0)
+      var FSfxj = BigDecimal(0)
       var FHggain = "0"
 
       val FSzsh = "H" //市场
@@ -145,19 +146,56 @@ object GuoHu_DBF {
       val fileds = t._2.mkString(",").split(",")
       //val Fjyxwh = fileds(4)
       val ZQDM = fileds(7)
-      // val fgddm = fileds(0)
+      val fgddm = fileds(0)
 
       for (x <- t._2) {
         val cjje = BigDecimal(x.getAs[String]("CJJE"))
         //成交金额
-        val cjsl = BigDecimal(x.getAs[String]("CJSL"))
-        //成交数量
-        val jsf = cjje * rateJS * zk.setScale(2, RoundingMode.HALF_UP)
-        val yhs = cjje * rateYH * zk.setScale(2, RoundingMode.HALF_UP)
-        val zgf = cjje * rateZG * zk.setScale(2, RoundingMode.HALF_UP)
-        val ghf = cjje * rateGH * zk.setScale(2, RoundingMode.HALF_UP)
-        val fx = cjje * rateFXJ * zk.setScale(2, RoundingMode.HALF_UP)
-        val yj = cjje * rateYJ.setScale(2, RoundingMode.HALF_UP) - zgf - jsf
+        val cjsl = BigDecimal(x.getAs[String]("CJSL")) //成交数量
+
+        //        val jsf = cjje * rateJS * zk.setScale(2, RoundingMode.HALF_UP)
+        //        val yhs = cjje * rateYH * zk.setScale(2, RoundingMode.HALF_UP)
+        //        val zgf = cjje * rateZG * zk.setScale(2, RoundingMode.HALF_UP)
+        //        val ghf = cjje * rateGH * zk.setScale(2, RoundingMode.HALF_UP)
+        //        val fx = cjje * rateFXJ * zk.setScale(2, RoundingMode.HALF_UP)
+        //        val yj = cjje * rateYJ.setScale(2, RoundingMode.HALF_UP) - zgf - jsf
+        //        sumCjje = (sumCjje + cjje).setScale(2, RoundingMode.HALF_UP)
+        //        sumCjsl = (sumCjsl + cjsl).setScale(2, RoundingMode.HALF_UP)
+        //        sumYj = sumYj + yj
+        //        sumJsf = sumJsf + jsf
+        //        sumYhs = sumYhs + yhs
+        //        sumZgf = sumZgf + zgf
+        //        sumGhf = sumGhf + ghf
+        //        sumFxj = sumFxj + fx
+        //      }
+        //      if ("B".equals(bs)) {
+        //        Fbje = sumCjje
+        //        FBsl = sumCjsl
+        //        FBjsf = sumJsf
+        //        Fbyhs = BigDecimal(0)
+        //        FBzgf = sumZgf
+        //        FBghf = sumGhf
+        //        FBfxj = sumFxj
+        //        Fbyj = sumYj
+        //      } else {
+        //        Fsje = sumCjje
+        //        FSsl = sumCjsl
+        //        FSjsf = sumJsf
+        //        Fsyhs = sumYhs
+        //        FSzgf = sumZgf
+        //        FSghf = sumGhf
+        //        FSfxj = sumFxj
+        //        Fsyj = sumYj
+        //      }
+        val jsf = (cjje * rateJS * zk).setScale(2, RoundingMode.HALF_UP)
+        var yhs = BigDecimal(0)
+        if ("S".equals(bs)) {
+          yhs = (cjje * rateYH * zk).setScale(2, RoundingMode.HALF_UP)
+        }
+        val zgf = (cjje * rateZG * zk).setScale(2, RoundingMode.HALF_UP)
+        val ghf = (cjsl * rateGH * zk).setScale(2, RoundingMode.HALF_UP)
+        val fx = (cjje * rateFXJ * zk).setScale(2, RoundingMode.HALF_UP)
+        val yj = (cjje * rateYJ * zk).setScale(2, RoundingMode.HALF_UP) - zgf - jsf
         sumCjje = sumCjje + cjje
         sumCjsl = sumCjsl + cjsl
         sumYj = sumYj + yj
@@ -167,11 +205,11 @@ object GuoHu_DBF {
         sumGhf = sumGhf + ghf
         sumFxj = sumFxj + fx
       }
+
       if ("B".equals(bs)) {
         Fbje = sumCjje
         FBsl = sumCjsl
         FBjsf = sumJsf
-        Fbyhs = BigDecimal(0)
         FBzgf = sumZgf
         FBghf = sumGhf
         FBfxj = sumFxj
@@ -234,13 +272,7 @@ object GuoHu_DBF {
       )
     })
     import spark.implicits._
-    value.toDF()
-      .write.format("jdbc")
-      .option("url", "jdbc:mysql://192.168.102.119:3306/JJCWGZ?useUnicode=true&characterEncoding=utf8")
-      .option("dbtable", "HZJKQS")
-      .option("user", "test01")
-      .option("password", "test01")
-      .mode(SaveMode.Overwrite)
-      .save()
+    Util.outputMySql(value.toDF(), "HZJKQS")
+    spark.stop()
   }
 }
