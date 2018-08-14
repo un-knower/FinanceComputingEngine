@@ -126,10 +126,10 @@ object SHDZGH {
             yhs = cjje.*(rateYH)
           }
 
-          val zgf = cjje.*(rateZG).setScale(2,RoundingMode.HALF_UP)
-          val ghf = cjsl.*(rateGH).setScale(2,RoundingMode.HALF_UP)
-          val fx = cjje.*(rateFXJ).setScale(2,RoundingMode.HALF_UP)
-          val yj = cjje.*(rateYJ).setScale(2,RoundingMode.HALF_UP).-(zgf).-(ghf).-(yhs)
+          val zgf = cjje.*(rateZG)
+          val ghf = cjsl.*(rateGH)
+          val fx = cjje.*(rateFXJ)
+          val yj = cjje.*(rateYJ).-(zgf).-(jsf)
           sumCjje = sumCjje.+(cjje)
           sumCjsl = sumCjsl.+(cjsl)
           sumYj = sumYj.+(yj)
