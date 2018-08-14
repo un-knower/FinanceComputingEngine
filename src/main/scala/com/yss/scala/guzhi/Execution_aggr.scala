@@ -24,6 +24,7 @@ object Execution_aggr {
    /*hdfs://nscluster/yss/guzhi/execution_aggr_N000032F0001_1_20160825.tsv*/
     /*C:\Users\hgd\Desktop\估值资料\exe.tsv*/
     /*C:\Users\hgd\Desktop\估值资料\execution_aggr_F000995F0401_1_20180808(1).tsv*/
+    /*C:\Users\hgd\Desktop\jiaoyan\execution_aggr_F000995F0401_1_20180808.tsv*/
 
     //2.进行map,将数据按 | 分割
     val map1 = exe.map {
@@ -45,26 +46,26 @@ object Execution_aggr {
     //4.进行计算
      val finallData= groupKey.flatMap{
           case(key,iterable)=>{
-            var Fbj=BigDecimal(0.00)
-            var Fsj=BigDecimal(0.00)
-            var Fbje = BigDecimal(0.00)//买金额
-            var Fsje = BigDecimal(0.00) //卖金额
-            var FBsl = BigDecimal(0.00) //买数量
-            var FSsl = BigDecimal(0.00) //卖数量
-            var Fbyj = BigDecimal(0.00) //买佣金
-            var Fsyj = BigDecimal(0.00) //卖佣金
-            var FBjsf = BigDecimal(0.00) //买经手费
-            var FSjsf = BigDecimal(0.00) //卖经手费
-            var Fbyhs = BigDecimal(0.00) //买印花税
-            var Fsyhs = BigDecimal(0.00) //卖印花税
-            var FBzgf = BigDecimal(0.00) //买征管费
-            var FSzgf = BigDecimal(0.00) //卖征管费
-            var FBghf = BigDecimal(0.00) //买过户费
-            var FSghf = BigDecimal(0.00) //卖过户费
-            var FBfxj = BigDecimal(0.00) //买风险金
-            var FSfxj = BigDecimal(0.00) //卖风险金
-            var Fbsfje=BigDecimal(0.00) //买实付金额
-            var Fsssje=BigDecimal(0.00) //卖实收金额
+            var Fbj =BigDecimal(0.000)
+
+            var Fbje = BigDecimal(0.000)//买金额
+            var Fsje = BigDecimal(0.000) //卖金额
+            var FBsl = BigDecimal(0.000) //买数量
+            var FSsl = BigDecimal(0.000) //卖数量
+            var Fbyj = BigDecimal(0.000) //买佣金
+            var Fsyj = BigDecimal(0.000) //卖佣金
+            var FBjsf = BigDecimal(0.000) //买经手费
+            var FSjsf = BigDecimal(0.000) //卖经手费
+            var Fbyhs = BigDecimal(0.000) //买印花税
+            var Fsyhs = BigDecimal(0.000) //卖印花税
+            var FBzgf = BigDecimal(0.000) //买征管费
+            var FSzgf = BigDecimal(0.000) //卖征管费
+            var FBghf = BigDecimal(0.000) //买过户费
+            var FSghf = BigDecimal(0.000) //卖过户费
+            var FBfxj = BigDecimal(0.000) //买风险金
+            var FSfxj = BigDecimal(0.000) //卖风险金
+            var Fbsfje=BigDecimal(0.000) //买实付金额
+            var Fsssje=BigDecimal(0.000) //卖实收金额
 
 
 
@@ -103,6 +104,7 @@ object Execution_aggr {
                  //2) 如果Side==1,将所有的进行计算，将结果输出到ExecutionAggr中
 
             if(Side=="1") {
+
               for (func <- iterable) { //将所有写到ExecutionAggr,最后将类放到可变数组中
                 val text = func.split("\t")
                 val LastPx = BigDecimal(text(16)) //成交价
@@ -111,16 +113,19 @@ object Execution_aggr {
                 //进行计算
                 Fbje += LastPx.*(LastQty)
                 FBsl += LastQty
+                Fbj= LastPx.*(LastQty)
+                Fbyhs =BigDecimal(0.0)
+                FBjsf += Fbj.*(HandingFeeRate)
+                FBzgf += Fbj.*(CollectionRate)
+                FBfxj += Fbj.*(RiskRate)
 
+                var FBjs = Fbj.*(HandingFeeRate)
+                var FBzg = Fbj.*(CollectionRate)
+
+                Fbyj += Fbj.*(commisionRate) - FBzg - FBjs //买佣金
               }
+              
 
-
-             // Fbj = LastPx.*(LastQty)
-              Fbyhs =BigDecimal(0.0)
-              FBjsf += Fbje.*(HandingFeeRate)
-              FBzgf += Fbje.*(CollectionRate)
-              FBfxj += Fbje.*(RiskRate)
-              Fbyj += Fbje.*(commisionRate) - FBzgf - FBjsf //买佣金
               Fbsfje = Fbje + FBjsf + FBzgf + FBghf
 
               val zero=BigDecimal(0).formatted("%.2f")
@@ -143,13 +148,20 @@ object Execution_aggr {
                 Fsje += LastPx.*(LastQty)  //卖金额
                 FSsl += LastQty  //卖数量
 
+                var Fsj =LastPx.*(LastQty) //卖金额
+
+                Fsyhs += Fsj.*(PrintingRate)
+                FSjsf += Fsj.*(HandingFeeRate)
+                FSzgf += Fsj.*(CollectionRate)
+                FSfxj += Fsj.*(RiskRate)
+
+                var FSjs = Fsj.*(HandingFeeRate)
+                var FSzg = Fsj.*(CollectionRate)
+
+                Fsyj += Fsj.*(commisionRate) - FSzg - FSjs//卖佣金
               }
-              //Fsj = LastPx.*(LastQty)  //卖金额
-              Fsyhs += Fsje.*(PrintingRate)
-              FSjsf += Fsje.*(HandingFeeRate)
-              FSzgf += Fsje.*(CollectionRate)
-              FSfxj += Fsje.*(RiskRate)
-              Fsyj += Fsje.*(commisionRate) - FSzgf - FSjsf //卖佣金
+
+
               Fsssje += Fsje - FSjsf - FSzgf - FSghf-Fsyhs
               val zero=BigDecimal(0).formatted("%.2f")
               val executionAggr=new ExecutionAggr(TransactTime,TransactTime,SecurityID,Market,ReportingPBUID,zero,Fsje.formatted("%.2f") ,zero
@@ -206,10 +218,10 @@ object Execution_aggr {
 
 import sparkSession.implicits._
        finallData.toDF().write.format("jdbc")
-    .option("url","jdbc:mysql://192.168.102.119:3306/test")
+    .option("url","jdbc:mysql://192.168.102.119:3306/JJCWGZ")
     .option("user","root")
     .option("password","root1234")
-    .option("dbtable","SJSV51")
+    .option("dbtable","SJSV5")
     .mode(SaveMode.Overwrite)
     .save()
 /*import sparkSession.implicits._
