@@ -186,7 +186,7 @@ object SHDZGH {
           FSgzlx.formatted("%.2f"), FHGGAIN.formatted("%.2f"), FBFxj.formatted("%.2f"), FSFxj.formatted("%.2f"), FBsfje.formatted("%.2f"), FSssje.formatted("%.2f"), FZqbz, FYwbz, FQsbz, FBQtf.formatted("%.2f"), FSQtf.formatted("%.2f"),
           ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm)
     }
-    Util.outputMySql(value.toDF(), "SHDZGH2")
+    Util.outputMySql(value.toDF(), "SHDZGH")
     spark.stop()
 
   }
