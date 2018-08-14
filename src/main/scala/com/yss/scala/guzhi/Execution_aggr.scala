@@ -216,15 +216,15 @@ object Execution_aggr {
     }*/
 
 
-/*import sparkSession.implicits._
+import sparkSession.implicits._
        finallData.toDF().write.format("jdbc")
-    .option("url","jdbc:mysql://192.168.102.119:3306/test")
+    .option("url","jdbc:mysql://192.168.102.119:3306/JJCWGZ")
     .option("user","root")
     .option("password","root1234")
-    .option("dbtable","SJSV51")
+    .option("dbtable","SJSV5")
     .mode(SaveMode.Overwrite)
-    .save()*/
-import sparkSession.implicits._
-  finallData.toDF().show()
+    .save()
+/*import sparkSession.implicits._
+  finallData.toDF().show()*/
   }
 }
