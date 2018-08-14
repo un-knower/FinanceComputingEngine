@@ -120,16 +120,16 @@ object SHDZGH {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
           val cjsl = BigDecimal(row.getAs[String]("CJSL"))
 
-          val jsf = cjje.*(rateJS).*(zk)
+          val jsf = cjje.*(rateJS).*(zk).setScale(2,RoundingMode.HALF_UP)
           var yhs = BigDecimal(0)
           if("S".equals(bs)){
-            yhs = cjje.*(rateYH)
+            yhs = cjje.*(rateYH).setScale(2,RoundingMode.HALF_UP)
           }
 
-          val zgf = cjje.*(rateZG)
-          val ghf = cjsl.*(rateGH)
-          val fx = cjje.*(rateFXJ)
-          val yj = cjje.*(rateYJ).-(zgf).-(jsf)
+          val zgf = cjje.*(rateZG).setScale(2,RoundingMode.HALF_UP)
+          val ghf = cjsl.*(rateGH).setScale(2,RoundingMode.HALF_UP)
+          val fx = cjje.*(rateFXJ).setScale(2,RoundingMode.HALF_UP)
+          val yj = cjje.*(rateYJ).setScale(2,RoundingMode.HALF_UP).-(zgf).-(jsf)
           sumCjje = sumCjje.+(cjje)
           sumCjsl = sumCjsl.+(cjsl)
           sumYj = sumYj.+(yj)
