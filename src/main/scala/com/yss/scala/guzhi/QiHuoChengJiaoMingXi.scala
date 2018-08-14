@@ -12,7 +12,7 @@ import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
   * @version : 2018-8-8
   *  describe: 期货成交明细
   *  目标文件：09000211trddata20180420.txt
-  *  目标表：09000211trddata20180420QiHuoChengJiaoMingXi
+  *  目标表：QHCJMX
   */
 object QiHuoChengJiaoMingXi {
   def main(args: Array[String]): Unit = {
@@ -77,7 +77,7 @@ object QiHuoChengJiaoMingXi {
       //文件名
       val partid = ""
 
-      //结果返回一个对象，数据带有元数据信息
+      //结果返回一个对象，对象的属性为表格元数据信息
       QiHuoChengJiao(
         fdate,
         accountid,
