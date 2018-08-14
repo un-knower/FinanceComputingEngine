@@ -162,7 +162,7 @@ object SHDZGH {
         val bcrq = fields(0)
         val FSzsh = "H"
         val Fjyxwh = fields(2)
-        val FBsfje = FBje.+(FBjsf).+(FBzgf).+(FBghf).setScale(2, RoundingMode.HALF_UP)
+        val FBsfje = -FBje.+(FBjsf).+(FBzgf).+(FBghf).setScale(2, RoundingMode.HALF_UP)
         val FSssje = FSje.-(FSjsf).-(FSzgf).-(FSghf).-(FSyhs).setScale(2, RoundingMode.HALF_UP)
         val FZqbz = "GP"
         val FYwbz = "DZ"
