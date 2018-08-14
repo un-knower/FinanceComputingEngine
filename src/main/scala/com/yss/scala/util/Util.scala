@@ -41,7 +41,7 @@ object Util {
     val properties = new Properties()
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
-    DF.write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.119/JJCWGZ?useUnicode=true&characterEncoding=utf8", tableName, properties)
+    DF.write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.119/JJCWGZ?useUnicode=true&characterEncoding=utf8", tableName, properties)
   }
 
   /**

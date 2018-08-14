@@ -63,9 +63,9 @@ object SHDZGH {
   private def doIt(): Unit = {
     import com.yss.scala.dbf._
 
-    val spark = SparkSession.builder().appName("SHDZGH") /*.master("local[*]")*/ .getOrCreate()
-    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))
-    //        val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\wenj\\dgh00001.dbf")
+    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
+//    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))
+    val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\data\\dgh2250120180418.dbf")
     import spark.implicits._
 
     val value = df.rdd.map(row => {
@@ -119,12 +119,17 @@ object SHDZGH {
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
           val cjsl = BigDecimal(row.getAs[String]("CJSL"))
-          val jsf = cjje.*(rateJS).*(zk)
-          val yhs = cjje.*(rateYH)
-          val zgf = cjje.*(rateZG)
-          val ghf = cjje.*(rateGH)
-          val fx = cjje.*(rateFXJ)
-          val yj = cjje.*(rateYJ).-(zgf).-(ghf).-(yhs)
+
+          val jsf = cjje.*(rateJS).*(zk).setScale(2,RoundingMode.HALF_UP)
+          var yhs = BigDecimal(0)
+          if("S".equals(bs)){
+            yhs = cjje.*(rateYH).setScale(2,RoundingMode.HALF_UP)
+          }
+
+          val zgf = cjje.*(rateZG).setScale(2,RoundingMode.HALF_UP)
+          val ghf = cjsl.*(rateGH).setScale(2,RoundingMode.HALF_UP)
+          val fx = cjje.*(rateFXJ).setScale(2,RoundingMode.HALF_UP)
+          val yj = cjje.*(rateYJ).setScale(2,RoundingMode.HALF_UP).-(zgf).-(jsf)
           sumCjje = sumCjje.+(cjje)
           sumCjsl = sumCjsl.+(cjsl)
           sumYj = sumYj.+(yj)
@@ -136,29 +141,29 @@ object SHDZGH {
         }
 
         if ("B".equals(bs)) {
-          FBje = sumCjje.setScale(2, RoundingMode.HALF_UP)
-          FBsl = sumCjsl.setScale(2, RoundingMode.HALF_UP)
-          FBjsf = sumJsf.setScale(2, RoundingMode.HALF_UP)
-          FByhs = sumYhs.setScale(2, RoundingMode.HALF_UP)
-          FBzgf = sumZgf.setScale(2, RoundingMode.HALF_UP)
-          FBghf = sumGhf.setScale(2, RoundingMode.HALF_UP)
-          FBFxj = sumFxj.setScale(2, RoundingMode.HALF_UP)
-          FByj = sumYj.setScale(2, RoundingMode.HALF_UP)
+          FBje = sumCjje
+          FBsl = sumCjsl
+          FBjsf = sumJsf
+//          FByhs = sumYhs.setScale(2, RoundingMode.HALF_UP)
+          FBzgf = sumZgf
+          FBghf = sumGhf
+          FBFxj = sumFxj
+          FByj = sumYj
         } else {
-          FSje = sumCjje.setScale(2, RoundingMode.HALF_UP)
-          FSsl = sumCjsl.setScale(2, RoundingMode.HALF_UP)
-          FSjsf = sumJsf.setScale(2, RoundingMode.HALF_UP)
-          FSyhs = sumYhs.setScale(2, RoundingMode.HALF_UP)
-          FSzgf = sumZgf.setScale(2, RoundingMode.HALF_UP)
-          FSghf = sumGhf.setScale(2, RoundingMode.HALF_UP)
-          FSFxj = sumFxj.setScale(2, RoundingMode.HALF_UP)
-          FSyj = sumYj.setScale(2, RoundingMode.HALF_UP)
+          FSje = sumCjje
+          FSsl = sumCjsl
+          FSjsf = sumJsf
+          FSyhs = sumYhs
+          FSzgf = sumZgf
+          FSghf = sumGhf
+          FSFxj = sumFxj
+          FSyj = sumYj
         }
         val bcrq = fields(0)
         val FSzsh = "H"
         val Fjyxwh = fields(2)
-        val FBsfje = FBje.+(FBjsf).+(FBzgf).+(FBghf).setScale(2, RoundingMode.HALF_UP)
-        val FSssje = FSje.-(FSjsf).-(FSzgf).-(FSghf).-(FSyhs).setScale(2, RoundingMode.HALF_UP)
+        val FBsfje = -FBje.+(FBjsf).+(FBzgf).+(FBghf)
+        val FSssje = FSje.-(FSjsf).-(FSzgf).-(FSghf).-(FSyhs)
         val FZqbz = "GP"
         val FYwbz = "DZ"
         val FQsbz = "N"
