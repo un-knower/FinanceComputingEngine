@@ -13,7 +13,7 @@ import org.apache.spark.{SparkConf, SparkContext}
   *          结果表：GoldSpotTrade
   */
 
-object SPOTMATCH {
+object SpotMatch {
 
   def main(args: Array[String]): Unit = {
 
