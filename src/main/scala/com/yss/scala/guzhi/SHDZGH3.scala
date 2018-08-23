@@ -97,6 +97,7 @@ object SHDZGH3 {
     //原始数据
     val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\data\\gh23341.dbf")
 
+    //参数表
     val csb = sc.hadoopFile("C:\\Users\\wuson\\Desktop\\new\\data\\参数.csv", classOf[TextInputFormat], classOf[LongWritable], classOf[Text])
       .map(pair => new String(pair._2.getBytes, 0, pair._2.getLength, "GBK"))
 
@@ -119,7 +120,7 @@ object SHDZGH3 {
     val SEPARATE2 = ","
     //将参数表转换成map结构
     val csbMap = csb.map(row => {
-      val fields = row.split(SEPARATE2)
+      val fields = row.replaceAll(""""""", "").split(SEPARATE2)
       val key = fields(0)
       //参数名
       val value = fields(1) //参数值
@@ -172,9 +173,6 @@ object SHDZGH3 {
     val csbValues = sc.broadcast(csbMap)
     val lvbValues = sc.broadcast(flbMap)
     val yjbValues = sc.broadcast(yjbMap)
-//    println(csbMap)
-//    println(flbMap)
-//    println(yjbMap)
 
 
     import spark.implicits._
@@ -187,7 +185,7 @@ object SHDZGH3 {
       val gddm = row.getAs[String]("GDDM") //股东代码
       val bs = row.getAs[String]("BS") //买卖
       val sqbh = row.getAs[String]("SQBH") //申请编号
-      val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm  + SEPARATE1 + bs + SEPARATE1 + sqbh
+      val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs + SEPARATE1 + sqbh
       (key, row)
     }).groupByKey()
 
@@ -199,129 +197,163 @@ object SHDZGH3 {
       val gddm = row.getAs[String]("GDDM") //股东代码
       val bs = row.getAs[String]("BS") //买卖
       val sqbh = row.getAs[String]("SQBH") //申请编号
-      val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm  + SEPARATE1 + bs
+      val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs
       (key, row)
     }).groupByKey()
 
-    //第一种  每一笔交易单独计算，最后相加
-    val fee1 = value1.map {
-      case (key, values) =>
-        val fields = key.split(SEPARATE1)
-        val bs = fields(3) //买卖方向
+    //获取所有的费率已经是否参数
+    // 2018-01-01@111@23341@B
+    def getRate(key: String) = {
+      val fields = key.split(SEPARATE1)
+      val bs = fields(3) //买卖方向
       val gsdm = fields(2) //交易席位
       val bcrq = fields(0) //本次日期
       val zqdm = fields(1) //证券代码
 
-        /**
-          * 获取公共的费率
-          * key = 证券类别+市场+资产号+利率类别
-          * value = 启用日期+利率+折扣
-          * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
-          */
-        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
-        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0@0@0")
-        val rateJS = rateJSstr.split(SEPARATE1)(1)
-        val rateJszk = rateJSstr.split(SEPARATE1)(2)
+      /**
+        * 获取公共的费率
+        * key = 证券类别+市场+资产号+利率类别
+        * value = 启用日期+利率+折扣
+        * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
+        */
+      var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
+      if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0@0@0")
+      val rateJS = rateJSstr.split(SEPARATE1)(1)
+      val rateJszk = rateJSstr.split(SEPARATE1)(2)
 
-        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
-        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "YHS", "0@0@0")
-        val rateYH = rateYHStr.split(SEPARATE1)(1)
-        val rateYhzk = rateYHStr.split(SEPARATE1)(2)
+      var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
+      if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "YHS", "0@0@0")
+      val rateYH = rateYHStr.split(SEPARATE1)(1)
+      val rateYhzk = rateYHStr.split(SEPARATE1)(2)
 
-        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
-        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
-        val rateZG = rateZGStr.split(SEPARATE1)(1)
-        val rateZgzk = rateZGStr.split(SEPARATE1)(2)
+      var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
+      if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
+      val rateZG = rateZGStr.split(SEPARATE1)(1)
+      val rateZgzk = rateZGStr.split(SEPARATE1)(2)
 
-        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
-        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
-        val rateGH = rateGHStr.split(SEPARATE1)(1)
-        val rateGhzk = rateGHStr.split(SEPARATE1)(2)
+      var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
+      if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
+      val rateGH = rateGHStr.split(SEPARATE1)(1)
+      val rateGhzk = rateGHStr.split(SEPARATE1)(2)
 
-        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
-        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
-        val rateFXJ = rateFXJStr.split(SEPARATE1)(1)
-        val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
+      var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
+      if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
+      val rateFXJ = rateFXJStr.split(SEPARATE1)(1)
+      val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
 
-        /**
-          * 获取佣金费率
-          * key=证券类别+市场+交易席位/公司代码
-          * value=启用日期+利率+折扣+最低佣金值
-          */
-//        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gddm, "-1")
-//        if ("-1".eq(rateYJStr))
-        val  rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gsdm, "0@0@0@0")
-        val rateYJ = rateYJStr.split(SEPARATE1)(1)
-        val rateYjzk = rateYJStr.split(SEPARATE1)(2)
-        val minYj = rateYJStr.split(SEPARATE1)(3)
+      /**
+        * 获取佣金费率
+        * key=证券类别+市场+交易席位/公司代码
+        * value=启用日期+利率+折扣+最低佣金值
+        */
+      //        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gddm, "-1")
+      //        if ("-1".eq(rateYJStr))
+      val rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gsdm, "0@0@0@0")
+      val rateYJ = rateYJStr.split(SEPARATE1)(1)
+      val rateYjzk = rateYJStr.split(SEPARATE1)(2)
+      val minYj = rateYJStr.split(SEPARATE1)(3)
 
 
-        //获取是否的参数
-        val cs1 = csbValues.value("\"117佣金包含经手费，证管费\"")
-        var cs2 = csbValues.value.getOrElse("\"上交所A股过户费按成交金额计算\"", "0")
-        if (!("0".equals(cs2) || ("1").equals(cs2))) {
-          //如果时日期格式的话要比较日期 TODO日期格式的比较
-          if (bcrq.compareTo(cs2) > 0) {
-            cs2 = "1"
-          } else {
-            cs2 = "0"
-          }
+      //获取是否的参数
+      val cs1 = csbValues.value("117佣金包含经手费，证管费")
+      var cs2 = csbValues.value.getOrElse("上交所A股过户费按成交金额计算", "0")
+      if (!("0".equals(cs2) || ("1").equals(cs2))) {
+        //如果时日期格式的话要比较日期 TODO日期格式的比较
+        if (bcrq.compareTo(cs2) > 0) {
+          cs2 = "1"
+        } else {
+          cs2 = "0"
         }
-        val cs3 = csbValues.value("\"117是否按千分之一费率计算过户费\"")
-        val cs4 = csbValues.value("\"117计算佣金减去风险金\"")
-        val cs5 = csbValues.value("\"117实际收付金额包含佣金\"")
-        val cs6 = csbValues.value("\"117计算佣金减去结算费\"")
+      }
+      val cs3 = csbValues.value("117是否按千分之一费率计算过户费")
+      val cs4 = csbValues.value("117计算佣金减去风险金")
+      val cs5 = csbValues.value("117实际收付金额包含佣金")
+      val cs6 = csbValues.value("117计算佣金减去结算费")
+      (bs, rateJS, rateJszk, rateYH, rateYhzk, rateZG, rateZgzk, rateGH, rateGhzk, rateFXJ, rateFxjzk, rateYJ, rateYjzk, minYj, cs1, cs2, cs3, cs4, cs6)
+    }
+
+    //    println(getRate("2018-01-01@111@23341@B"))
+
+    //第一种  每一笔交易单独计算，最后相加
+    val fee1 = value1.map {
+      case (key, values) => {
+        val fields = key.split(SEPARATE1)
+        val bs = fields(3) //买卖方向
+        val gsdm = fields(2) //交易席位
+        val bcrq = fields(0) //本次日期
+        val zqdm = fields(1) //证券代码
+
+        val getRateResult = getRate(key)
+        val rateJS: String = getRateResult._2
+        val rateJszk: String = getRateResult._3
+        val rateYH: String = getRateResult._4
+        val rateYhzk: String = getRateResult._5
+        val rateZG: String = getRateResult._6
+        val rateZgzk: String = getRateResult._7
+        val rateGH: String = getRateResult._8
+        val rateGhzk: String = getRateResult._9
+        val rateFXJ: String = getRateResult._10
+        val rateFxjzk: String = getRateResult._11
+        val rateYJ: String = getRateResult._12
+        val rateYjzk: String = getRateResult._13
+        val minYj: String = getRateResult._14
+        val cs1: String = getRateResult._15
+        var cs2: String = getRateResult._16
+        val cs3: String = getRateResult._17
+        val cs4: String = getRateResult._18
+        val cs6: String = getRateResult._19
+
         val otherFee = BigDecimal(0)
 
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
-      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
-      var sumYj = BigDecimal(0) //同一个申请编号总的佣金 （按成交记录）
-      var sumJsf = BigDecimal(0) //同一个申请编号总的经手费
-      var sumYhs = BigDecimal(0) //同一个申请编号总的印花税
-      var sumZgf = BigDecimal(0) //同一个申请编号总的征管费
-      var sumGhf = BigDecimal(0) //同一个申请编号总的过户费
-      var sumFxj = BigDecimal(0) //同一个申请编号总的风险金
+        var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+        var sumYj = BigDecimal(0) //同一个申请编号总的佣金 （按成交记录）
+        var sumJsf = BigDecimal(0) //同一个申请编号总的经手费
+        var sumYhs = BigDecimal(0) //同一个申请编号总的印花税
+        var sumZgf = BigDecimal(0) //同一个申请编号总的征管费
+        var sumGhf = BigDecimal(0) //同一个申请编号总的过户费
+        var sumFxj = BigDecimal(0) //同一个申请编号总的风险金
 
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
           val cjsl = BigDecimal(row.getAs[String]("CJSL"))
           //经手费的计算
-          val jsf = cjje * BigDecimal(rateJS) * BigDecimal(rateJszk).setScale(2, RoundingMode.HALF_UP)
+          val jsf = cjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
           var yhs = BigDecimal(0)
-          if ("H".equals(bs)) {
+          if ("S".equals(bs)) {
             //印花税的计算
-            yhs = cjje.*(BigDecimal(rateYH)) * BigDecimal(rateYhzk).setScale(2, RoundingMode.HALF_UP)
+            yhs = cjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
           }
           //征管费的计算
-          val zgf = cjje.*(BigDecimal(rateZG)) * BigDecimal(rateZgzk).setScale(2, RoundingMode.HALF_UP)
+          val zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
           //风险金的计算
-          val fx = cjje.*(BigDecimal(rateFXJ)) * BigDecimal(rateFxjzk).setScale(2, RoundingMode.HALF_UP)
+          val fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP)
           //过户费的计算
           var ghf = BigDecimal(0)
           if ("1".equals(cs2)) {
             if ("1".equals(cs3)) {
-              ghf = cjje * cjsl * BigDecimal(0.001).setScale(2, RoundingMode.HALF_UP)
+              ghf = cjje.*(cjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
             } else {
-              ghf = cjje * cjsl * BigDecimal(rateGH) * BigDecimal(rateGhzk).setScale(2, RoundingMode.HALF_UP)
+              ghf = cjje.*(cjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
             }
           } else {
             if ("1".equals(cs3)) {
-              ghf = cjsl * BigDecimal(0.001).setScale(2, RoundingMode.HALF_UP)
+              ghf = cjsl.*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP).setScale(2, RoundingMode.HALF_UP)
             } else {
-              ghf = cjsl * BigDecimal(rateGH) * BigDecimal(rateGhzk).setScale(2, RoundingMode.HALF_UP)
+              ghf = cjsl.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
             }
           }
           //佣金的计算
-          var yj = cjje.*(BigDecimal(rateYJ)) * BigDecimal(rateYjzk).setScale(2, RoundingMode.HALF_UP)
+          var yj = cjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
           if ("0".equals(cs1)) {
-            yj = yj - jsf - zgf
+            yj = yj.-(jsf).-(zgf)
           }
           if ("1".equals(cs4)) {
-            yj = yj - fx
+            yj = yj.-(fx)
           }
 
           if ("1".equals(cs6)) {
-            yj = yj - otherFee
+            yj = yj.-(otherFee)
           }
           //单笔佣金小于最小佣金
           if (yj - BigDecimal(minYj) < 0) {
@@ -340,200 +372,41 @@ object SHDZGH3 {
 
         (key, Fee("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
           sumGhf, sumFxj))
+      }
     }
-
-
-    //第三种 金额汇总*费率
-    val fee3 = value1.map {
-      case (key, values) =>
-        val fields = key.split(SEPARATE1)
-        val bs = fields(3) //买卖方向
-      val gsdm = fields(2) //交易席位
-      val bcrq = fields(0) //本次日期
-      val zqdm = fields(1) //证券代码
-
-        //获取是否的参数
-        val cs1 = csbValues.value("\"117佣金包含经手费，证管费\"")
-        var cs2 = csbValues.value.getOrElse("\"上交所A股过户费按成交金额计算\"", "0")
-        if (!("0".equals(cs2) || ("1").equals(cs2))) {
-          //如果时日期格式的话要比较日期 TODO日期格式的比较
-          if (bcrq.compareTo(cs2) > 0) {
-            cs2 = "1"
-          } else {
-            cs2 = "0"
-          }
-        }
-        val cs3 = csbValues.value("\"117是否按千分之一费率计算过户费\"")
-        val cs4 = csbValues.value("\"117计算佣金减去风险金\"")
-        val cs5 = csbValues.value("\"117实际收付金额包含佣金\"")
-        val cs6 = csbValues.value("\"117计算佣金减去结算费\"")
-        val otherFee = BigDecimal(0)
-        /**
-          * 获取公共的费率
-          * key = 证券类别+市场+资产号+利率类别
-          * value = 启用日期+利率+折扣
-          * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
-          */
-        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
-        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0@0@0")
-        val rateJS = rateJSstr.split(SEPARATE1)(1)
-        val rateJszk = rateJSstr.split(SEPARATE1)(2)
-
-        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
-        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + "0" + "YHS", "0@0@0")
-        val rateYH = rateYHStr.split(SEPARATE1)(1)
-        val rateYhzk = rateYHStr.split(SEPARATE1)(2)
-
-        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
-        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
-        val rateZG = rateZGStr.split(SEPARATE1)(1)
-        val rateZgzk = rateZGStr.split(SEPARATE1)(2)
-
-        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
-        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
-        val rateGH = rateGHStr.split(SEPARATE1)(1)
-        val rateGhzk = rateGHStr.split(SEPARATE1)(2)
-
-        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
-        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
-        val rateFXJ = rateFXJStr.split(SEPARATE1)(1)
-        val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
-
-        /**
-          * 获取佣金费率
-          * key=证券类别+市场+交易席位/公司代码
-          * value=启用日期+利率+折扣+最低佣金值
-          */
-//        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gddm, "-1")
-//        if ("-1".eq(rateYJStr))
-        val rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gsdm, "0@0@0@0")
-        val rateYJ = rateYJStr.split(SEPARATE1)(1)
-        val rateYjzk = rateYJStr.split(SEPARATE1)(2)
-        val minYj = rateYJStr.split(SEPARATE1)(3)
-
-
-        var sumCjje = BigDecimal(0) //同一个申请编号总金额
-      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
-
-
-        for (row <- values) {
-          val cjje = BigDecimal(row.getAs[String]("CJJE"))
-          val cjsl = BigDecimal(row.getAs[String]("CJSL"))
-          sumCjje = sumCjje.+(cjje)
-          sumCjsl = sumCjsl.+(cjsl)
-        }
-
-        var sumJsf2 = sumCjje * BigDecimal(rateJS) * BigDecimal(rateJszk).setScale(2, RoundingMode.HALF_UP)
-        //同一个申请编号总的经手费
-        var sumYhs2 = BigDecimal(0) //同一个申请编号总的印花税
-        if ("H".equals(bs)) {
-          sumYhs2 = sumCjje.*(BigDecimal(rateYH)) * BigDecimal(rateYhzk).setScale(2, RoundingMode.HALF_UP)
-        }
-        var sumZgf2 = sumCjje.*(BigDecimal(rateZG)) * BigDecimal(rateZgzk).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
-      var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)) * BigDecimal(rateFxjzk).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
-      //同一个申请编号总的过户费
-      var sumGhf2 = BigDecimal(0)
-        if ("1".equals(cs2)) {
-          if ("1".equals(cs3)) {
-            sumGhf2 = sumCjje * sumCjsl * BigDecimal(0.001).setScale(2, RoundingMode.HALF_UP)
-          } else {
-            sumGhf2 = sumCjje * sumCjsl * BigDecimal(rateGH) * BigDecimal(rateGhzk).setScale(2, RoundingMode.HALF_UP)
-          }
-        } else {
-          if ("1".equals(cs3)) {
-            sumGhf2 = sumCjsl * BigDecimal(0.001).setScale(2, RoundingMode.HALF_UP)
-          } else {
-            sumGhf2 = sumCjsl * BigDecimal(rateGH) * BigDecimal(rateGhzk).setScale(2, RoundingMode.HALF_UP)
-          }
-        }
-        //同一个申请编号总的佣金 （按申请编号汇总）
-        var sumYj2 = sumCjje.*(BigDecimal(rateYJ)) * BigDecimal(rateYjzk).setScale(2, RoundingMode.HALF_UP)
-        if ("0".equals(cs1)) {
-          sumYj2 = sumYj2 - sumJsf2 - sumZgf2
-        }
-        if ("1".equals(cs4)) {
-          sumYj2 = sumYj2 - sumFxj2
-        }
-
-        if ("1".equals(cs6)) {
-          sumYj2 = sumYj2 - otherFee
-        }
-
-        (key, Fee("3", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
-          sumGhf2, sumFxj2))
-    }
-
 
     //第二种 相同申请编号的金额汇总*费率，各申请编号汇总后的金额相加
     val fee2 = value.map {
-      case (key, values) =>
+      case (key, values) => {
         val fields = key.split("@")
         val bs = fields(3) //买卖方向
-      val gsdm = fields(2) //交易席位
-      val bcrq = fields(0) //本次日期
-      val zqdm = fields(1) //证券代码
-
-        //获取是否的参数
-        val cs1 = csbValues.value("\"117佣金包含经手费，证管费\"")
-        var cs2 = csbValues.value.getOrElse("\"上交所A股过户费按成交金额计算\"", "0")
-        if (!("0".equals(cs2) || ("1").equals(cs2))) {
-          //如果时日期格式的话要比较日期 TODO日期格式的比较
-          if (bcrq.compareTo(cs2) > 0) {
-            cs2 = "1"
-          } else {
-            cs2 = "0"
-          }
-        }
-        val cs3 = csbValues.value("\"117是否按千分之一费率计算过户费\"")
-        val cs4 = csbValues.value("\"117计算佣金减去风险金\"")
-        val cs5 = csbValues.value("\"117实际收付金额包含佣金\"")
-        val cs6 = csbValues.value("\"117计算佣金减去结算费\"")
+        val gsdm = fields(2) //交易席位
+        val bcrq = fields(0) //本次日期
+        val zqdm = fields(1) //证券代码
         val otherFee = BigDecimal(0)
-        /**
-          * 获取公共的费率
-          * key = 证券类别+市场+资产号+利率类别
-          * value = 启用日期+利率+折扣
-          * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
-          */
-        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
-        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0-0-0")
-        val rateJS = rateJSstr.split(SEPARATE1)(1)
-        val rateJszk = rateJSstr.split(SEPARATE1)(2)
 
-        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
-        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + "0" + "YHS", "0@0@0")
-        val rateYH = rateYHStr.split(SEPARATE1)(1)
-        val rateYhzk = rateYHStr.split(SEPARATE1)(2)
-
-        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
-        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
-        val rateZG = rateZGStr.split(SEPARATE1)(1)
-        val rateZgzk = rateZGStr.split(SEPARATE1)(2)
-
-        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
-        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
-        val rateGH = rateGHStr.split(SEPARATE1)(1)
-        val rateGhzk = rateGHStr.split(SEPARATE1)(2)
-
-        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
-        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
-        val rateFXJ = rateFXJStr.split(SEPARATE1)(1)
-        val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
-
-        /**
-          * 获取佣金费率
-          * key=证券类别+市场+交易席位/公司代码
-          * value=启用日期+利率+折扣+最低佣金值
-          */
-//        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gddm, "-1")
-//        if ("-1".eq(rateYJStr))
-        val rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gsdm, "0@0@0@0")
-        val rateYJ = rateYJStr.split(SEPARATE1)(1)
-        val rateYjzk = rateYJStr.split(SEPARATE1)(2)
-        val minYj = rateYJStr.split(SEPARATE1)(3)
+        val getRateResult = getRate(key)
+        val rateJS: String = getRateResult._2
+        val rateJszk: String = getRateResult._3
+        val rateYH: String = getRateResult._4
+        val rateYhzk: String = getRateResult._5
+        val rateZG: String = getRateResult._6
+        val rateZgzk: String = getRateResult._7
+        val rateGH: String = getRateResult._8
+        val rateGhzk: String = getRateResult._9
+        val rateFXJ: String = getRateResult._10
+        val rateFxjzk: String = getRateResult._11
+        val rateYJ: String = getRateResult._12
+        val rateYjzk: String = getRateResult._13
+        val minYj: String = getRateResult._14
+        val cs1: String = getRateResult._15
+        var cs2: String = getRateResult._16
+        val cs3: String = getRateResult._17
+        val cs4: String = getRateResult._18
+        val cs6: String = getRateResult._19
 
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
-      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+        var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
 
         for (row <- values) {
@@ -543,31 +416,31 @@ object SHDZGH3 {
           sumCjsl = sumCjsl.+(cjsl)
         }
 
-        var sumJsf2 = sumCjje * BigDecimal(rateJS) * BigDecimal(rateJszk).setScale(2, RoundingMode.HALF_UP)
+        var sumJsf2 = sumCjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
         //同一个申请编号总的经手费
         var sumYhs2 = BigDecimal(0) //同一个申请编号总的印花税
-        if ("H".equals(bs)) {
-          sumYhs2 = sumCjje.*(BigDecimal(rateYH)) * BigDecimal(rateYhzk).setScale(2, RoundingMode.HALF_UP)
+        if ("S".equals(bs)) {
+          sumYhs2 = sumCjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
         }
-        var sumZgf2 = sumCjje.*(BigDecimal(rateZG)) * BigDecimal(rateZgzk).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
-      var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)) * BigDecimal(rateFxjzk).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
-      //同一个申请编号总的过户费
-      var sumGhf2 = BigDecimal(0)
+        var sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
+        var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
+        //同一个申请编号总的过户费
+        var sumGhf2 = BigDecimal(0)
         if ("1".equals(cs2)) {
           if ("1".equals(cs3)) {
-            sumGhf2 = sumCjje * sumCjsl * BigDecimal(0.001).setScale(2, RoundingMode.HALF_UP)
+            sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
           } else {
-            sumGhf2 = sumCjje * sumCjsl * BigDecimal(rateGH) * BigDecimal(rateGhzk).setScale(2, RoundingMode.HALF_UP)
+            sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
           }
         } else {
           if ("1".equals(cs3)) {
-            sumGhf2 = sumCjsl * BigDecimal(0.001).setScale(2, RoundingMode.HALF_UP)
+            sumGhf2 = sumCjsl.*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
           } else {
-            sumGhf2 = sumCjsl * BigDecimal(rateGH) * BigDecimal(rateGhzk).setScale(2, RoundingMode.HALF_UP)
+            sumGhf2 = sumCjsl.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
           }
         }
         //同一个申请编号总的佣金 （按申请编号汇总）
-        var sumYj2 = sumCjje.*(BigDecimal(rateYJ)) * BigDecimal(rateYjzk).setScale(2, RoundingMode.HALF_UP)
+        var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
         if ("0".equals(cs1)) {
           sumYj2 = sumYj2 - sumJsf2 - sumZgf2
         }
@@ -579,9 +452,10 @@ object SHDZGH3 {
           sumYj2 = sumYj2 - otherFee
         }
 
-        (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1  + bs,
+        (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs,
           Fee("2", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
             sumGhf2, sumFxj2))
+      }
     }.groupByKey().map {
       case (key, fees) =>
         var totalYj2 = BigDecimal(0)
@@ -606,8 +480,92 @@ object SHDZGH3 {
           totalGhf2, totalFxj2))
     }
 
+    //第三种 金额汇总*费率
+    val fee3 = value1.map {
+      case (key, values) => {
+        val fields = key.split(SEPARATE1)
+        val bs = fields(3) //买卖方向
+        val gsdm = fields(2) //交易席位
+        val bcrq = fields(0) //本次日期
+        val zqdm = fields(1) //证券代码
+
+        val getRateResult = getRate(key)
+        val rateJS: String = getRateResult._2
+        val rateJszk: String = getRateResult._3
+        val rateYH: String = getRateResult._4
+        val rateYhzk: String = getRateResult._5
+        val rateZG: String = getRateResult._6
+        val rateZgzk: String = getRateResult._7
+        val rateGH: String = getRateResult._8
+        val rateGhzk: String = getRateResult._9
+        val rateFXJ: String = getRateResult._10
+        val rateFxjzk: String = getRateResult._11
+        val rateYJ: String = getRateResult._12
+        val rateYjzk: String = getRateResult._13
+        val minYj: String = getRateResult._14
+        val cs1: String = getRateResult._15
+        var cs2: String = getRateResult._16
+        val cs3: String = getRateResult._17
+        val cs4: String = getRateResult._18
+        val cs6: String = getRateResult._19
+
+        val otherFee = BigDecimal(0)
+        var sumCjje = BigDecimal(0) //同一个申请编号总金额
+        var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+
+
+        for (row <- values) {
+          val cjje = BigDecimal(row.getAs[String]("CJJE"))
+          val cjsl = BigDecimal(row.getAs[String]("CJSL"))
+          sumCjje = sumCjje.+(cjje)
+          sumCjsl = sumCjsl.+(cjsl)
+        }
+
+        var sumJsf2 = sumCjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
+        //同一个申请编号总的经手费
+        var sumYhs2 = BigDecimal(0) //同一个申请编号总的印花税
+        if ("S".equals(bs)) {
+          sumYhs2 = sumCjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
+        }
+        var sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
+        var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
+        //同一个申请编号总的过户费
+        var sumGhf2 = BigDecimal(0)
+        if ("1".equals(cs2)) {
+          if ("1".equals(cs3)) {
+            sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
+          } else {
+            sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
+          }
+        } else {
+          if ("1".equals(cs3)) {
+            sumGhf2 = sumCjsl.*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
+          } else {
+            sumGhf2 = sumCjsl.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
+          }
+        }
+        //同一个申请编号总的佣金 （按申请编号汇总）
+        var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
+        if ("0".equals(cs1)) {
+          sumYj2 = sumYj2 - sumJsf2 - sumZgf2
+        }
+        if ("1".equals(cs4)) {
+          sumYj2 = sumYj2 - sumFxj2
+        }
+
+        if ("1".equals(cs6)) {
+          sumYj2 = sumYj2 - otherFee
+        }
+
+        (key, Fee("3", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
+          sumGhf2, sumFxj2))
+      }
+    }
+
+
     val middle = fee1.union(fee2).union(fee3)
 
+    //最终结果
     val result = middle.groupByKey().map {
       case (key, fees) =>
         val fields = key.split(SEPARATE1)
@@ -674,35 +632,36 @@ object SHDZGH3 {
         var realFxj = BigDecimal(0)
 
 
-        val con1 = csbValues.value("\"117按申请编号汇总计算经手费\"")
-        val con2 = csbValues.value("\"117按申请编号汇总计算征管费\"")
-        val con3 = csbValues.value("\"117按申请编号汇总计算过户费\"")
-        val con4 = csbValues.value("\"117按申请编号汇总计算印花税\"")
-        val con5 = csbValues.value("\"117S按申请编号汇总计算佣金\"")
-        val con7 = csbValues.value("\"117S按申请编号汇总计算风险金\"")
-        val con8 = csbValues.value("\"117实际收付金额包含佣金\"")
+        val con1 = csbValues.value("117按申请编号汇总计算经手费")
+        val con2 = csbValues.value("117按申请编号汇总计算征管费")
+        val con3 = csbValues.value("117按申请编号汇总计算过户费")
+        val con4 = csbValues.value("117按申请编号汇总计算印花税")
+        val con5 = csbValues.value("117H按申请编号汇总计算佣金")
+        val con7 = csbValues.value("117H按申请编号汇总计算风险金")
+        val con8 = csbValues.value("117实际收付金额包含佣金")
 
-        val con11 = csbValues.value("\"117按成交记录计算经手费\"")
-        val con12 = csbValues.value("\"117按成交记录计算征管费\"")
-        val con13 = csbValues.value("\"117按成交记录计算过户费\"")
-        val con14 = csbValues.value("\"117按成交记录计算印花税\"")
-        val con15 = csbValues.value("\"117S按成交记录计算佣金\"")
-        val con17 = csbValues.value("\"117S按成交记录计算风险金\"")
-
+        val con11 = csbValues.value("117按成交记录计算经手费")
+        val con12 = csbValues.value("117按成交记录计算征管费")
+        val con13 = csbValues.value("117按成交记录计算过户费")
+        val con14 = csbValues.value("117按成交记录计算印花税")
+        val con15 = csbValues.value("117H按成交记录计算佣金")
+        val con17 = csbValues.value("117H按成交记录计算风险金")
+        //
         if ("1".equals(con1)) {
           realJsf = totalJsf2
         } else if ("1".equals(con11)) {
           realJsf = totalJsf1
         } else {
-          realJsf = totalJsf3
+          realJsf = totalJsf1
         }
+
 
         if ("1".equals(con2)) {
           realZgf = totalZgf2
         } else if ("1".equals(con12)) {
           realZgf = totalZgf1
         } else {
-          realZgf = totalZgf3
+          realZgf = totalZgf1
         }
 
         if ("1".equals(con3)) {
@@ -710,7 +669,7 @@ object SHDZGH3 {
         } else if ("1".equals(con13)) {
           realGhf = totalGhf1
         } else {
-          realGhf = totalGhf3
+          realGhf = totalGhf1
         }
 
         if ("1".equals(con4)) {
@@ -718,14 +677,14 @@ object SHDZGH3 {
         } else if ("1".equals(con14)) {
           realYhs = totalYhs1
         } else {
-          realYhs = totalYhs3
+          realYhs = totalYhs1
         }
         if ("1".equals(con5)) {
           realYj = totalYj2
         } else if ("1".equals(con15)) {
           realYj = totalYj1
         } else {
-          realYj = totalYj3
+          realYj = totalYj1
         }
 
         if ("1".equals(con7)) {
@@ -733,7 +692,7 @@ object SHDZGH3 {
         } else if ("1".equals(con17)) {
           realFxj = totalFxj1
         } else {
-          realFxj = totalFxj3
+          realFxj = totalFxj1
         }
 
         var FBje = BigDecimal(0)
@@ -755,14 +714,6 @@ object SHDZGH3 {
         var FBFxj = BigDecimal(0)
         var FSFxj = BigDecimal(0)
 
-        /**
-          * var realYj = totalYj
-          * var realJsf = totalJsf
-          * var realYhs = totalYhs
-          * var realZgf = totalZgf
-          * var realGhf = totalGhf
-          * var realFxj = totalFxj
-          */
         if ("B".equals(bs)) {
           FBje = totalCjje
           FBsl = totalCjsl
@@ -815,7 +766,7 @@ object SHDZGH3 {
           ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm)
     }
 
-    Util.outputMySql(result.toDF(), "SHDZGH3")
+        Util.outputMySql(result.toDF(), "SHDZGH4")
     spark.stop()
 
   }
