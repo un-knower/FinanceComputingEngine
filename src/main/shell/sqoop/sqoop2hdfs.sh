@@ -9,3 +9,4 @@ hdfsPath=/yss/guzhi/basic_list/LVARLIST
 
 sqoop import --connect ${url} --username ${uid} --password ${pwd}  --delete-target-dir --target-dir ${hdfsPath} --m 1 --table ${tableName}
 
+
