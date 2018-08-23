@@ -187,7 +187,7 @@ object SHDZGH3 {
       val gddm = row.getAs[String]("GDDM") //股东代码
       val bs = row.getAs[String]("BS") //买卖
       val sqbh = row.getAs[String]("SQBH") //申请编号
-      val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + gddm + SEPARATE1 + bs + SEPARATE1 + sqbh
+      val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm  + SEPARATE1 + bs + SEPARATE1 + sqbh
       (key, row)
     }).groupByKey()
 
@@ -199,7 +199,7 @@ object SHDZGH3 {
       val gddm = row.getAs[String]("GDDM") //股东代码
       val bs = row.getAs[String]("BS") //买卖
       val sqbh = row.getAs[String]("SQBH") //申请编号
-      val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + gddm + SEPARATE1 + bs
+      val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm  + SEPARATE1 + bs
       (key, row)
     }).groupByKey()
 
@@ -207,9 +207,8 @@ object SHDZGH3 {
     val fee1 = value1.map {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
-        val bs = fields(4) //买卖方向
+        val bs = fields(3) //买卖方向
       val gsdm = fields(2) //交易席位
-      val gddm = fields(3) //股东代码
       val bcrq = fields(0) //本次日期
       val zqdm = fields(1) //证券代码
 
@@ -219,28 +218,28 @@ object SHDZGH3 {
           * value = 启用日期+利率+折扣
           * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
           */
-        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
-        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0@0@0")
+        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
+        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0@0@0")
         val rateJS = rateJSstr.split(SEPARATE1)(1)
         val rateJszk = rateJSstr.split(SEPARATE1)(2)
 
-        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
-        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "YHS", "0@0@0")
+        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
+        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "YHS", "0@0@0")
         val rateYH = rateYHStr.split(SEPARATE1)(1)
         val rateYhzk = rateYHStr.split(SEPARATE1)(2)
 
-        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
-        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
+        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
+        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
         val rateZG = rateZGStr.split(SEPARATE1)(1)
         val rateZgzk = rateZGStr.split(SEPARATE1)(2)
 
-        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
-        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
+        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
+        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
         val rateGH = rateGHStr.split(SEPARATE1)(1)
         val rateGhzk = rateGHStr.split(SEPARATE1)(2)
 
-        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
-        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
+        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
+        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
         val rateFXJ = rateFXJStr.split(SEPARATE1)(1)
         val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
 
@@ -249,8 +248,9 @@ object SHDZGH3 {
           * key=证券类别+市场+交易席位/公司代码
           * value=启用日期+利率+折扣+最低佣金值
           */
-        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + gddm, "-1")
-        if ("-1".eq(rateYJStr)) rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + gsdm, "0@0@0@0")
+//        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gddm, "-1")
+//        if ("-1".eq(rateYJStr))
+        val  rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gsdm, "0@0@0@0")
         val rateYJ = rateYJStr.split(SEPARATE1)(1)
         val rateYjzk = rateYJStr.split(SEPARATE1)(2)
         val minYj = rateYJStr.split(SEPARATE1)(3)
@@ -288,7 +288,7 @@ object SHDZGH3 {
           //经手费的计算
           val jsf = cjje * BigDecimal(rateJS) * BigDecimal(rateJszk).setScale(2, RoundingMode.HALF_UP)
           var yhs = BigDecimal(0)
-          if ("S".equals(bs)) {
+          if ("H".equals(bs)) {
             //印花税的计算
             yhs = cjje.*(BigDecimal(rateYH)) * BigDecimal(rateYhzk).setScale(2, RoundingMode.HALF_UP)
           }
@@ -347,9 +347,8 @@ object SHDZGH3 {
     val fee3 = value1.map {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
-        val bs = fields(4) //买卖方向
+        val bs = fields(3) //买卖方向
       val gsdm = fields(2) //交易席位
-      val gddm = fields(3) //股东代码
       val bcrq = fields(0) //本次日期
       val zqdm = fields(1) //证券代码
 
@@ -375,28 +374,28 @@ object SHDZGH3 {
           * value = 启用日期+利率+折扣
           * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
           */
-        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
-        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0@0@0")
+        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
+        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0@0@0")
         val rateJS = rateJSstr.split(SEPARATE1)(1)
         val rateJszk = rateJSstr.split(SEPARATE1)(2)
 
-        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
-        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + "0" + "YHS", "0@0@0")
+        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
+        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + "0" + "YHS", "0@0@0")
         val rateYH = rateYHStr.split(SEPARATE1)(1)
         val rateYhzk = rateYHStr.split(SEPARATE1)(2)
 
-        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
-        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
+        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
+        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
         val rateZG = rateZGStr.split(SEPARATE1)(1)
         val rateZgzk = rateZGStr.split(SEPARATE1)(2)
 
-        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
-        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
+        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
+        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
         val rateGH = rateGHStr.split(SEPARATE1)(1)
         val rateGhzk = rateGHStr.split(SEPARATE1)(2)
 
-        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
-        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
+        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
+        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
         val rateFXJ = rateFXJStr.split(SEPARATE1)(1)
         val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
 
@@ -405,8 +404,9 @@ object SHDZGH3 {
           * key=证券类别+市场+交易席位/公司代码
           * value=启用日期+利率+折扣+最低佣金值
           */
-        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + gddm, "-1")
-        if ("-1".eq(rateYJStr)) rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + gsdm, "0@0@0@0")
+//        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gddm, "-1")
+//        if ("-1".eq(rateYJStr))
+        val rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gsdm, "0@0@0@0")
         val rateYJ = rateYJStr.split(SEPARATE1)(1)
         val rateYjzk = rateYJStr.split(SEPARATE1)(2)
         val minYj = rateYJStr.split(SEPARATE1)(3)
@@ -426,7 +426,7 @@ object SHDZGH3 {
         var sumJsf2 = sumCjje * BigDecimal(rateJS) * BigDecimal(rateJszk).setScale(2, RoundingMode.HALF_UP)
         //同一个申请编号总的经手费
         var sumYhs2 = BigDecimal(0) //同一个申请编号总的印花税
-        if ("S".equals(bs)) {
+        if ("H".equals(bs)) {
           sumYhs2 = sumCjje.*(BigDecimal(rateYH)) * BigDecimal(rateYhzk).setScale(2, RoundingMode.HALF_UP)
         }
         var sumZgf2 = sumCjje.*(BigDecimal(rateZG)) * BigDecimal(rateZgzk).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
@@ -468,9 +468,8 @@ object SHDZGH3 {
     val fee2 = value.map {
       case (key, values) =>
         val fields = key.split("@")
-        val bs = fields(4) //买卖方向
+        val bs = fields(3) //买卖方向
       val gsdm = fields(2) //交易席位
-      val gddm = fields(3) //股东代码
       val bcrq = fields(0) //本次日期
       val zqdm = fields(1) //证券代码
 
@@ -496,28 +495,28 @@ object SHDZGH3 {
           * value = 启用日期+利率+折扣
           * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
           */
-        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
-        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0-0-0")
+        var rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "JSF", "-1")
+        if ("-1".equals(rateJSstr)) rateJSstr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "JSF", "0-0-0")
         val rateJS = rateJSstr.split(SEPARATE1)(1)
         val rateJszk = rateJSstr.split(SEPARATE1)(2)
 
-        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
-        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + "0" + "YHS", "0@0@0")
+        var rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "YHS", "-1")
+        if ("-1".equals(rateYHStr)) rateYHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + "0" + "YHS", "0@0@0")
         val rateYH = rateYHStr.split(SEPARATE1)(1)
         val rateYhzk = rateYHStr.split(SEPARATE1)(2)
 
-        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
-        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
+        var rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "ZGF", "-1")
+        if ("-1".equals(rateZGStr)) rateZGStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "ZGF", "0@0@0")
         val rateZG = rateZGStr.split(SEPARATE1)(1)
         val rateZgzk = rateZGStr.split(SEPARATE1)(2)
 
-        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
-        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
+        var rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "GHF", "-1")
+        if ("-1".equals(rateGHStr)) rateGHStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "GHF", "0@0@0")
         val rateGH = rateGHStr.split(SEPARATE1)(1)
         val rateGhzk = rateGHStr.split(SEPARATE1)(2)
 
-        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
-        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
+        var rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "117" + SEPARATE1 + "FXJ", "-1")
+        if ("-1".equals(rateFXJStr)) rateFXJStr = lvbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + "0" + SEPARATE1 + "FXJ", "0@0@0")
         val rateFXJ = rateFXJStr.split(SEPARATE1)(1)
         val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
 
@@ -526,9 +525,9 @@ object SHDZGH3 {
           * key=证券类别+市场+交易席位/公司代码
           * value=启用日期+利率+折扣+最低佣金值
           */
-        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + gddm, "-1")
-        if ("-1".eq(rateYJStr)) rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "S" + SEPARATE1 + gsdm, "0@0@0@0")
-
+//        var rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gddm, "-1")
+//        if ("-1".eq(rateYJStr))
+        val rateYJStr = yjbValues.value.getOrElse("GP" + SEPARATE1 + "H" + SEPARATE1 + gsdm, "0@0@0@0")
         val rateYJ = rateYJStr.split(SEPARATE1)(1)
         val rateYjzk = rateYJStr.split(SEPARATE1)(2)
         val minYj = rateYJStr.split(SEPARATE1)(3)
@@ -547,7 +546,7 @@ object SHDZGH3 {
         var sumJsf2 = sumCjje * BigDecimal(rateJS) * BigDecimal(rateJszk).setScale(2, RoundingMode.HALF_UP)
         //同一个申请编号总的经手费
         var sumYhs2 = BigDecimal(0) //同一个申请编号总的印花税
-        if ("S".equals(bs)) {
+        if ("H".equals(bs)) {
           sumYhs2 = sumCjje.*(BigDecimal(rateYH)) * BigDecimal(rateYhzk).setScale(2, RoundingMode.HALF_UP)
         }
         var sumZgf2 = sumCjje.*(BigDecimal(rateZG)) * BigDecimal(rateZgzk).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
@@ -580,7 +579,7 @@ object SHDZGH3 {
           sumYj2 = sumYj2 - otherFee
         }
 
-        (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + gddm + SEPARATE1 + bs,
+        (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1  + bs,
           Fee("2", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
             sumGhf2, sumFxj2))
     }.groupByKey().map {
@@ -612,7 +611,7 @@ object SHDZGH3 {
     val result = middle.groupByKey().map {
       case (key, fees) =>
         val fields = key.split(SEPARATE1)
-        val bs = fields(4)
+        val bs = fields(3)
 
         var totalYj2 = BigDecimal(0)
         var totalJsf2 = BigDecimal(0)
