@@ -278,30 +278,46 @@ object SHGHPlus {
             }
           }
           //佣金的计算
-          var yj = cjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
-          if ("0".equals(cs1)) {
-            yj = yj.-(jsf).-(zgf)
-          }
-          if ("1".equals(cs4)) {
-            yj = yj.-(fx)
-          }
-
-          if ("1".equals(cs6)) {
-            yj = yj.-(otherFee)
-          }
-          //单笔佣金小于最小佣金
-          if (yj - BigDecimal(minYj) < 0) {
-            yj = BigDecimal(minYj)
-          }
+//          var yj = cjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
+//          if ("0".equals(cs1)) {
+//            yj = yj.-(jsf).-(zgf)
+//          }
+//          if ("1".equals(cs4)) {
+//            yj = yj.-(fx)
+//          }
+//
+//          if ("1".equals(cs6)) {
+//            yj = yj.-(otherFee)
+//          }
+//          //单笔佣金小于最小佣金
+//          if (yj - BigDecimal(minYj) < 0) {
+//            yj = BigDecimal(minYj)
+//          }
 
           sumCjje = sumCjje.+(cjje)
           sumCjsl = sumCjsl.+(cjsl)
-          sumYj = sumYj.+(yj)
+//          sumYj = sumYj.+(yj)
           sumJsf = sumJsf.+(jsf)
           sumYhs = sumYhs.+(yhs)
           sumZgf = sumZgf.+(zgf)
           sumGhf = sumGhf.+(ghf)
           sumFxj = sumFxj.+(fx)
+        }
+
+        //佣金的计算
+        sumYj = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
+        if ("0".equals(cs1)) {
+          sumYj = sumYj.-(sumJsf).-(sumZgf)
+        }
+        if ("1".equals(cs4)) {
+          sumYj = sumYj.-(sumFxj)
+        }
+
+        if ("1".equals(cs6)) {
+          sumYj = sumYj.-(otherFee)
+        }
+        if (sumYj < BigDecimal(minYj)) {
+          sumYj = BigDecimal(minYj)
         }
 
         (key, SHGHFee("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
@@ -384,6 +400,10 @@ object SHGHPlus {
 
         if ("1".equals(cs6)) {
           sumYj2 = sumYj2 - otherFee
+        }
+
+        if (sumYj2 < BigDecimal(minYj)) {
+          sumYj2 = BigDecimal(minYj)
         }
 
         (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs,
@@ -491,71 +511,47 @@ object SHGHPlus {
           sumYj2 = sumYj2 - otherFee
         }
 
+        if (sumYj2 < BigDecimal(minYj)) {
+          sumYj2 = BigDecimal(minYj)
+        }
+
         (key, SHGHFee("3", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
           sumGhf2, sumFxj2))
       }
     }
 
-
     //将三种结果串联起来
-    val middle = fee1.union(fee2).union(fee3)
+    val middle = fee1.join(fee2).join(fee3)
 
     //最终结果
-    val result = middle.groupByKey().map {
-      case (key, fees) =>
+    val result = middle.map {
+      case (key, ((fee1,fee2),fee3)) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3)
 
-        var totalYj2 = BigDecimal(0)
-        var totalJsf2 = BigDecimal(0)
-        var totalYhs2 = BigDecimal(0)
-        var totalZgf2 = BigDecimal(0)
-        var totalGhf2 = BigDecimal(0)
-        var totalFxj2 = BigDecimal(0)
+        var totalYj2 = fee2.sumYj
+        var totalJsf2 = fee2.sumJsf
+        var totalYhs2 = fee2.sumYhs
+        var totalZgf2 = fee2.sumZgf
+        var totalGhf2 = fee2.sumGhf
+        var totalFxj2 = fee2.sumFxj
 
-        var totalCjje = BigDecimal(0)
-        var totalCjsl = BigDecimal(0)
+        var totalCjje = fee1.sumCjje
+        var totalCjsl = fee1.sumCjsl
 
-        var totalYj1 = BigDecimal(0)
-        var totalJsf1 = BigDecimal(0)
-        var totalYhs1 = BigDecimal(0)
-        var totalZgf1 = BigDecimal(0)
-        var totalGhf1 = BigDecimal(0)
-        var totalFxj1 = BigDecimal(0)
+        var totalYj1 = fee1.sumYj
+        var totalJsf1 = fee1.sumJsf
+        var totalYhs1 = fee1.sumYhs
+        var totalZgf1 = fee1.sumZgf
+        var totalGhf1 = fee1.sumGhf
+        var totalFxj1 = fee1.sumFxj
 
-        var totalYj3 = BigDecimal(0)
-        var totalJsf3 = BigDecimal(0)
-        var totalYhs3 = BigDecimal(0)
-        var totalZgf3 = BigDecimal(0)
-        var totalGhf3 = BigDecimal(0)
-        var totalFxj3 = BigDecimal(0)
-
-        for (fee <- fees) {
-          if ("1".equals(fee.ctype)) {
-            totalCjje = fee.sumCjje
-            totalCjsl = fee.sumCjsl
-            totalYj1 = fee.sumYj
-            totalJsf1 = fee.sumJsf
-            totalYhs1 = fee.sumYhs
-            totalZgf1 = fee.sumZgf
-            totalGhf1 = fee.sumGhf
-            totalFxj1 = fee.sumFxj
-          } else if ("2".equals(fee.ctype)) {
-            totalYj2 = fee.sumYj
-            totalJsf2 = fee.sumJsf
-            totalYhs2 = fee.sumYhs
-            totalZgf2 = fee.sumZgf
-            totalGhf2 = fee.sumGhf
-            totalFxj2 = fee.sumFxj
-          } else if ("3".equals(fee.ctype)) {
-            totalYj3 = fee.sumYj
-            totalJsf3 = fee.sumJsf
-            totalYhs3 = fee.sumYhs
-            totalZgf3 = fee.sumZgf
-            totalGhf3 = fee.sumGhf
-            totalFxj3 = fee.sumFxj
-          }
-        }
+        var totalYj3 = fee3.sumYj
+        var totalJsf3 = fee3.sumJsf
+        var totalYhs3 = fee3.sumYhs
+        var totalZgf3 = fee3.sumZgf
+        var totalGhf3 = fee3.sumGhf
+        var totalFxj3 = fee3.sumFxj
 
         //判断取值逻辑
 
@@ -701,7 +697,8 @@ object SHGHPlus {
           ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm, FHGGAIN.formatted("%.2f"))
     }
 
-        Util.outputMySql(result.toDF(), "SHDZGH4")
+
+    Util.outputMySql(result.toDF(), "SHDZGH4")
     spark.stop()
 
   }
