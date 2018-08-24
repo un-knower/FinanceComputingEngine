@@ -1,5 +1,6 @@
 package com.yss.scala.guzhi
 
+import com.yss.scala.dto.{SHGHFee, ShangHaiGuoHu}
 import com.yss.scala.util.Util
 import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.hadoop.mapred.TextInputFormat
@@ -7,83 +8,19 @@ import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 import scala.math.BigDecimal.RoundingMode
 
-case class DGH000013(FDATE: String,
-                     FINDATE: String,
-                     FZQDM: String,
-                     FSZSH: String,
-                     FJYXWH: String,
-                     FBJE: String,
-                     FSJE: String,
-                     FBSL: String,
-                     FSSL: String,
-                     FBYJ: String,
-                     FSYJ: String,
-                     FBJSF: String,
-                     FSJSF: String,
-                     FBYHS: String,
-                     FSYHS: String,
-                     FBZGF: String,
-                     FSZGF: String,
-                     FBGHF: String,
-                     FSGHF: String,
-                     FBGZLX: String,
-                     FSGZLX: String,
-                     FHGGAIN: String,
-                     FBFXJ: String,
-                     FSFXJ: String,
-                     FBSFJE: String,
-                     FSSSJE: String,
-                     FZQBZ: String,
-                     FYWBZ: String,
-                     FQSBZ: String,
-                     FBQTF: String,
-                     FSQTF: String,
-                     ZQDM: String,
-                     FJYFS: String,
-                     FSH: String,
-                     FZZR: String,
-                     FCHK: String,
-                     FZLH: String,
-                     FTZBZ: String,
-                     FBQSGHF: String,
-                     FSQSGHF: String,
-                     FGDDM: String)
 
-/**
-  * var sumCjje = BigDecimal(0) //同一个申请编号总金额
-  * var sumCjsl = BigDecimal(0) //同一个申请编号总数量
-  * var sumYj = BigDecimal(0) //同一个申请编号总的佣金 （按成交记录）
-  * var sumJsf = BigDecimal(0) //同一个申请编号总的经手费
-  * var sumYhs = BigDecimal(0) //同一个申请编号总的印花税
-  * var sumZgf = BigDecimal(0) //同一个申请编号总的征管费
-  * var sumGhf = BigDecimal(0) //同一个申请编号总的过户费
-  * var sumFxj = BigDecimal(0) //同一个申请编号总的风险金
-  *
-  */
-case class Fee(ctype: String, sumCjje: BigDecimal, sumCjsl: BigDecimal, sumYj: BigDecimal, sumJsf: BigDecimal, sumYhs: BigDecimal, sumZgf: BigDecimal,
-               sumGhf: BigDecimal, sumFxj: BigDecimal)
 
 /**
   * @author ws
   * @version 2018-08-08
-  *          描述：上海大宗过户
+  *          描述：上海过户动态获取参数
   *          源文件：gdh.dbf
-  *          结果表：HZJKQS
+  *          结果表：SHDZGH
   */
-object SHDZGH3 {
+object SHGHPlus {
 
   def main(args: Array[String]): Unit = {
     doIt()
-  }
-
-  def test01() = {
-    //    val arr1 = Array("a", "b", "c")
-    //    println(arr1(0))
-    //    val str = arr1.sortWith((st1, str2) => st1 > str2)(0)
-    //    println(str)
-    //    val map1 = Map("中国"->1,"张三"->2)
-    //    println(map1("中国"))
-    println("20180810@600258@00001@D890786050@B@0000006112".split("@").length)
   }
 
 
@@ -92,28 +29,19 @@ object SHDZGH3 {
     import com.yss.scala.dbf._
 
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
-    //    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))
     val sc = spark.sparkContext
     //原始数据
     val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\data\\gh23341.dbf")
+    //    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))
 
-    //参数表
+    //参数表,编码格式的转换
     val csb = sc.hadoopFile("C:\\Users\\wuson\\Desktop\\new\\data\\参数.csv", classOf[TextInputFormat], classOf[LongWritable], classOf[Text])
       .map(pair => new String(pair._2.getBytes, 0, pair._2.getLength, "GBK"))
 
     //费率表
-    val flb = spark.read.format("csv")
-      .option("sep", ",")
-      .option("inferSchema", "false")
-      .option("header", "true")
-      .load("C:\\Users\\wuson\\Desktop\\new\\data\\交易利率.csv")
+    val flb = Util.readCSV("C:\\Users\\wuson\\Desktop\\new\\data\\交易利率.csv",spark)
     //佣金表
-    val yjb = spark.read.format("csv")
-      .option("sep", ",")
-      .option("inferSchema", "false")
-      .option("header", "true")
-      .load("C:\\Users\\wuson\\Desktop\\new\\data\\佣金利率.csv")
-
+    val yjb = Util.readCSV("C:\\Users\\wuson\\Desktop\\new\\data\\佣金利率.csv",spark)
 
     //定义分隔符
     val SEPARATE1 = "@"
@@ -169,15 +97,16 @@ object SHDZGH3 {
     }).collectAsMap()
 
     //将参数表，利率表，佣金表进行广播
-
     val csbValues = sc.broadcast(csbMap)
     val lvbValues = sc.broadcast(flbMap)
     val yjbValues = sc.broadcast(yjbMap)
 
-
     import spark.implicits._
 
-    //进行原始数据的计算
+    /**
+      *  原始数据转换1
+      *  key = 本次日期+证券代码+公司代码/交易席位+买卖+申请编号
+      */
     val value = df.rdd.map(row => {
       val bcrq = row.getAs[String]("BCRQ") //本次日期
       val zqdm = row.getAs[String]("ZQDM") //证券代码
@@ -190,6 +119,11 @@ object SHDZGH3 {
     }).groupByKey()
 
 
+    /**
+      *  原始数据转换1
+      *  key = 本次日期+证券代码+公司代码/交易席位+买卖
+      *  返回 各种费率以及是否参数
+      */
     val value1 = df.rdd.map(row => {
       val bcrq = row.getAs[String]("BCRQ") //本次日期
       val zqdm = row.getAs[String]("ZQDM") //证券代码
@@ -201,8 +135,10 @@ object SHDZGH3 {
       (key, row)
     }).groupByKey()
 
-    //获取所有的费率已经是否参数
-    // 2018-01-01@111@23341@B
+    /**获取所有的费率以及是否参数
+       key要求：本次日期@证券代码@交易席位@买卖方向
+       例如：2018-01-01@111@23341@B
+      */
     def getRate(key: String) = {
       val fields = key.split(SEPARATE1)
       val bs = fields(3) //买卖方向
@@ -271,8 +207,6 @@ object SHDZGH3 {
       val cs6 = csbValues.value("117计算佣金减去结算费")
       (bs, rateJS, rateJszk, rateYH, rateYhzk, rateZG, rateZgzk, rateGH, rateGhzk, rateFXJ, rateFxjzk, rateYJ, rateYjzk, minYj, cs1, cs2, cs3, cs4, cs6)
     }
-
-    //    println(getRate("2018-01-01@111@23341@B"))
 
     //第一种  每一笔交易单独计算，最后相加
     val fee1 = value1.map {
@@ -370,7 +304,7 @@ object SHDZGH3 {
           sumFxj = sumFxj.+(fx)
         }
 
-        (key, Fee("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
+        (key, SHGHFee("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
           sumGhf, sumFxj))
       }
     }
@@ -378,7 +312,7 @@ object SHDZGH3 {
     //第二种 相同申请编号的金额汇总*费率，各申请编号汇总后的金额相加
     val fee2 = value.map {
       case (key, values) => {
-        val fields = key.split("@")
+        val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
         val gsdm = fields(2) //交易席位
         val bcrq = fields(0) //本次日期
@@ -453,7 +387,7 @@ object SHDZGH3 {
         }
 
         (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs,
-          Fee("2", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
+          SHGHFee("2", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
             sumGhf2, sumFxj2))
       }
     }.groupByKey().map {
@@ -476,7 +410,7 @@ object SHDZGH3 {
           totalGhf2 += fee.sumGhf
           totalFxj2 += fee.sumFxj
         }
-        (key, Fee("2", totalCjje, totalCjsl, totalYj2, totalJsf2, totalYhs2, totalZgf2,
+        (key, SHGHFee("2", totalCjje, totalCjsl, totalYj2, totalJsf2, totalYhs2, totalZgf2,
           totalGhf2, totalFxj2))
     }
 
@@ -557,12 +491,13 @@ object SHDZGH3 {
           sumYj2 = sumYj2 - otherFee
         }
 
-        (key, Fee("3", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
+        (key, SHGHFee("3", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
           sumGhf2, sumFxj2))
       }
     }
 
 
+    //将三种结果串联起来
     val middle = fee1.union(fee2).union(fee3)
 
     //最终结果
@@ -756,14 +691,14 @@ object SHDZGH3 {
         val ftzbz = ""
         val FBQsghf = BigDecimal(0)
         val FSQsghf = BigDecimal(0)
-        val FGddm = fields(3)
+        val FGddm = ""
         val FHGGAIN = BigDecimal(0)
 
         //bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + gddm + SEPARATE1 + bs,
-        DGH000013(bcrq, bcrq, ZqDm, FSzsh, Fjyxwh, FBje.formatted("%.2f"), FSje.formatted("%.2f"), FBsl.formatted("%.2f"), FSsl.formatted("%.2f"), FByj.formatted("%.2f"),
+        ShangHaiGuoHu(bcrq, bcrq, ZqDm, FSzsh, Fjyxwh, FBje.formatted("%.2f"), FSje.formatted("%.2f"), FBsl.formatted("%.2f"), FSsl.formatted("%.2f"), FByj.formatted("%.2f"),
           FSyj.formatted("%.2f"), FBjsf.formatted("%.2f"), FSjsf.formatted("%.2f"), FByhs.formatted("%.2f"), FSyhs.formatted("%.2f"), FBzgf.formatted("%.2f"), FSzgf.formatted("%.2f"), FBghf.formatted("%.2f"), FSghf.formatted("%.2f"), FBgzlx.formatted("%.2f"),
-          FSgzlx.formatted("%.2f"), FHGGAIN.formatted("%.2f"), FBFxj.formatted("%.2f"), FSFxj.formatted("%.2f"), FBsfje.formatted("%.2f"), FSssje.formatted("%.2f"), FZqbz, FYwbz, FQsbz, FBQtf.formatted("%.2f"), FSQtf.formatted("%.2f"),
-          ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm)
+          FSgzlx.formatted("%.2f"), FBFxj.formatted("%.2f"), FSFxj.formatted("%.2f"), FBsfje.formatted("%.2f"), FSssje.formatted("%.2f"), FZqbz, FYwbz, FQsbz, FBQtf.formatted("%.2f"), FSQtf.formatted("%.2f"),
+          ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm, FHGGAIN.formatted("%.2f"))
     }
 
         Util.outputMySql(result.toDF(), "SHDZGH4")
