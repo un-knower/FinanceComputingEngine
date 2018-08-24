@@ -105,26 +105,27 @@ object SHGHPlus {
     val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
 
     //获取是否的参数
-    val cs1 = csbMap(CS1_KEY)
-    val cs3 = csbMap(CS3_KEY)
-    val cs4 = csbMap(CS4_KEY)
-    val cs6 = csbMap(CS6_KEY)
+    val cs1 = csbMap(CS1_KEY)  //是否开启佣金包含经手费，证管费
+    var cs2 = csbMap.getOrElse(CS2_KEY, NO) //是否开启上交所A股过户费按成交金额计算
+    val cs3 = csbMap(CS3_KEY)  //是否按千分之一费率计算过户费
+    val cs4 = csbMap(CS4_KEY)  //是否开启计算佣金减去风险金
+    val cs6 = csbMap(CS6_KEY)  //是否开启计算佣金减去结算费
 
     //获取计算参数
-    val con1 = csbMap(CON1_KEY)
-    val con2 = csbMap(CON2_KEY)
-    val con3 = csbMap(CON3_KEY)
-    val con4 = csbMap(CON4_KEY)
-    val con5 = csbMap(CON5_KEY)
-    val con7 = csbMap(CON7_KEY)
-    val con8 = csbMap(CON8_KEY)
+    val con1 = csbMap(CON1_KEY) //是否勾选按申请编号汇总计算经手费
+    val con2 = csbMap(CON2_KEY) //是否勾选按申请编号汇总计算征管费
+    val con3 = csbMap(CON3_KEY) //是否勾选按申请编号汇总计算过户费
+    val con4 = csbMap(CON4_KEY) //是否勾选按申请编号汇总计算印花税
+    val con5 = csbMap(CON5_KEY) //是否勾选H按申请编号汇总计算佣金
+    val con7 = csbMap(CON7_KEY) //是否勾选H按申请编号汇总计算风险金
+    val con8 = csbMap(CON8_KEY) //是否开启实际收付金额包含佣金
 
-    val con11 = csbMap(CON11_KEY)
-    val con12 = csbMap(CON12_KEY)
-    val con13 = csbMap(CON13_KEY)
-    val con14 = csbMap(CON14_KEY)
-    val con15 = csbMap(CON15_KEY)
-    val con17 = csbMap(CON17_KEY)
+    val con11 = csbMap(CON11_KEY) //是否开启按成交记录计算经手费
+    val con12 = csbMap(CON12_KEY) //是否开启按成交记录计算征管费
+    val con13 = csbMap(CON13_KEY) //是否开启按成交记录计算过户费
+    val con14 = csbMap(CON14_KEY) //是否开启按成交记录计算印花税
+    val con15 = csbMap(CON15_KEY) //是否开启H按成交记录计算佣金
+    val con17 = csbMap(CON17_KEY) //是否开启H按成交记录计算风险金
 
     //将佣金表转换成map结构
     val yjbMap = yjb.rdd.map(row => {
@@ -146,7 +147,6 @@ object SHGHPlus {
     }).collectAsMap()
 
     //将参数表，佣金表进行广播
-    val csbValues = sc.broadcast(csbMap)
     val yjbValues = sc.broadcast(yjbMap)
 
     import spark.implicits._
@@ -197,17 +197,7 @@ object SHGHPlus {
       val rateYJ = rateYJStr.split(SEPARATE1)(1)
       val rateYjzk = rateYJStr.split(SEPARATE1)(2)
       val minYj = rateYJStr.split(SEPARATE1)(3)
-
-      var cs2 = csbValues.value.getOrElse(CS2_KEY, NO)
-      if (!(NO.equals(cs2) || (YES).equals(cs2))) {
-        //如果时日期格式的话要比较日期 TODO日期格式的比较
-        if (bcrq.compareTo(cs2) > 0) {
-          cs2 = YES
-        } else {
-          cs2 = NO
-        }
-      }
-      (rateYJ, rateYjzk, minYj, cs2)
+      (rateYJ, rateYjzk, minYj)
     }
 
     //第一种  每一笔交易单独计算，最后相加
@@ -223,7 +213,6 @@ object SHGHPlus {
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
         val minYj: String = getRateResult._3
-        var cs2: String = getRateResult._4
 
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //总金额
@@ -252,6 +241,15 @@ object SHGHPlus {
           val fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP)
           //过户费的计算
           var ghf = BigDecimal(0)
+
+          if (!(NO.equals(cs2) || (YES).equals(cs2))) {
+            //如果时日期格式的话要比较日期 TODO日期格式的比较
+            if (bcrq.compareTo(cs2) > 0) {
+              cs2 = YES
+            } else {
+              cs2 = NO
+            }
+          }
           if (YES.equals(cs2)) {
             if (YES.equals(cs3)) {
               ghf = cjje.*(cjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
@@ -327,7 +325,6 @@ object SHGHPlus {
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
         val minYj: String = getRateResult._3
-        var cs2: String = getRateResult._4
 
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
         var sumCjsl = BigDecimal(0) //同一个申请编号总数量
@@ -350,6 +347,15 @@ object SHGHPlus {
         var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
         //同一个申请编号总的过户费
         var sumGhf2 = BigDecimal(0)
+
+        if (!(NO.equals(cs2) || (YES).equals(cs2))) {
+          //如果时日期格式的话要比较日期 TODO日期格式的比较
+          if (bcrq.compareTo(cs2) > 0) {
+            cs2 = YES
+          } else {
+            cs2 = NO
+          }
+        }
         if (YES.equals(cs2)) {
           if (YES.equals(cs3)) {
             sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
@@ -422,7 +428,6 @@ object SHGHPlus {
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
         val minYj: String = getRateResult._3
-        var cs2: String = getRateResult._4
 
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
@@ -446,6 +451,14 @@ object SHGHPlus {
         val sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
         //同一个申请编号总的过户费
         var sumGhf2 = BigDecimal(0)
+        if (!(NO.equals(cs2) || (YES).equals(cs2))) {
+          //如果时日期格式的话要比较日期 TODO日期格式的比较
+          if (bcrq.compareTo(cs2) > 0) {
+            cs2 = YES
+          } else {
+            cs2 = NO
+          }
+        }
         if (YES.equals(cs2)) {
           if (YES.equals(cs3)) {
             sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
