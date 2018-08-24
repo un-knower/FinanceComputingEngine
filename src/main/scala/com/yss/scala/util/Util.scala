@@ -5,7 +5,7 @@ import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
 import org.apache.spark.sql.{DataFrame, Dataset, SaveMode, SparkSession}
-
+import java.net.{InetAddress, ServerSocket, Socket}
 object Util {
 
   /**
@@ -28,6 +28,18 @@ object Util {
     */
   def getInputFilePath(fileName:String)={
     val hdfsDir = "hdfs://nscluster/yss/guzhi/"
+    val inputFilePath = hdfsDir+fileName
+    inputFilePath
+  }
+
+  /**
+    * 用于测试，获取文件本地输入路径
+    * @param fileName 文件输入名
+    */
+  def getInputLocalFilePath(fileName:String)={
+    val str: String = (InetAddress.getLocalHost()).getHostName()
+    val userName = str.split("-")(0)
+    val hdfsDir = "C:\\Users\\"+userName+"\\Desktop\\"
     val inputFilePath = hdfsDir+fileName
     inputFilePath
   }
