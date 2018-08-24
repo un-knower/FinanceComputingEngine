@@ -23,6 +23,20 @@ object Util {
   }
 
   /**
+    * 读取csv格式的数据
+    * @param path
+    * @param sparkSession
+    * @return
+    */
+  def readCSV(path:String,sparkSession:SparkSession) ={
+    sparkSession.read.format("csv")
+      .option("sep", ",")
+      .option("inferSchema", "false")
+      .option("header", "true")
+      .load(path)
+  }
+
+  /**
     * 获取文件输入路径
     * @param fileName 文件输入名
     */
