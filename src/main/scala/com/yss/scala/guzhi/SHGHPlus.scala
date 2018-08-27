@@ -183,9 +183,8 @@ object SHGHPlus {
 
     /** 获取佣金的费率
       * val gsdm = fields(2) //交易席位
-      * val bcrq = fields(0) //本次日期
       */
-    def getRate(gsdm: String, bcrq: String) = {
+    def getRate(gsdm: String) = {
       /**
         * 获取佣金费率
         * key=证券类别+市场+交易席位/公司代码
@@ -209,7 +208,7 @@ object SHGHPlus {
         val bcrq = fields(0) //本次日期
         val zqdm = fields(1) //证券代码
 
-        val getRateResult = getRate(gsdm, bcrq)
+        val getRateResult = getRate(gsdm)
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
         val minYj: String = getRateResult._3
@@ -321,7 +320,7 @@ object SHGHPlus {
         val zqdm = fields(1) //证券代码
         val otherFee = BigDecimal(0)
 
-        val getRateResult = getRate(gsdm, bcrq)
+        val getRateResult = getRate(gsdm)
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
         val minYj: String = getRateResult._3
@@ -423,7 +422,7 @@ object SHGHPlus {
         val bcrq = fields(0) //本次日期
         val zqdm = fields(1) //证券代码
 
-        val getRateResult = getRate(gsdm, bcrq)
+        val getRateResult = getRate(gsdm)
 
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
