@@ -82,6 +82,7 @@ object SHGHPlus {
     var rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + JSF, DEFORT_VALUE1)
     if (DEFORT_VALUE1.equals(rateJSstr)) rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + JSF, DEFORT_VALUE2)
     val rateJS = rateJSstr.split(SEPARATE1)(1)
+
     val rateJszk = rateJSstr.split(SEPARATE1)(2)
 
     var rateYHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + YHS, DEFORT_VALUE1)
@@ -146,7 +147,7 @@ object SHGHPlus {
       })(0)
     }).collectAsMap()
 
-    //将参数表，佣金表进行广播
+    //将佣金表进行广播
     val yjbValues = sc.broadcast(yjbMap)
 
     import spark.implicits._
@@ -497,6 +498,7 @@ object SHGHPlus {
     val middle = fee1.join(fee2).join(fee3)
 
     //最终结果
+
     val result = middle.map {
       case (key, ((fee1, fee2), fee3)) =>
         val fields = key.split(SEPARATE1)
