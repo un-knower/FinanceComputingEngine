@@ -60,7 +60,7 @@ object SHGHPlus {
       (key, value)
     }).groupByKey().mapValues(item => { //分组完成后进行排序取最大的启用日期的数据
       item.toArray.sortWith((str1, str2) => {
-        str1.split(SEPARATE1)(0) > str2.split(SEPARATE1)(0)
+        str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0
       })(0)
     }).collectAsMap()
 
@@ -106,11 +106,11 @@ object SHGHPlus {
     val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
 
     //获取是否的参数
-    val cs1 = csbMap(CS1_KEY)  //是否开启佣金包含经手费，证管费
+    val cs1 = csbMap(CS1_KEY) //是否开启佣金包含经手费，证管费
     var cs2 = csbMap.getOrElse(CS2_KEY, NO) //是否开启上交所A股过户费按成交金额计算
-    val cs3 = csbMap(CS3_KEY)  //是否按千分之一费率计算过户费
-    val cs4 = csbMap(CS4_KEY)  //是否开启计算佣金减去风险金
-    val cs6 = csbMap(CS6_KEY)  //是否开启计算佣金减去结算费
+    val cs3 = csbMap(CS3_KEY) //是否按千分之一费率计算过户费
+    val cs4 = csbMap(CS4_KEY) //是否开启计算佣金减去风险金
+    val cs6 = csbMap(CS6_KEY) //是否开启计算佣金减去结算费
 
     //获取计算参数
     val con1 = csbMap(CON1_KEY) //是否勾选按申请编号汇总计算经手费
@@ -143,7 +143,7 @@ object SHGHPlus {
       (key, value)
     }).groupByKey().mapValues(item => { //分组完成后进行排序取最大的启用日期的数据
       item.toArray.sortWith((str1, str2) => {
-        str1.split(SEPARATE1)(0) > str2.split(SEPARATE1)(0)
+        str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0
       })(0)
     }).collectAsMap()
 
@@ -633,7 +633,7 @@ object SHGHPlus {
           ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm, FHGGAIN.formatted("%.2f"))
     }
 
-    Util.outputMySql(result.toDF(), "SHDZGH5")
+    Util.outputMySql(result.toDF(), "SHDZGH2")
     spark.stop()
 
   }
