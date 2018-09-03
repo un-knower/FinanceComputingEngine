@@ -1,6 +1,6 @@
-package com.yss.scala.dto
+package com.yss.guzhi.sparkbuss.dto
 
-case class ShangHaiGuoHu(
+case class ShghDto(
                   FDATE: String,
                   FINDATE: String,
                   FZQDM: String,

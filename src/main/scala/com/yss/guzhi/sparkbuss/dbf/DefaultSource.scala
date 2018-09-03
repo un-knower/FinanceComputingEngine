@@ -1,4 +1,4 @@
-package com.yss.scala.dbf
+package com.yss.guzhi.sparkbuss.dbf
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.{BaseRelation, RelationProvider}

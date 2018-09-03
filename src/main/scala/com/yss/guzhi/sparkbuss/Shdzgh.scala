@@ -1,7 +1,7 @@
-package com.yss.scala.guzhi
+package com.yss.guzhi.sparkbuss
 
-import com.yss.scala.dto.ShghDto
-import com.yss.scala.util.Util
+import com.yss.guzhi.sparkbuss.dto.ShghDto
+import com.yss.guzhi.sparkbuss.util.Util
 import org.apache.spark.sql.SparkSession
 
 import scala.math.BigDecimal.RoundingMode
@@ -21,7 +21,7 @@ object Shdzgh {
   }
 
   private def doIt(): Unit = {
-    import com.yss.scala.dbf._
+    import com.yss.guzhi.sparkbuss.dbf._
 
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
 //    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))

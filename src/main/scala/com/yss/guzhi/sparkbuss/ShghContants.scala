@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.guzhi.sparkbuss
 
 /**
   * 上海过户的相关常量

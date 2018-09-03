@@ -1,7 +1,7 @@
-package com.yss.scala.guzhi
+package com.yss.guzhi.sparkbuss
 
 import java.util.Date
-import com.yss.scala.util.Util
+import com.yss.guzhi.sparkbuss.util.Util
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 

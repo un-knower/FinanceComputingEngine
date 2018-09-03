@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.guzhi.sparkbuss
 
 case class ExecutionAggrObj(
  Fdate:String ,//日期

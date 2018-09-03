@@ -1,4 +1,4 @@
-package com.yss.scala
+package com.yss.guzhi
 
 import org.apache.spark.sql.SQLContext
 

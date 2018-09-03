@@ -1,4 +1,4 @@
-package com.yss.scala.dto
+package com.yss.guzhi.sparkbuss.dto
 
 /**
   * ctype按何种方式计算的费率

@@ -1,13 +1,13 @@
-package com.yss.scala.guzhi
+package com.yss.guzhi.sparkbuss
 
-import com.yss.scala.dto.{SHGHFee, ShghDto}
-import com.yss.scala.util.Util
+import com.yss.guzhi.sparkbuss.dto.{SHGHFee, ShghDto}
+import com.yss.guzhi.sparkbuss.util.Util
 import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.hadoop.mapred.TextInputFormat
 import org.apache.spark.sql.SparkSession
 
 import scala.math.BigDecimal.RoundingMode
-import com.yss.scala.guzhi.ShghContants._
+import com.yss.guzhi.sparkbuss.ShghContants._
 
 /**
   * @author ws
@@ -25,7 +25,7 @@ object Shgh {
 
   private def doIt(): Unit = {
 
-    import com.yss.scala.dbf._
+    import com.yss.guzhi.sparkbuss.dbf._
 
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val sc = spark.sparkContext

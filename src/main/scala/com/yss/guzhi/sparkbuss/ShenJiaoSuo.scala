@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.guzhi.sparkbuss
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{DataFrame, SparkSession}
