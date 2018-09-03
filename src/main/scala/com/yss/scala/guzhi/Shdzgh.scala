@@ -1,6 +1,6 @@
 package com.yss.scala.guzhi
 
-import com.yss.scala.dto.ShangHaiGuoHu
+import com.yss.scala.dto.ShghDto
 import com.yss.scala.util.Util
 import org.apache.spark.sql.SparkSession
 
@@ -14,7 +14,7 @@ import scala.math.BigDecimal.RoundingMode
   *          源文件：gdh.dbf
   *          结果表：HZJKQS
   */
-object SHDZGH {
+object Shdzgh {
 
   def main(args: Array[String]): Unit = {
     doIt()
@@ -141,7 +141,7 @@ object SHDZGH {
         val FGddm = fields(3)
         val FHGGAIN = BigDecimal(0)
 
-        ShangHaiGuoHu(bcrq, bcrq, ZqDm, FSzsh, Fjyxwh, FBje.formatted("%.2f"), FSje.formatted("%.2f"), FBsl.formatted("%.2f"), FSsl.formatted("%.2f"), FByj.formatted("%.2f"),
+        ShghDto(bcrq, bcrq, ZqDm, FSzsh, Fjyxwh, FBje.formatted("%.2f"), FSje.formatted("%.2f"), FBsl.formatted("%.2f"), FSsl.formatted("%.2f"), FByj.formatted("%.2f"),
           FSyj.formatted("%.2f"), FBjsf.formatted("%.2f"), FSjsf.formatted("%.2f"), FByhs.formatted("%.2f"), FSyhs.formatted("%.2f"), FBzgf.formatted("%.2f"), FSzgf.formatted("%.2f"), FBghf.formatted("%.2f"), FSghf.formatted("%.2f"), FBgzlx.formatted("%.2f"),
           FSgzlx.formatted("%.2f"),  FBFxj.formatted("%.2f"), FSFxj.formatted("%.2f"), FBsfje.formatted("%.2f"), FSssje.formatted("%.2f"), FZqbz, FYwbz, FQsbz, FBQtf.formatted("%.2f"), FSQtf.formatted("%.2f"),
           ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm,FHGGAIN.formatted("%.2f"))

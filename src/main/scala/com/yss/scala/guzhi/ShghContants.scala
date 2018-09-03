@@ -3,7 +3,7 @@ package com.yss.scala.guzhi
 /**
   * 上海过户的相关常量
   */
-object SHGHContants {
+object ShghContants {
 
   //定义分隔符
   val SEPARATE1 = "@"
