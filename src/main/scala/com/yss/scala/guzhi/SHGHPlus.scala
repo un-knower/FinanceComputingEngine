@@ -79,7 +79,7 @@ object SHGHPlus {
       * value = 启用日期+利率+折扣
       * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
       */
-    var rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + JSF, DEFORT_VALUE1)
+    var rateJSstr = flbMap.getOrElse(ZC LB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + JSF, DEFORT_VALUE1)
     if (DEFORT_VALUE1.equals(rateJSstr)) rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + JSF, DEFORT_VALUE2)
     val rateJS = rateJSstr.split(SEPARATE1)(1)
     val rateJszk = rateJSstr.split(SEPARATE1)(2)
