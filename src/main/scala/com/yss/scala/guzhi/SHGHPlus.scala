@@ -60,7 +60,7 @@ object SHGHPlus {
       (key, value)
     }).groupByKey().mapValues(item => { //分组完成后进行排序取最大的启用日期的数据
       item.toArray.sortWith((str1, str2) => {
-        str1.split(SEPARATE1)(0) > str2.split(SEPARATE1)(0)
+        str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0
       })(0)
     }).collectAsMap()
 
@@ -82,6 +82,7 @@ object SHGHPlus {
     var rateJSstr = flbMap.getOrElse(ZC LB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + JSF, DEFORT_VALUE1)
     if (DEFORT_VALUE1.equals(rateJSstr)) rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + JSF, DEFORT_VALUE2)
     val rateJS = rateJSstr.split(SEPARATE1)(1)
+
     val rateJszk = rateJSstr.split(SEPARATE1)(2)
 
     var rateYHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + YHS, DEFORT_VALUE1)
@@ -105,11 +106,11 @@ object SHGHPlus {
     val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
 
     //获取是否的参数
-    val cs1 = csbMap(CS1_KEY)  //是否开启佣金包含经手费，证管费
+    val cs1 = csbMap(CS1_KEY) //是否开启佣金包含经手费，证管费
     var cs2 = csbMap.getOrElse(CS2_KEY, NO) //是否开启上交所A股过户费按成交金额计算
-    val cs3 = csbMap(CS3_KEY)  //是否按千分之一费率计算过户费
-    val cs4 = csbMap(CS4_KEY)  //是否开启计算佣金减去风险金
-    val cs6 = csbMap(CS6_KEY)  //是否开启计算佣金减去结算费
+    val cs3 = csbMap(CS3_KEY) //是否按千分之一费率计算过户费
+    val cs4 = csbMap(CS4_KEY) //是否开启计算佣金减去风险金
+    val cs6 = csbMap(CS6_KEY) //是否开启计算佣金减去结算费
 
     //获取计算参数
     val con1 = csbMap(CON1_KEY) //是否勾选按申请编号汇总计算经手费
@@ -142,11 +143,11 @@ object SHGHPlus {
       (key, value)
     }).groupByKey().mapValues(item => { //分组完成后进行排序取最大的启用日期的数据
       item.toArray.sortWith((str1, str2) => {
-        str1.split(SEPARATE1)(0) > str2.split(SEPARATE1)(0)
+        str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0
       })(0)
     }).collectAsMap()
 
-    //将参数表，佣金表进行广播
+    //将佣金表进行广播
     val yjbValues = sc.broadcast(yjbMap)
 
     import spark.implicits._
@@ -183,9 +184,8 @@ object SHGHPlus {
 
     /** 获取佣金的费率
       * val gsdm = fields(2) //交易席位
-      * val bcrq = fields(0) //本次日期
       */
-    def getRate(gsdm: String, bcrq: String) = {
+    def getRate(gsdm: String) = {
       /**
         * 获取佣金费率
         * key=证券类别+市场+交易席位/公司代码
@@ -209,7 +209,7 @@ object SHGHPlus {
         val bcrq = fields(0) //本次日期
         val zqdm = fields(1) //证券代码
 
-        val getRateResult = getRate(gsdm, bcrq)
+        val getRateResult = getRate(gsdm)
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
         val minYj: String = getRateResult._3
@@ -321,7 +321,7 @@ object SHGHPlus {
         val zqdm = fields(1) //证券代码
         val otherFee = BigDecimal(0)
 
-        val getRateResult = getRate(gsdm, bcrq)
+        val getRateResult = getRate(gsdm)
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
         val minYj: String = getRateResult._3
@@ -423,7 +423,7 @@ object SHGHPlus {
         val bcrq = fields(0) //本次日期
         val zqdm = fields(1) //证券代码
 
-        val getRateResult = getRate(gsdm, bcrq)
+        val getRateResult = getRate(gsdm)
 
         val rateYJ: String = getRateResult._1
         val rateYjzk: String = getRateResult._2
@@ -498,6 +498,7 @@ object SHGHPlus {
     val middle = fee1.join(fee2).join(fee3)
 
     //最终结果
+
     val result = middle.map {
       case (key, ((fee1, fee2), fee3)) =>
         val fields = key.split(SEPARATE1)
@@ -632,7 +633,7 @@ object SHGHPlus {
           ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm, FHGGAIN.formatted("%.2f"))
     }
 
-    Util.outputMySql(result.toDF(), "SHDZGH5")
+    Util.outputMySql(result.toDF(), "SHDZGH2")
     spark.stop()
 
   }
