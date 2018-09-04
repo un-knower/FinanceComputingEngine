@@ -1,4 +1,4 @@
-package com.yss.guzhi
+package com.yss.guzhi.sparkbuss
 
 import org.apache.spark.sql.SQLContext
 

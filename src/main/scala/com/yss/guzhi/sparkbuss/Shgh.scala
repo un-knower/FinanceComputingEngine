@@ -1,6 +1,6 @@
 package com.yss.guzhi.sparkbuss
 
-import com.yss.guzhi.sparkbuss.dto.{SHGHFee, ShghDto}
+import com.yss.guzhi.sparkbuss.dto.{ShghFee, ShghDto}
 import com.yss.guzhi.sparkbuss.util.Util
 import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.hadoop.mapred.TextInputFormat
@@ -322,7 +322,7 @@ object Shgh {
           sumYj = BigDecimal(minYj)
         }
 
-        (key, SHGHFee("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
+        (key, ShghFee("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
           sumGhf, sumFxj))
       }
     }
@@ -413,7 +413,7 @@ object Shgh {
         }
 
         (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs,
-          SHGHFee("2", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
+          ShghFee("2", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
             sumGhf2, sumFxj2))
       }
     }.groupByKey().map {
@@ -436,7 +436,7 @@ object Shgh {
           totalGhf2 += fee.sumGhf
           totalFxj2 += fee.sumFxj
         }
-        (key, SHGHFee("2", totalCjje, totalCjsl, totalYj2, totalJsf2, totalYhs2, totalZgf2,
+        (key, ShghFee("2", totalCjje, totalCjsl, totalYj2, totalJsf2, totalYhs2, totalZgf2,
           totalGhf2, totalFxj2))
     }
 
@@ -524,7 +524,7 @@ object Shgh {
           sumYj2 = BigDecimal(minYj)
         }
 
-        (key, SHGHFee("3", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
+        (key, ShghFee("3", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
           sumGhf2, sumFxj2))
       }
     }
