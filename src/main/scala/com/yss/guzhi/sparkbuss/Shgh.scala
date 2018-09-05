@@ -1,6 +1,6 @@
 package com.yss.guzhi.sparkbuss
 
-import com.yss.guzhi.sparkbuss.dto.{ShghFee, ShghDto}
+import com.yss.guzhi.sparkbuss.dto.{ShghDto, ShghFee, ShghYssj}
 import com.yss.guzhi.sparkbuss.util.Util
 import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.hadoop.mapred.TextInputFormat
@@ -8,6 +8,8 @@ import org.apache.spark.sql.SparkSession
 
 import scala.math.BigDecimal.RoundingMode
 import com.yss.guzhi.sparkbuss.ShghContants._
+
+import scala.collection.mutable
 
 /**
   * @author ws
@@ -19,9 +21,22 @@ import com.yss.guzhi.sparkbuss.ShghContants._
 object Shgh {
 
   def main(args: Array[String]): Unit = {
-    doIt()
+    test01()
   }
 
+  def test01() = {
+    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
+    val csjjxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSJJXX_201809051144.csv", spark)
+    val csjjxxMap =  new mutable.HashMap[String,Array[String]]
+    for (elem <- csjjxx.columns) {
+      val values = csjjxx.select(elem).rdd.map(row => String.valueOf(row.get(0))).collect()
+      csjjxxMap.+=((elem,values))
+    }
+    println(csjjxxMap("FZQDMETF1").contains("510051"))
+    println(csjjxxMap("FZQDMETF2").contains("510052"))
+    println(csjjxxMap("FZQDMETF3").contains("510053"))
+    println(csjjxxMap("FZQDMETF4").contains("510054"))
+  }
 
   private def doIt(): Unit = {
 
@@ -51,30 +66,6 @@ object Shgh {
       val value = fields(1) //参数值
       (key, value)
     }).collectAsMap()
-
-
-    //获取是否的参数
-    val cs1 = csbMap(CS1_KEY) //是否开启佣金包含经手费，证管费
-    var cs2 = csbMap.getOrElse(CS2_KEY, NO) //是否开启上交所A股过户费按成交金额计算
-    val cs3 = csbMap(CS3_KEY) //是否按千分之一费率计算过户费
-    val cs4 = csbMap(CS4_KEY) //是否开启计算佣金减去风险金
-    val cs6 = csbMap(CS6_KEY) //是否开启计算佣金减去结算费
-
-    //获取计算参数
-    val con1 = csbMap(CON1_KEY) //是否勾选按申请编号汇总计算经手费
-    val con2 = csbMap(CON2_KEY) //是否勾选按申请编号汇总计算征管费
-    val con3 = csbMap(CON3_KEY) //是否勾选按申请编号汇总计算过户费
-    val con4 = csbMap(CON4_KEY) //是否勾选按申请编号汇总计算印花税
-    val con5 = csbMap(CON5_KEY) //是否勾选H按申请编号汇总计算佣金
-    val con7 = csbMap(CON7_KEY) //是否勾选H按申请编号汇总计算风险金
-    val con8 = csbMap(CON8_KEY) //是否开启实际收付金额包含佣金
-
-    val con11 = csbMap(CON11_KEY) //是否开启按成交记录计算经手费
-    val con12 = csbMap(CON12_KEY) //是否开启按成交记录计算征管费
-    val con13 = csbMap(CON13_KEY) //是否开启按成交记录计算过户费
-    val con14 = csbMap(CON14_KEY) //是否开启按成交记录计算印花税
-    val con15 = csbMap(CON15_KEY) //是否开启H按成交记录计算佣金
-    val con17 = csbMap(CON17_KEY) //是否开启H按成交记录计算风险金
 
     //将佣金表转换成map结构
     val yjbMapValues = yjb.rdd.map(row => {
@@ -117,11 +108,249 @@ object Shgh {
       })
     }).collectAsMap()
 
-
     //将佣金表进行广播
     val yjbValues = sc.broadcast(yjbMapValues)
     val flbValues = sc.broadcast(flbMapValue)
 
+    //读取基金信息表，并转换成map结构
+    val csjjxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSJJXX_201809051144.csv", spark)
+    val csjjxxMap =  new mutable.HashMap[String,Array[String]]
+    for (elem <- csjjxx.columns) {
+      val values = csjjxx.select(elem).rdd.map(row => String.valueOf(row.get(0))).collect()
+      csjjxxMap.+=((elem,values))
+    }
+    val csjjxxValues = sc.broadcast(csjjxxMap)
+    val csbValues = sc.broadcast(csbMap)
+
+    /**
+      * 获取证券标志
+      *
+      * @param zqdm 证券代码
+      * @param cjjg 成交金额
+      * @return
+      */
+    def getZqbz(zqdm: String, cjjg: String): String = {
+      if (zqdm.startsWith("6")) {
+        if (zqdm.startsWith("609")) return "CDRGP"
+        else return "GP"
+      }
+      if (zqdm.startsWith("5")) {
+        if (cjjg.equals("0")) {
+          if(csjjxxValues.value("FZQDMETF1").contains(zqdm)) return "EJDM"
+          if(csjjxxValues.value("FZQDMETF2").contains(zqdm)) return "XJTD"
+          if(csjjxxValues.value("FZQDMETF5").contains(zqdm)) return "XJTD_KSC"
+        } else return "JJ"
+      }
+      if (zqdm.startsWith("0") || zqdm.startsWith("1")) return "ZQ"
+      if (zqdm.startsWith("20")) return "HG"
+      if (zqdm.startsWith("58")) return "QZ"
+      if (zqdm.startsWith("712") || zqdm.startsWith("730") || zqdm.startsWith("731")
+        || zqdm.startsWith("732") || zqdm.startsWith("780") || zqdm.startsWith("734")
+        || zqdm.startsWith("740") || zqdm.startsWith("790")) return "XG"
+      if (zqdm.startsWith("742")) return "QY"
+      if (zqdm.startsWith("714") || zqdm.startsWith("760") || zqdm.startsWith("781")) {
+        //TODO  zqdm为配股股票(csqyxx表中有维护)
+        return "XG"
+      }
+      if (zqdm.startsWith("73")) return "XG"
+      if (zqdm.startsWith("70")) {
+        if ("100".equals(cjjg)) return "XZ"
+        //TODO  zqdm为配股股票(csqyxx表中有维护)
+        return "XG"
+      }
+      null
+    }
+
+    /**
+      * 获取业务标识
+      *
+      * @param zqbz 证券标识
+      * @param zqdm 证券代码
+      * @param cjjg 成交金额
+      * @param bs   买卖
+      * @return
+      */
+    def getYwbz(zqbz: String, zqdm: String, cjjg: String, bs: String): String = {
+      if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
+        //TODO  GP或CDRGP
+//        val condition = csbValues.value(tzh+"指数、指标股票按特殊科目设置页面处理")
+//        if("1".equals(condition)){
+//
+//        }
+        return "PT"
+      }
+      if ("EJDM".equals(zqbz) || "XJTD".equals(zqbz) || "XJTD_KSC".equals(zqbz)) {
+        if ("B".equals(bs)) return "ETFSG"
+        else return "ETFSH"
+      }
+      if ("JJ".equals(zqbz)) {
+        if (zqdm.startsWith("501") || zqdm.startsWith("502")) return "LOF"
+        if (zqdm.startsWith("518")) return "HJETF"
+        //TODO
+      }
+      if ("ZQ".equals(zqbz)) {
+        //TODO
+        if (zqdm.startsWith("0")) {
+          if (zqdm.startsWith("018")) return "JRZQ_ZCX"
+          else return "GZXQ"
+        }
+        if (zqdm.startsWith("1")) {
+          if (zqdm.startsWith("10") || zqdm.startsWith("11")) return "KZZ"
+          if (zqdm.startsWith("121") || zqdm.startsWith("131")) return "ZCZQ"
+          //TODO zqdm符合正则表达式：123[0-4][0-9]{2}
+          if (zqdm.startsWith("137")) return "KJHSMZQ"
+          if (zqbz.startsWith("130") || zqdm.startsWith("140") || zqdm.startsWith("147")) return "DFZQ"
+          if (zqdm.startsWith("132") && "0".equals(cjjg)) return "KJHGSZQ"
+          if ("0".equals(cjjg)) return "KZZGP"
+          if (zqdm.startsWith("132")) return "KJHGSZQ"
+          //TODO CSZQXX表中维护了类型为FLKZZ的债券代码
+          return "QYZQ"
+        }
+        if ("HG".equals(zqbz)) {
+          if ("B".equals(bs)) {
+            if (zqdm.startsWith("201") || zqdm.startsWith("203")
+              || zqdm.startsWith("204") || zqdm.startsWith("205")) return "MCHG"
+            else if (zqdm.startsWith("22")) return "MCHG_QY"
+            else return "MC"
+          } else {
+            if (zqdm.startsWith("201") || zqdm.startsWith("203")
+              || zqdm.startsWith("204") || zqdm.startsWith("205")) return "MRHG"
+            else if (zqdm.startsWith("22")) return "MRHG_QY"
+            else return "MR"
+          }
+        }
+        if ("QZ".equals(zqbz)) {
+          val last = zqdm.substring(zqdm.length - 3)
+          if (zqdm.startsWith("580")) {
+            if (last >= "000" && last <= "999") return "RGQZ"
+            else return "RZQZ"
+          } else {
+            if (last >= "000" && last <= "999") return "RGQZXQ"
+            else return "RZQZXQ"
+          }
+        }
+        if ("XG".equals(zqbz)) {
+          if (zqdm.startsWith("734") || zqdm.startsWith("740") || zqdm.startsWith("790")) {
+            if ("B".equals(bs)) return "XGSG"
+            else return "XGFK"
+          }
+          if (zqdm.startsWith("730") || zqdm.startsWith("732") || zqdm.startsWith("780")) return "XGZQ"
+          if (zqdm.startsWith("712") || zqdm.startsWith("731")) return "XGZF"
+          if (zqdm.startsWith("783")) return "KZZZQ"
+          if (zqdm.startsWith("753") || zqdm.startsWith("762") || zqdm.startsWith("764")) return "KZZXZ"
+          if (zqdm.startsWith("714") || zqdm.startsWith("760") || zqdm.startsWith("781") || zqdm.startsWith("70")) {
+            //TODO zqdm以714,760,781或70开头
+          }
+          if (zqdm.startsWith("73")) return "SHZQ"
+        }
+        if ("XZ".equals(zqbz)) {
+          if (zqdm.startsWith("743") || zqdm.startsWith("793")) {
+            if ("B".equals(bs)) return "KZZSG"
+            else return "KZZFK"
+          }
+          if (zqdm.startsWith("783")) return "KZZZQ"
+          if (zqdm.startsWith("753") || zqdm.startsWith("762") || zqdm.startsWith("764")) return "KZZXZ"
+          if (zqdm.startsWith("751")) return "QYZQXZ"
+          if (zqdm.startsWith("70") && "100".equals(cjjg)) return "KZZXZ"
+        }
+        if ("QY".equals(zqbz)) {
+          if (zqdm.startsWith("714") || zqdm.startsWith("760") || zqdm.startsWith("781")
+            || zqdm.startsWith("742") || zqdm.startsWith("70")) {
+            //TODO
+            return "PG"
+          }
+        }
+      }
+      null
+    }
+
+    /**
+      * 转换证券代码
+      *
+      * @param zqdm 证券代码
+      * @param cjjg 成交金额
+      * @return
+      */
+    def getZqdm(zqdm: String, cjjg: String): String = {
+      val other3 = zqdm.substring(3)
+      val other1 = zqdm.substring(1)
+      if (zqdm.startsWith("730") || zqdm.startsWith("731") || zqdm.startsWith("737")) return "600" + other3
+      if (zqdm.startsWith("732") || zqdm.startsWith("742")) return "603" + other3
+      if (zqdm.startsWith("760") || zqdm.startsWith("780") || zqdm.startsWith("781")) return "601" + other3
+      if (zqdm.startsWith("712") || zqdm.startsWith("714")) return "609" + other3
+      if (zqdm.startsWith("733") || zqdm.startsWith("743")) return "110" + other3
+      if (zqdm.startsWith("753") || zqdm.startsWith("762") || zqdm.startsWith("764")
+        || zqdm.startsWith("783") || zqdm.startsWith("793")) return "113" + other3
+      if (zqdm.startsWith("751")) return "112" + other3
+      if (zqdm.startsWith("739")) return "002" + other3
+      if (zqdm.startsWith("70") && cjjg.equals("100")) return "110" + other3
+      if (zqdm.startsWith("70")) return "6" + other1
+      zqdm
+    }
+
+    /**
+      * 转换cjje
+      *
+      * @param zqdm
+      * @param cjjg
+      * @return
+      */
+    def getCjsl(zqdm: String, cjjg: String, cjsl: String): String = {
+      if (zqdm.startsWith("0") || zqdm.startsWith("1") || zqdm.startsWith("2")
+        || zqdm.startsWith("733") || zqdm.startsWith("743") || zqdm.startsWith("783")
+        || zqdm.startsWith("751") || zqdm.startsWith("753") || zqdm.startsWith("762")
+        || zqdm.startsWith("764") || (zqdm.startsWith("70") && cjjg.equals("100"))) {
+        return BigDecimal(cjsl).*(BigDecimal(10)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+      }
+      cjsl
+    }
+
+    /**
+      * 转换
+      **/
+    def getCjje(zqdm: String, zqbz: String, ywbz: String, cjje: String, cjsl: String, cjjg: String): String = {
+      if ("JJ".equals(zqbz)) {
+        if ("ETFRG".equals(ywbz) || "ETFFK".equals(ywbz) || "ETFRGZQ".equals(ywbz))
+          return BigDecimal(cjsl).*(BigDecimal(cjjg)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+      }
+      //TODO  基金类型=3
+      //TODO 上交所新一代接口
+      if ("ZQ".equals(zqbz)) {
+        if ("KJHSMZQ".equals(ywbz) || "KJHGSZQ".equals(ywbz)) {
+          //TODO
+        }
+      }
+      return cjje
+    }
+
+    //TODO 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
+    val dffs = df.rdd.map(row => {
+      val gddm = row.getAs[String]("GDDM")
+      val gdxw = row.getAs[String]("GDXW")
+      val bcrq = row.getAs[String]("BCRQ")
+      val cjbh = row.getAs[String]("CJBH")
+      var gsdm = row.getAs[String]("GSDM")
+      val cjsl = row.getAs[String]("CJSL")
+      val bcye = row.getAs[String]("BCYE")
+      var zqdm = row.getAs[String]("ZQDM")
+      val sbsj = row.getAs[String]("SBSJ")
+      val cjsj = row.getAs[String]("CJSJ")
+      val cjjg = row.getAs[String]("CJJG")
+      val cjje = row.getAs[String]("CJJE")
+      val sqbh = row.getAs[String]("SQBH")
+      val bs = row.getAs[String]("BS")
+      val mjbh = row.getAs[String]("MJBH")
+      val zqbz = getZqbz(zqdm, cjjg)
+      val ywbz = getYwbz(zqbz, zqdm, cjjg, bs)
+      zqdm = getZqdm(zqdm, cjjg)
+      //gsdm不够5位补0
+      var length = gsdm.length
+      while (length < 5) {
+        gsdm = "0" + gsdm
+        length += 1
+      }
+      ShghYssj(gddm, gdxw, bcrq, cjbh, gsdm, cjsj, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz)
+    })
 
     import spark.implicits._
     /**
@@ -154,10 +383,19 @@ object Shgh {
       (key, row)
     }).groupByKey()
 
-    /** 获取佣金的费率
-      * val gsdm = fields(2) //交易席位
+    /**
+      * 获取公共费率和佣金费率
+      *
+      * @param gsdm  交易席位/公司代码
+      * @param bcrq  处理日期
+      * @param ywbz  业务标识
+      * @param zqbz  证券标识
+      * @param zyzch 专用资产号
+      * @param gyzch 公用资产号
+      * @return
       */
-    def getRate(gsdm: String,bcrq:String) = {
+    def getRate(gsdm: String, bcrq: String, ywbz: String, zqbz: String, zyzch: String, gyzch: String) = {
+      //为了获取启动日期小于等于处理日期的参数
       val flbMap = flbValues.value.mapValues(items => items.partition(_.split(SEPARATE1)(0).compareTo(bcrq) <= 0)._1(0))
       val yjMap = yjbValues.value.mapValues(items => items.partition(_.split(SEPARATE1)(0).compareTo(bcrq) <= 0)._1(0))
 
@@ -167,28 +405,28 @@ object Shgh {
         * value = 启用日期+利率+折扣
         * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
         */
-      var rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + JSF, DEFORT_VALUE1)
-      if (DEFORT_VALUE1.equals(rateJSstr)) rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + JSF, DEFORT_VALUE2)
+      var rateJSstr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + zyzch + SEPARATE1 + JSF, DEFORT_VALUE1)
+      if (DEFORT_VALUE1.equals(rateJSstr)) rateJSstr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gyzch + SEPARATE1 + JSF, DEFORT_VALUE2)
       val rateJS = rateJSstr.split(SEPARATE1)(1)
       val rateJszk = rateJSstr.split(SEPARATE1)(2)
 
-      var rateYHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + YHS, DEFORT_VALUE1)
-      if (DEFORT_VALUE1.equals(rateYHStr)) rateYHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + YHS, DEFORT_VALUE2)
+      var rateYHStr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + zyzch + SEPARATE1 + YHS, DEFORT_VALUE1)
+      if (DEFORT_VALUE1.equals(rateYHStr)) rateYHStr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gyzch + SEPARATE1 + YHS, DEFORT_VALUE2)
       val rateYH = rateYHStr.split(SEPARATE1)(1)
       val rateYhzk = rateYHStr.split(SEPARATE1)(2)
 
-      var rateZGStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + ZGF, DEFORT_VALUE1)
-      if (DEFORT_VALUE1.equals(rateZGStr)) rateZGStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + ZGF, DEFORT_VALUE2)
+      var rateZGStr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + zyzch + SEPARATE1 + ZGF, DEFORT_VALUE1)
+      if (DEFORT_VALUE1.equals(rateZGStr)) rateZGStr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gyzch + SEPARATE1 + ZGF, DEFORT_VALUE2)
       val rateZG = rateZGStr.split(SEPARATE1)(1)
       val rateZgzk = rateZGStr.split(SEPARATE1)(2)
 
-      var rateGHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + GHF, DEFORT_VALUE1)
-      if (DEFORT_VALUE1.equals(rateGHStr)) rateGHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + GHF, DEFORT_VALUE2)
+      var rateGHStr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + zyzch + SEPARATE1 + GHF, DEFORT_VALUE1)
+      if (DEFORT_VALUE1.equals(rateGHStr)) rateGHStr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gyzch + SEPARATE1 + GHF, DEFORT_VALUE2)
       val rateGH = rateGHStr.split(SEPARATE1)(1)
       val rateGhzk = rateGHStr.split(SEPARATE1)(2)
 
-      var rateFXJStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + FXJ, DEFORT_VALUE1)
-      if (DEFORT_VALUE1.equals(rateFXJStr)) rateFXJStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + FXJ, DEFORT_VALUE2)
+      var rateFXJStr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + zyzch + SEPARATE1 + FXJ, DEFORT_VALUE1)
+      if (DEFORT_VALUE1.equals(rateFXJStr)) rateFXJStr = flbMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gyzch + SEPARATE1 + FXJ, DEFORT_VALUE2)
       val rateFXJ = rateFXJStr.split(SEPARATE1)(1)
       val rateFxjzk = rateFXJStr.split(SEPARATE1)(2)
 
@@ -197,48 +435,106 @@ object Shgh {
         * key=证券类别+市场+交易席位/公司代码
         * value=启用日期+利率+折扣+最低佣金值
         */
-      // var rateYJStr = yjbValues.value.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + gddm, DEFORT_VALUE1)
+      // var rateYJStr = yjbValues.value.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gddm, DEFORT_VALUE1)
       // if (DEFORT_VALUE1.eq(rateYJStr))
-      val rateYJStr = yjMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + gsdm, DEFORT_VALUE3)
+      val rateYJStr = yjMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gsdm, DEFORT_VALUE3)
       val rateYJ = rateYJStr.split(SEPARATE1)(1)
       val rateYjzk = rateYJStr.split(SEPARATE1)(2)
       val minYj = rateYJStr.split(SEPARATE1)(3)
-      (rateJS,rateJszk,rateYH,rateYhzk,rateZG,rateZgzk,rateGH,rateGhzk,rateFXJ,rateFxjzk,rateYJ, rateYjzk, minYj)
+      (rateJS, rateJszk, rateYH, rateYhzk, rateZG, rateZgzk, rateGH, rateGhzk, rateFXJ, rateFxjzk, rateYJ, rateYjzk, minYj)
+    }
+
+    /**
+      * 根据套账号获取公共参数
+      *
+      * @param tzh 套账号
+      **/
+    def getGgcs(tzh: String) = {
+      //获取是否的参数
+      val cs1 = csbValues.value(tzh + CS1_KEY) //是否开启佣金包含经手费，证管费
+      var cs2 = csbMap.getOrElse(tzh + CS2_KEY, NO) //是否开启上交所A股过户费按成交金额计算
+      val cs3 = csbValues.value(tzh + CS3_KEY) //是否按千分之一费率计算过户费
+      val cs4 = csbValues.value(tzh + CS4_KEY) //是否开启计算佣金减去风险金
+      val cs5 = csbValues.value(tzh + CS6_KEY) //是否开启计算佣金减去结算费
+      (cs1, cs2, cs3, cs4, cs5)
+    }
+
+    /**
+      * 根据套账号获取计算参数
+      *
+      * @param tzh 套账号
+      * @return
+      */
+    def getJsgz(tzh: String) = {
+      val cs6 = csbValues.value(tzh + CON8_KEY) //是否开启实际收付金额包含佣金
+
+      //获取计算参数
+      val con1 = csbValues.value(tzh + CON1_KEY) //是否勾选按申请编号汇总计算经手费
+      val con2 = csbValues.value(tzh + CON2_KEY) //是否勾选按申请编号汇总计算征管费
+      val con3 = csbValues.value(tzh + CON3_KEY) //是否勾选按申请编号汇总计算过户费
+      val con4 = csbValues.value(tzh + CON4_KEY) //是否勾选按申请编号汇总计算印花税
+      val con5 = csbValues.value(tzh + CON5_KEY) //是否勾选H按申请编号汇总计算佣金
+      val con6 = csbValues.value(tzh + CON7_KEY) //是否勾选H按申请编号汇总计算风险金
+
+      val con7 = csbValues.value(tzh + CON11_KEY) //是否开启按成交记录计算经手费
+      val con8 = csbValues.value(tzh + CON12_KEY) //是否开启按成交记录计算征管费
+      val con9 = csbValues.value(tzh + CON13_KEY) //是否开启按成交记录计算过户费
+      val con10 = csbValues.value(tzh + CON14_KEY) //是否开启按成交记录计算印花税
+      val con11 = csbValues.value(tzh + CON15_KEY) //是否开启H按成交记录计算佣金
+      val con12 = csbValues.value(tzh + CON17_KEY) //是否开启H按成交记录计算风险金
+      (cs6, con1, con2, con3, con4, con5, con6, con7, con8, con9, con10, con11, con12)
+    }
+
+    /**
+      * 获取套账号和资产类型
+      *
+      * @param gddm
+      */
+    def getOtherInfo(gddm: String) = {
+
     }
 
     //第一种  每一笔交易单独计算，最后相加
     val fee1 = value1.map {
-      case (key, values) => {
+      case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-        val gsdm = fields(2) //交易席位
-        val bcrq = fields(0) //本次日期
-        val zqdm = fields(1) //证券代码
+      val gsdm = fields(2) //交易席位
+      val bcrq = fields(0) //本次日期
+      val zqdm = fields(1) //证券代码
 
-        val getRateResult = getRate(gsdm,bcrq)
-        val rateJS:String = getRateResult._1
-        val rateJszk:String = getRateResult._2
-        val rateYH:String = getRateResult._3
-        val rateYhzk:String = getRateResult._4
-        val rateZG:String = getRateResult._5
-        val rateZgzk:String = getRateResult._6
-        val rateGH:String = getRateResult._7
-        val rateGhzk:String = getRateResult._8
-        val rateFXJ:String = getRateResult._9
-        val rateFxjzk:String = getRateResult._10
+        //        getZqbz()
+        val getRateResult = getRate(gsdm, bcrq, ZCLB, ZCLB, ZYZCH, GYZCH)
+        val rateJS: String = getRateResult._1
+        val rateJszk: String = getRateResult._2
+        val rateYH: String = getRateResult._3
+        val rateYhzk: String = getRateResult._4
+        val rateZG: String = getRateResult._5
+        val rateZgzk: String = getRateResult._6
+        val rateGH: String = getRateResult._7
+        val rateGhzk: String = getRateResult._8
+        val rateFXJ: String = getRateResult._9
+        val rateFxjzk: String = getRateResult._10
         val rateYJ: String = getRateResult._11
         val rateYjzk: String = getRateResult._12
         val minYj: String = getRateResult._13
 
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //总金额
-        var sumCjsl = BigDecimal(0) //总数量
-        var sumYj = BigDecimal(0) //总的佣金
-        var sumJsf = BigDecimal(0) //总的经手费
-        var sumYhs = BigDecimal(0) //总的印花税
-        var sumZgf = BigDecimal(0) //总的征管费
-        var sumGhf = BigDecimal(0) //总的过户费
-        var sumFxj = BigDecimal(0) //总的风险金
+      var sumCjsl = BigDecimal(0) //总数量
+      var sumYj = BigDecimal(0) //总的佣金
+      var sumJsf = BigDecimal(0) //总的经手费
+      var sumYhs = BigDecimal(0) //总的印花税
+      var sumZgf = BigDecimal(0) //总的征管费
+      var sumGhf = BigDecimal(0) //总的过户费
+      var sumFxj = BigDecimal(0) //总的风险金
+
+        val csResults = getGgcs("117")
+        val cs1 = csResults._1
+        var cs2 = csResults._2
+        val cs3 = csResults._3
+        val cs4 = csResults._4
+        val cs5 = csResults._5
 
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
@@ -258,7 +554,7 @@ object Shgh {
           //过户费的计算
           var ghf = BigDecimal(0)
 
-          if (!(NO.equals(cs2) || (YES).equals(cs2))) {
+          if (!(NO.equals(cs2) || YES.equals(cs2))) {
             //如果时日期格式的话要比较日期 TODO日期格式的比较
             if (bcrq.compareTo(cs2) > 0) {
               cs2 = YES
@@ -315,7 +611,7 @@ object Shgh {
           sumYj = sumYj.-(sumFxj)
         }
 
-        if (YES.equals(cs6)) {
+        if (YES.equals(cs5)) {
           sumYj = sumYj.-(otherFee)
         }
         if (sumYj < BigDecimal(minYj)) {
@@ -324,7 +620,6 @@ object Shgh {
 
         (key, ShghFee("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
           sumGhf, sumFxj))
-      }
     }
 
     //第二种 相同申请编号的金额汇总*费率，各申请编号汇总后的金额相加
@@ -337,17 +632,17 @@ object Shgh {
         val zqdm = fields(1) //证券代码
         val otherFee = BigDecimal(0)
 
-        val getRateResult = getRate(gsdm,bcrq)
-        val rateJS:String = getRateResult._1
-        val rateJszk:String = getRateResult._2
-        val rateYH:String = getRateResult._3
-        val rateYhzk:String = getRateResult._4
-        val rateZG:String = getRateResult._5
-        val rateZgzk:String = getRateResult._6
-        val rateGH:String = getRateResult._7
-        val rateGhzk:String = getRateResult._8
-        val rateFXJ:String = getRateResult._9
-        val rateFxjzk:String = getRateResult._10
+        val getRateResult = getRate(gsdm, bcrq, ZCLB, ZCLB, ZYZCH, GYZCH)
+        val rateJS: String = getRateResult._1
+        val rateJszk: String = getRateResult._2
+        val rateYH: String = getRateResult._3
+        val rateYhzk: String = getRateResult._4
+        val rateZG: String = getRateResult._5
+        val rateZgzk: String = getRateResult._6
+        val rateGH: String = getRateResult._7
+        val rateGhzk: String = getRateResult._8
+        val rateFXJ: String = getRateResult._9
+        val rateFxjzk: String = getRateResult._10
         val rateYJ: String = getRateResult._11
         val rateYjzk: String = getRateResult._12
         val minYj: String = getRateResult._13
@@ -355,6 +650,12 @@ object Shgh {
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
         var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
+        val csResults = getGgcs("117")
+        val cs1 = csResults._1
+        var cs2 = csResults._2
+        val cs3 = csResults._3
+        val cs4 = csResults._4
+        val cs5 = csResults._5
 
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
@@ -404,7 +705,7 @@ object Shgh {
           sumYj2 = sumYj2 - sumFxj2
         }
 
-        if (YES.equals(cs6)) {
+        if (YES.equals(cs5)) {
           sumYj2 = sumYj2 - otherFee
         }
 
@@ -449,17 +750,17 @@ object Shgh {
         val bcrq = fields(0) //本次日期
         val zqdm = fields(1) //证券代码
 
-        val getRateResult = getRate(gsdm,bcrq)
-        val rateJS:String = getRateResult._1
-        val rateJszk:String = getRateResult._2
-        val rateYH:String = getRateResult._3
-        val rateYhzk:String = getRateResult._4
-        val rateZG:String = getRateResult._5
-        val rateZgzk:String = getRateResult._6
-        val rateGH:String = getRateResult._7
-        val rateGhzk:String = getRateResult._8
-        val rateFXJ:String = getRateResult._9
-        val rateFxjzk:String = getRateResult._10
+        val getRateResult = getRate(gsdm, bcrq, ZCLB, ZCLB, ZYZCH, GYZCH)
+        val rateJS: String = getRateResult._1
+        val rateJszk: String = getRateResult._2
+        val rateYH: String = getRateResult._3
+        val rateYhzk: String = getRateResult._4
+        val rateZG: String = getRateResult._5
+        val rateZgzk: String = getRateResult._6
+        val rateGH: String = getRateResult._7
+        val rateGhzk: String = getRateResult._8
+        val rateFXJ: String = getRateResult._9
+        val rateFxjzk: String = getRateResult._10
         val rateYJ: String = getRateResult._11
         val rateYjzk: String = getRateResult._12
         val minYj: String = getRateResult._13
@@ -468,6 +769,12 @@ object Shgh {
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
         var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
+        val csResults = getGgcs("117")
+        val cs1 = csResults._1
+        var cs2 = csResults._2
+        val cs3 = csResults._3
+        val cs4 = csResults._4
+        val cs5 = csResults._5
 
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
@@ -516,7 +823,7 @@ object Shgh {
           sumYj2 = sumYj2 - sumFxj2
         }
 
-        if (YES.equals(cs6)) {
+        if (YES.equals(cs5)) {
           sumYj2 = sumYj2 - otherFee
         }
 
@@ -533,7 +840,6 @@ object Shgh {
     val middle = fee1.join(fee2).join(fee3)
 
     //最终结果
-
     val result = middle.map {
       case (key, ((fee1, fee2), fee3)) =>
         val fields = key.split(SEPARATE1)
@@ -547,6 +853,21 @@ object Shgh {
         var realZgf = BigDecimal(0)
         var realGhf = BigDecimal(0)
         var realFxj = BigDecimal(0)
+
+        val jsResult = getJsgz("117")
+        val con8 = jsResult._1
+        val con1 = jsResult._2
+        val con2 = jsResult._3
+        val con3 = jsResult._4
+        val con4 = jsResult._5
+        val con5 = jsResult._6
+        val con6 = jsResult._7
+        val con11 = jsResult._8
+        val con12 = jsResult._9
+        val con13 = jsResult._10
+        val con14 = jsResult._11
+        val con15 = jsResult._12
+        val con16 = jsResult._13
 
         //判断取值逻辑
         if (YES.equals(con1)) {
@@ -589,9 +910,9 @@ object Shgh {
           realYj = fee1.sumYj
         }
 
-        if (YES.equals(con7)) {
+        if (YES.equals(con6)) {
           realFxj = fee2.sumFxj
-        } else if (YES.equals(con17)) {
+        } else if (YES.equals(con16)) {
           realFxj = fee1.sumFxj
         } else {
           realFxj = fee1.sumFxj
