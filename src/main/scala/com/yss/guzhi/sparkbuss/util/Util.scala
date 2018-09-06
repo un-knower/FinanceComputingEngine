@@ -1,4 +1,4 @@
-package com.yss.scala.util
+package com.yss.guzhi.sparkbuss.util
 
 import java.io.FileInputStream
 import java.sql.{Connection, DriverManager}

@@ -1,6 +1,6 @@
-package com.yss.scala.guzhi
+package com.yss.guzhi.sparkbuss
 
-import com.yss.scala.util.Util
+import com.yss.guzhi.sparkbuss.util.Util
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -65,7 +65,7 @@ object GuoHu_DBF {
       .appName("mytest")
       .master("local[2]")
       .getOrCreate()
-    import com.yss.scala.dbf._
+    import com.yss.guzhi.sparkbuss.dbf._
     //hdfs://nscluster/yss/guzhi/gh.dbf
     val value = spark.sqlContext.dbfFile("E:\\DBFFILE\\InterDoc\\gh23341.dbf").rdd.map(row => {
 

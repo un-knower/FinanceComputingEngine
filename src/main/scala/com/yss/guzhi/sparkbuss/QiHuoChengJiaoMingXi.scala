@@ -1,9 +1,9 @@
-package com.yss.scala.guzhi
+package com.yss.guzhi.sparkbuss
 
 import java.util.Properties
 
-import com.yss.scala.dto.QiHuoChengJiao
-import com.yss.scala.util.Util
+import com.yss.guzhi.sparkbuss.dto.QiHuoChengJiao
+import com.yss.guzhi.sparkbuss.util.Util
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
 

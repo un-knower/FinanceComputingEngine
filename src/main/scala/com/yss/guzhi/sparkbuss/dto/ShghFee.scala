@@ -1,4 +1,4 @@
-package com.yss.scala.dto
+package com.yss.guzhi.sparkbuss.dto
 
 /**
   * ctype按何种方式计算的费率
@@ -7,5 +7,5 @@ package com.yss.scala.dto
   * 取值3：金额汇总*费率
   *费率参数
   */
-case class SHGHFee(ctype: String, sumCjje: BigDecimal, sumCjsl: BigDecimal, sumYj: BigDecimal, sumJsf: BigDecimal, sumYhs: BigDecimal, sumZgf: BigDecimal,
+case class ShghFee(ctype: String, sumCjje: BigDecimal, sumCjsl: BigDecimal, sumYj: BigDecimal, sumJsf: BigDecimal, sumYhs: BigDecimal, sumZgf: BigDecimal,
                    sumGhf: BigDecimal, sumFxj: BigDecimal)

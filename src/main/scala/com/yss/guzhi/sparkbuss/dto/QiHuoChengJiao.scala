@@ -1,4 +1,4 @@
-package com.yss.scala.dto
+package com.yss.guzhi.sparkbuss.dto
 
 case class QiHuoChengJiao(
                                   fdate:String,

@@ -1,4 +1,4 @@
-package com.yss.scala.dbf
+package com.yss.guzhi.sparkbuss.dbf
 
 import com.yss.java.dbf.{DBFField, DBFHeader}
 import com.yss.java.maprd.DBFInputFormat
