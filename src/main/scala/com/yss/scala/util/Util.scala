@@ -41,7 +41,7 @@ object Util {
     * @param fileName 文件输入名
     */
   def getInputFilePath(fileName:String)={
-    val hdfsDir = "hdfs://nscluster/yss/guzhi/"
+    val hdfsDir = "hdfs://192.168.102.120:8020/yss/guzhi/"
     val inputFilePath = hdfsDir+fileName
     inputFilePath
   }
@@ -67,6 +67,7 @@ object Util {
     val properties = new Properties()
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
+    properties.setProperty("driver","com.mysql.jdbc.Driver")
     DF.write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.119/JJCWGZ?useUnicode=true&characterEncoding=utf8", tableName, properties)
   }
 
