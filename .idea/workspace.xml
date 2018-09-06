@@ -1,0 +1,1016 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="d4028974-d106-4107-a3f1-02ecd688b55b" name="Default" comment="" />
+    <ignored path="$PROJECT_DIR$/target/" />
+    <ignored path="$PROJECT_DIR$/flume/target/" />
+    <ignored path="$PROJECT_DIR$/hbase/target/" />
+    <ignored path="$PROJECT_DIR$/kafka/target/" />
+    <ignored path="$PROJECT_DIR$/oozie/target/" />
+    <ignored path="$PROJECT_DIR$/gz-oozie/target/" />
+    <ignored path="$PROJECT_DIR$/gz-hbase/target/" />
+    <ignored path="$PROJECT_DIR$/gz-business/target/" />
+    <ignored path="$PROJECT_DIR$/gz-flume/target/" />
+    <ignored path="$PROJECT_DIR$/gz-kafka/target/" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="TRACKING_ENABLED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_DATA_SOURCES" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
+    <option name="HIDDEN_KINDS">
+      <set />
+    </option>
+    <expand />
+    <select />
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>117深圳中登计算数据费用处理模式值</find>
+    </findStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="ROOT_SYNC" value="DONT_SYNC" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="PUSH_TAGS">
+      <GitPushTagMode>
+        <option name="argument" value="--follow-tags" />
+        <option name="title" value="Current Branch" />
+      </GitPushTagMode>
+    </option>
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/guzhi/reff04.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/guzhi/Reff04.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/guzhi/Execution_aggr.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/guzhi/SHDZGH.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/guzhi/GuoHu_DBF.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/util/execution_aggr.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/com/yss/test/scala/hbase2test.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/com/yss/test/scala/hbase.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/com/yss/test/scala/ReadHbase.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/com/yss/test/scala/hbasetest.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/com/yss/test/scala/SHDZGH3.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/util/test11.java" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/util/asd.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/scala/util/sparktest.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/guzhi/dto/SHGHFee.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/com/yss/guzhi/sparkbuss/dto/SHGHFee.scala" />
+        <option value="$PROJECT_DIR$/guzhibuss/pom.xml" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/scriptFile.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dbf/dbf.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dbf/DefaultSource.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/QiHuoChengJiao.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/ShangHaiGuoHu.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/ShghDto.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/SHGHFee.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ExecutionAggr.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ExecutionAggrObj.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/Reff04.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ShenJiaoSuo.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ShghContants.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/SpotMatch.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/util/execution_aggr.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/util/sparktest.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/util/Util.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dbf/DBFRelation.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ImcExchangeRate.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/GuoHu_DBF.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/QiHuoChengJiaoMingXi.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/Shdzgh.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/Shgh.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/test/scala/com.yss.test.scala/DBFTest.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/test/scala/com.yss.test.scala/hbase.scala" />
+        <option value="$PROJECT_DIR$/gz-business/src/test/scala/com.yss.test.scala/SHDZGH3.scala" />
+        <option value="$PROJECT_DIR$/gz-flume/pom.xml" />
+        <option value="$PROJECT_DIR$/gz-flume/src/main/java/yss/tailsource/TaildirMatcher.java" />
+        <option value="$PROJECT_DIR$/gz-flume/src/main/java/com/yss/tailsource/TaildirSource.java" />
+        <option value="$PROJECT_DIR$/gz-kafka/pom.xml" />
+        <option value="$PROJECT_DIR$/gz-oozie/pom.xml" />
+        <option value="$PROJECT_DIR$/gz-hbase/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/ShghYssj.scala" />
+        <option value="$PROJECT_DIR$/gz-business/pom.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="JsBuildToolGruntFileManager" detection-done="true" sorting="DEFINITION_ORDER" />
+  <component name="JsBuildToolPackageJson" detection-done="true" sorting="DEFINITION_ORDER" />
+  <component name="JsGulpfileManager">
+    <detection-done>true</detection-done>
+    <sorting>DEFINITION_ORDER</sorting>
+  </component>
+  <component name="MavenProjectNavigator">
+    <treeState>
+      <expand />
+      <select />
+    </treeState>
+  </component>
+  <component name="NodePackageJsonFileManager">
+    <packageJsonPaths />
+  </component>
+  <component name="ProjectFrameBounds" extendedState="7">
+    <option name="x" value="590" />
+    <option name="y" value="165" />
+    <option name="width" value="2075" />
+    <option name="height" value="1590" />
+  </component>
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="PackagesPane" />
+      <pane id="Scope">
+        <subPane subId="Project Files">
+          <expand>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="GuZhi" type="cbb8eebc:String" user="GuZhi" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gz-business" type="cbb8eebc:String" user="gz-business" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gz-flume" type="cbb8eebc:String" user="gz-flume" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gz-hbase" type="cbb8eebc:String" user="gz-hbase" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gz-kafka" type="cbb8eebc:String" user="gz-kafka" />
+            </path>
+            <path>
+              <item name="Root" type="cbb8eebc:String" user="Root" />
+              <item name="gz-oozie" type="cbb8eebc:String" user="gz-oozie" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="AndroidView" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="GuZhi" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GuZhi" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="GuZhi" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GuZhi" type="462c0819:PsiDirectoryNode" />
+              <item name="gz-kafka" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="GuZhi" type="b2602c69:ProjectViewProjectNode" />
+              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="project.structure.last.edited" value="Libraries" />
+    <property name="project.structure.proportion" value="0.15" />
+    <property name="project.structure.side.proportion" value="0.2" />
+    <property name="settings.editor.selected.configurable" value="vcs.Git" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\ideaproject\test\GuZhi\gz-business\src\main\scala\com.yss.scala\guzhi" />
+      <recent name="D:\ideaproject\test\GuZhi\gz-business\src\main\scala\com.yss.scala" />
+      <recent name="D:\ideaproject\test\GuZhi\src\main\scala\com\yss\guzhi" />
+    </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="com.yss.scala.util" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\ideaproject\test\GuZhi\gz-business\src\main\scala\com.yss.scala\dto" />
+      <recent name="D:\ideaproject\test\GuZhi\gz-business\src\main\scala\com.yss.scala\guzhi" />
+      <recent name="D:\ideaproject\test\GuZhi\gz-flume\src\main\java" />
+      <recent name="D:\ideaproject\test\GuZhi\gz-business\src\main\java\com.yss.java\maprd" />
+      <recent name="D:\ideaproject\test\GuZhi\gz-business\src\test\scala" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Application.QiHuoChengJiaoMingXi">
+    <configuration name="QiHuoChengJiaoMingXi" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="com.yss.guzhi.sparkbuss.QiHuoChengJiaoMingXi" />
+      <module name="GuZhi" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.yss.guzhi.sparkbuss.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+    </configuration>
+    <configuration name="SHDZGH3" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="com.yss.test.scala.SHDZGH3" />
+      <module name="GuZhi" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.yss.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+    </configuration>
+    <configuration default="true" type="Application" factoryName="Application">
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    </configuration>
+    <configuration name="asd" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="com.yss.scala.util.asd" />
+      <module name="GuZhi" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.yss.guzhi.sparkbuss.util.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+    </configuration>
+    <configuration name="sparktest" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="com.yss.guzhi.sparkbuss.util.sparktest" />
+      <module name="GuZhi" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.yss.guzhi.sparkbuss.util.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+    </configuration>
+    <configuration name="test11" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.yss.scala.util.test11" />
+      <module name="GuZhi" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.yss.guzhi.sparkbuss.util.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+    </configuration>
+    <configuration default="true" type="JUnit" factoryName="JUnit">
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="PACKAGE_NAME" />
+      <option name="MAIN_CLASS_NAME" />
+      <option name="METHOD_NAME" />
+      <option name="TEST_OBJECT" value="class" />
+      <option name="VM_PARAMETERS" value="-ea" />
+      <option name="PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="%MODULE_WORKING_DIR%" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="TEST_SEARCH_SCOPE">
+        <value defaultName="singleModule" />
+      </option>
+      <patterns />
+    </configuration>
+    <configuration default="true" type="TestNG" factoryName="TestNG">
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="SUITE_NAME" />
+      <option name="PACKAGE_NAME" />
+      <option name="MAIN_CLASS_NAME" />
+      <option name="METHOD_NAME" />
+      <option name="GROUP_NAME" />
+      <option name="TEST_OBJECT" value="CLASS" />
+      <option name="VM_PARAMETERS" value="-ea" />
+      <option name="PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="%MODULE_WORKING_DIR%" />
+      <option name="OUTPUT_DIRECTORY" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="TEST_SEARCH_SCOPE">
+        <value defaultName="singleModule" />
+      </option>
+      <option name="USE_DEFAULT_REPORTERS" value="false" />
+      <option name="PROPERTIES_FILE" />
+      <properties />
+      <listeners />
+    </configuration>
+    <list>
+      <item itemvalue="Application.SHDZGH3" />
+      <item itemvalue="Application.test11" />
+      <item itemvalue="Application.asd" />
+      <item itemvalue="Application.sparktest" />
+      <item itemvalue="Application.QiHuoChengJiaoMingXi" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.QiHuoChengJiaoMingXi" />
+        <item itemvalue="Application.sparktest" />
+        <item itemvalue="Application.asd" />
+        <item itemvalue="Application.test11" />
+        <item itemvalue="Application.SHDZGH3" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SbtLocalSettings">
+    <option name="projectSyncType">
+      <map>
+        <entry key="$PROJECT_DIR$/../spark-xml-master" value="PREVIEW" />
+      </map>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration>C:\Users\yupan\AppData\Roaming\Subversion</configuration>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="d4028974-d106-4107-a3f1-02ecd688b55b" name="Default" comment="" />
+      <created>1533867808550</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1533867808550</updated>
+      <workItem from="1533867810112" duration="14268000" />
+      <workItem from="1533952172660" duration="7894000" />
+      <workItem from="1533975028329" duration="1975000" />
+      <workItem from="1534037448665" duration="59000" />
+      <workItem from="1534120956993" duration="1568000" />
+      <workItem from="1534123326989" duration="1490000" />
+      <workItem from="1534126326669" duration="1867000" />
+      <workItem from="1534128272151" duration="575000" />
+      <workItem from="1534128856127" duration="3613000" />
+      <workItem from="1534139660103" duration="2337000" />
+      <workItem from="1534153740841" duration="5849000" />
+      <workItem from="1534227208756" duration="8714000" />
+      <workItem from="1534468147520" duration="5676000" />
+      <workItem from="1534482999929" duration="7654000" />
+      <workItem from="1534729177090" duration="614000" />
+      <workItem from="1534845980417" duration="129000" />
+      <workItem from="1534910615643" duration="630000" />
+      <workItem from="1534918086874" duration="633000" />
+      <workItem from="1534993761413" duration="2621000" />
+      <workItem from="1535090687271" duration="1104000" />
+      <workItem from="1535333584361" duration="831000" />
+      <workItem from="1535335200912" duration="539000" />
+      <workItem from="1535338138587" duration="57000" />
+      <workItem from="1535338468388" duration="25000" />
+      <workItem from="1535339202872" duration="4143000" />
+      <workItem from="1535345468118" duration="2070000" />
+      <workItem from="1535350309395" duration="739000" />
+      <workItem from="1535367491336" duration="594000" />
+      <workItem from="1535952397586" duration="766000" />
+      <workItem from="1536032453689" duration="1078000" />
+      <workItem from="1536038377882" duration="643000" />
+      <workItem from="1536049162683" duration="298000" />
+      <workItem from="1536111941596" duration="835000" />
+      <workItem from="1536117032116" duration="906000" />
+      <workItem from="1536118896881" duration="3088000" />
+      <workItem from="1536125634374" duration="8440000" />
+      <workItem from="1536137138773" duration="221000" />
+      <workItem from="1536137378268" duration="121000" />
+      <workItem from="1536137530571" duration="2622000" />
+      <workItem from="1536140183850" duration="403000" />
+      <workItem from="1536140605849" duration="554000" />
+      <workItem from="1536141178977" duration="1464000" />
+      <workItem from="1536197328279" duration="5287000" />
+    </task>
+    <task id="LOCAL-00001" summary="修改input路径-reff04">
+      <created>1533868336225</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1533868336225</updated>
+    </task>
+    <task id="LOCAL-00002" summary="删除local-reff04">
+      <created>1533874487946</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1533874487946</updated>
+    </task>
+    <task id="LOCAL-00003" summary="添加注释，并将输出到hdfs的路径删除">
+      <created>1534139144336</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1534139144336</updated>
+    </task>
+    <task id="LOCAL-00004" summary="修改文件为通配符">
+      <created>1534226926893</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1534226926893</updated>
+    </task>
+    <task id="LOCAL-00005" summary="修改目录结构">
+      <created>1535953032460</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1535953032460</updated>
+    </task>
+    <task id="LOCAL-00006" summary="新结构">
+      <created>1536141893456</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1536141893456</updated>
+    </task>
+    <task id="LOCAL-00007" summary="上海过户原始数据">
+      <created>1536199094292</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1536199094292</updated>
+    </task>
+    <task id="LOCAL-00008" summary="case class Hzjkqs">
+      <created>1536199124917</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1536199124917</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
+    <servers />
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="104994000" />
+  </component>
+  <component name="TodoView">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="-6" y="-6" width="1549" height="837" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info anchor="right" id="Palette" order="3" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.32909605" />
+      <window_info anchor="bottom" id="Messages" order="8" weight="0.26271185" />
+      <window_info anchor="right" id="Palette&#9;" order="3" />
+      <window_info id="Image Layers" order="2" />
+      <window_info anchor="bottom" id="Java Enterprise" order="7" weight="0.32909605" />
+      <window_info anchor="right" id="Capture Analysis" order="3" />
+      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.5016745" side_tool="true" weight="0.4081921" />
+      <window_info anchor="right" id="Maven Projects" order="3" sideWeight="0.4992272" visible="true" weight="0.2900201" />
+      <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Version Control" order="7" sideWeight="0.49832553" visible="true" weight="0.4081921" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.230226" />
+      <window_info anchor="bottom" id="Terminal" order="7" weight="0.32909605" />
+      <window_info id="Capture Tool" order="2" />
+      <window_info id="Designer" order="2" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25184193" />
+      <window_info anchor="right" id="Bean Validation" order="3" />
+      <window_info anchor="right" id="Database" order="3" weight="0.32953784" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.2497979" />
+      <window_info id="UI Designer" order="2" />
+      <window_info anchor="right" id="Theme Preview" order="3" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="right" x="0" y="0" width="325" height="576" id="Documentation" order="4" sideWeight="0.5007728" side_tool="true" weight="0.21853389" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="1" />
+    </layout>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName="*.sh" />
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="修改input路径-reff04" />
+    <MESSAGE value="删除local-reff04" />
+    <MESSAGE value="添加注释，并将输出到hdfs的路径删除" />
+    <MESSAGE value="修改文件为通配符" />
+    <MESSAGE value="修改目录结构" />
+    <MESSAGE value="新结构" />
+    <MESSAGE value="上海过户原始数据" />
+    <MESSAGE value="case class Hzjkqs" />
+    <option name="LAST_COMMIT_MESSAGE" value="case class Hzjkqs" />
+  </component>
+  <component name="antWorkspaceConfiguration">
+    <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
+    <option name="FILTER_TARGETS" value="false" />
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/gz-kafka/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2793">
+          <caret line="147" column="12" selection-start-line="147" selection-start-column="12" selection-end-line="147" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="418">
+          <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-oozie/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="513">
+          <caret line="27" column="10" lean-forward="true" selection-start-line="27" selection-start-column="10" selection-end-line="27" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-kafka/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2793">
+          <caret line="147" column="12" selection-start-line="147" selection-start-column="12" selection-end-line="147" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/sqoop/sqoop2hdfs.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="228">
+          <caret line="12" selection-start-line="12" selection-end-line="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/gz-business.iml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="8" column="9" selection-start-line="8" selection-start-column="9" selection-end-line="8" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/java/com.yss.java/dbf/DBFField.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="38">
+          <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/java/com.yss.java/dbf/DBFHeader.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="38">
+          <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/java/com.yss.java/dbf/DBFReader.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="38">
+          <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/java/com.yss.java/dbf/DBFType.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="304">
+          <caret line="16" column="1" selection-start-line="16" selection-start-column="1" selection-end-line="16" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/java/com.yss.java/maprd/DBFRecordReader.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="38">
+          <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/java/com.yss.java/maprd/DBFInputFormat.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="38">
+          <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dbf/DefaultSource.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="38">
+          <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/QiHuoChengJiao.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-123">
+          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/ShangHaiGuoHu.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-503">
+          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/ShghDto.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-190">
+          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/SHGHFee.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="57">
+          <caret line="3" column="19" lean-forward="true" selection-start-line="3" selection-start-column="19" selection-end-line="3" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ExecutionAggr.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1444">
+          <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ExecutionAggrObj.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-617">
+          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ImcExchangeRate.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-123">
+          <caret line="40" column="47" lean-forward="true" selection-start-line="40" selection-start-column="47" selection-end-line="40" selection-end-column="47" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/Reff04.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-551">
+          <caret line="16" column="7" selection-start-line="16" selection-start-column="7" selection-end-line="16" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ShenJiaoSuo.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="133">
+          <caret line="13" column="7" selection-start-line="13" selection-start-column="7" selection-end-line="13" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/SpotMatch.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-959">
+          <caret line="2" column="7" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/util/execution_aggr.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1900">
+          <caret line="14" column="7" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/util/sparktest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="10" column="7" selection-start-line="10" selection-start-column="7" selection-end-line="10" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/util/Util.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-76">
+          <caret line="8" column="7" selection-start-line="8" selection-start-column="7" selection-end-line="8" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/ShghContants.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="95">
+          <caret line="5" column="7" selection-start-line="5" selection-start-column="7" selection-end-line="5" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/Shgh.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="10875">
+          <caret line="674" column="16" selection-start-line="674" selection-start-column="16" selection-end-line="674" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dbf/dbf.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="8" selection-start-column="8" selection-end-column="25" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/GuoHu_DBF.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="333">
+          <caret line="276" column="16" selection-start-line="276" selection-start-column="16" selection-end-line="276" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/QiHuoChengJiaoMingXi.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1643">
+          <caret line="5" selection-start-line="5" selection-end-line="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-hbase/src/main/java/com/yss/hbase.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="114">
+          <caret line="6" column="7" selection-start-line="6" selection-start-column="7" selection-end-line="6" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-hbase/src/main/java/com/yss/ReadHbase.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret line="19" lean-forward="true" selection-start-line="19" selection-end-line="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-hbase/src/main/java/com/yss/hbasetest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="13" column="7" selection-start-line="13" selection-start-column="7" selection-end-line="13" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-hbase/src/main/java/com/yss/hbase2test.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="12" column="7" selection-start-line="12" selection-start-column="7" selection-end-line="12" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/guzhi/Shdzgh.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="24" column="4" selection-start-line="24" selection-start-column="4" selection-end-line="24" selection-end-column="34" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/test/scala/com.yss.test.scala/SHDZGH3.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="157">
+          <caret line="89" selection-start-line="89" selection-end-line="89" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/test/scala/com.yss.test.scala/DBFTest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="399">
+          <caret line="21" column="1" selection-start-line="21" selection-start-column="1" selection-end-line="21" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-flume/src/main/java/com/yss/tailsource/TaildirMatcher.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="17" column="3" selection-start-line="17" selection-start-column="3" selection-end-line="17" selection-end-column="3" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-flume/src/main/java/com/yss/tailsource/TaildirSource.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="304">
+          <caret line="40" column="27" selection-start-line="40" selection-start-column="27" selection-end-line="40" selection-end-column="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-kafka/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="641">
+          <caret line="147" column="12" selection-start-line="147" selection-start-column="12" selection-end-line="147" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-flume/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="641">
+          <caret line="80" column="47" selection-start-line="80" selection-start-column="47" selection-end-line="80" selection-end-column="47" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-hbase/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="58">
+          <caret line="19" selection-start-line="19" selection-end-line="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-oozie/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="508">
+          <caret line="27" selection-start-line="27" selection-end-line="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dbf/DBFRelation.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="19">
+          <caret line="19" column="22" selection-start-line="19" selection-start-column="22" selection-end-line="19" selection-end-column="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-flume/gz-flume.iml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-912">
+          <caret line="24" column="17" lean-forward="true" selection-start-line="24" selection-start-column="17" selection-end-line="24" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/Hzjkqs.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="38">
+          <caret line="2" column="11" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/src/main/scala/com.yss.scala/dto/ShghYssj.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="380">
+          <caret line="20" column="16" selection-start-line="20" selection-start-column="16" selection-end-line="20" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gz-business/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1026">
+          <caret line="54" column="60" lean-forward="true" selection-start-line="54" selection-start-column="60" selection-end-line="54" selection-end-column="60" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="393">
+          <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
+        </state>
+      </provider>
+    </entry>
+  </component>
+  <component name="masterDetails">
+    <states>
+      <state key="ArquillianSettingsConfigurable.UI">
+        <settings>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ArtifactsStructureConfigurable.UI">
+        <settings>
+          <artifact-editor />
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="Copyright.UI">
+        <settings>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="FacetStructureConfigurable.UI">
+        <settings>
+          <last-edited>No facets are configured</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="GlobalLibrariesConfigurable.UI">
+        <settings>
+          <last-edited>scala-sdk-2.11.8</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="JdkListConfigurable.UI">
+        <settings>
+          <last-edited>1.8</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ModuleStructureConfigurable.UI">
+        <settings>
+          <last-edited>gz-hbase</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+                <option value="0.6" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ProjectJDKs.UI">
+        <settings>
+          <last-edited>1.8</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ProjectLibrariesConfigurable.UI">
+        <settings>
+          <last-edited>Maven: org.apache.openjpa:openjpa-persistence:2.2.2</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.27816093" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+    </states>
+  </component>
+</project>
