@@ -6,8 +6,8 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.hadoop.mapred.TextInputFormat
 import org.apache.spark.sql.SparkSession
 
-import scala.math.BigDecimal.RoundingMode
 import scala.collection.mutable
+import scala.math.BigDecimal.RoundingMode
 import com.yss.scala.guzhi.ShghContants._
 
 /**
@@ -26,10 +26,10 @@ object Shgh {
   def test01() = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val csjjxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSJJXX_201809051144.csv", spark)
-    val csjjxxMap =  new mutable.HashMap[String,Array[String]]
+    val csjjxxMap = new mutable.HashMap[String, Array[String]]
     for (elem <- csjjxx.columns) {
       val values = csjjxx.select(elem).rdd.map(row => String.valueOf(row.get(0))).collect()
-      csjjxxMap.+=((elem,values))
+      csjjxxMap.+=((elem, values))
     }
     println(csjjxxMap("FZQDMETF1").contains("510051"))
     println(csjjxxMap("FZQDMETF2").contains("510052"))
@@ -43,6 +43,7 @@ object Shgh {
     val sc = spark.sparkContext
     //原始数据
     import com.yss.scala.dbf.dbf._
+    import spark.implicits._
     val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\data\\gh23341.dbf")
     //    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))
 
@@ -108,21 +109,35 @@ object Shgh {
 
     //读取基金信息表，并转换成map结构
     val csjjxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSJJXX_201809051144.csv", spark)
-    val csjjxxMap =  new mutable.HashMap[String,Array[String]]
+    val csjjxxMap = new mutable.HashMap[String, Array[String]]
     for (elem <- csjjxx.columns) {
       val values = csjjxx.select(elem).rdd.map(row => String.valueOf(row.get(0))).collect()
-      csjjxxMap.+=((elem,values))
+      csjjxxMap.+=((elem, values))
     }
 
     //读取CsOsXw表
-    val csosxw = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSQSXW_201809051145.csv", spark)
-//    csosxw.rdd.map(row => )
+    val csqsxw = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSQSXW_201809051145.csv", spark)
+    val csqsxwMap = csqsxw.rdd.map(row => row.getAs[String]("FQSXW")).collect()
 
+
+    val csqsxwValue = sc.broadcast(csqsxwMap)
     val csjjxxValues = sc.broadcast(csjjxxMap)
     val csbValues = sc.broadcast(csbMap)
     //将佣金表进行广播
     val yjbValues = sc.broadcast(yjbMapValues)
     val flbValues = sc.broadcast(flbMapValue)
+
+    /** 获取基金类型 */
+    val lsetcssysjj = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\LSETCSSYSJJ_201809051145.csv", spark)
+    val lsetcssysjjMap = lsetcssysjj.rdd.map(row => (row.getAs[String]("FSETCODE"), row.getAs[String]("FJJLX") + "@" + row.getAs[String]("FJJLB"))).collectAsMap()
+    val lsetcssysjjValues = sc.broadcast(lsetcssysjjMap)
+
+    /** 判断配股股票 */
+    val csqyxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\csqyxx.csv", spark)
+    csqyxx.createOrReplaceTempView("csqyxx")
+    val csTsKm = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSQSXW_201809051145.csv", spark)
+    val csTsKmMap = csTsKm.rdd.map(row => row).collect()
+    val csTsKmValue = sc.broadcast(csTsKmMap)
 
     /**
       * 获取证券标志
@@ -131,16 +146,21 @@ object Shgh {
       * @param cjjg 成交金额
       * @return
       */
-    def getZqbz(zqdm: String, cjjg: String): String = {
+    def getZqbz(zqdm: String, cjjg: String, bcrq: String): String = {
+      val sql = "select 1 from csqyxx where fqylx='PG' " +
+        "and FQYDJR<='" + bcrq + "' and fjkjzr>='" + bcrq +
+        "' and FSTARTDATE<= '" + bcrq +
+        "' and FQYBL not in('银行间','上交所','深交所','场外') " +
+        "and FSH=1 and FZQDM='" + zqdm + "'"
       if (zqdm.startsWith("6")) {
         if (zqdm.startsWith("609")) return "CDRGP"
         else return "GP"
       }
       if (zqdm.startsWith("5")) {
         if (cjjg.equals("0")) {
-          if(csjjxxValues.value("FZQDMETF1").contains(zqdm)) return "EJDM"
-          if(csjjxxValues.value("FZQDMETF2").contains(zqdm)) return "XJTD"
-          if(csjjxxValues.value("FZQDMETF5").contains(zqdm)) return "XJTD_KSC"
+          if (csjjxxValues.value("FZQDMETF1").contains(zqdm)) return "EJDM"
+          if (csjjxxValues.value("FZQDMETF2").contains(zqdm)) return "XJTD"
+          if (csjjxxValues.value("FZQDMETF5").contains(zqdm)) return "XJTD_KSC"
         } else return "JJ"
       }
       if (zqdm.startsWith("0") || zqdm.startsWith("1")) return "ZQ"
@@ -151,13 +171,13 @@ object Shgh {
         || zqdm.startsWith("740") || zqdm.startsWith("790")) return "XG"
       if (zqdm.startsWith("742")) return "QY"
       if (zqdm.startsWith("714") || zqdm.startsWith("760") || zqdm.startsWith("781")) {
-        //TODO  zqdm为配股股票(csqyxx表中有维护)
+        if (spark.sql(sql).count() > 0) return "QY"
         return "XG"
       }
       if (zqdm.startsWith("73")) return "XG"
       if (zqdm.startsWith("70")) {
         if ("100".equals(cjjg)) return "XZ"
-        //TODO  zqdm为配股股票(csqyxx表中有维护)
+        if (spark.sql(sql).count() > 0) return "QY"
         return "XG"
       }
       null
@@ -172,13 +192,34 @@ object Shgh {
       * @param bs   买卖
       * @return
       */
-    def getYwbz(tzh:String,zqbz: String, zqdm: String, cjjg: String, bs: String): String = {
+    def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String): String = {
       if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
-        //TODO GP或CDRGP
-        val condition = csbValues.value(tzh+"指数、指标股票按特殊科目设置页面处理")
-        if("1".equals(condition)){
-
+        val sql1 = "select 1 from A117CsTsKm " +
+          "where fstartdate<=' " + bcrq +
+          "' and fsh=1 and fbz =3 " +
+          "and fzqdm='" + zqdm + "'"
+        val sql2 = "select 1 from A117CsTsKm " +
+          "where fstartdate<=' " + bcrq +
+          "' and fsh=1 and fbz =2 " +
+          "and fzqdm='" + zqdm + "'"
+        val condition = csbValues.value(tzh + "指数、指标股票按特殊科目设置页面处理")
+        if ("1".equals(condition)) {
+          if (csqsxwValue.value.contains(gsdm) || spark.sql(sql1).count() > 0) {
+            return "ZS"
+          }
+          if (spark.sql(sql2).count() > 0) return "ZB"
         }
+        val lset = lsetcssysjjValues.value.getOrElse(tzh, "-1@-1").split("@")
+        if ("0".equals(lset(0))) {
+          if ("1".equals(lset(1)) || "5".equals(lset(1)) || "7".equals(lset(1))) {}
+          if (csqsxwValue.value.contains(gsdm) || spark.sql(sql1).count() > 0) {
+            return "ZS"
+          }
+        }
+        if ("0".equals(lset(0)) && "2".equals(lset(1)) && spark.sql(sql2).count() > 0) {
+          //          if()
+        }
+
         return "PT"
       }
       if ("EJDM".equals(zqbz) || "XJTD".equals(zqbz) || "XJTD_KSC".equals(zqbz)) {
@@ -306,27 +347,24 @@ object Shgh {
       }
       cjsl
     }
-    /** 获取基金类型*/
-    val lsetcssysjj = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\LSETCSSYSJJ_201809051145.csv", spark)
-    val lsetcssysjjMap = lsetcssysjj.rdd.map(row => (row.getAs[String]("fsetcode"),row.getAs[String]("fjjlx"))).collectAsMap()
-    val lsetcssysjjValues = sc.broadcast(lsetcssysjjMap)
 
     /**
       * 转换
       **/
-    def getCjje(tzh:String,zqdm: String, zqbz: String, ywbz: String, cjje: String, cjsl: String, cjjg: String,gzlx:String): String = {
+    def getCjje(tzh: String, zqdm: String, zqbz: String, ywbz: String, cjje: String, cjsl: String, cjjg: String, gzlx: String): String = {
       if ("JJ".equals(zqbz)) {
         if ("ETFRG".equals(ywbz) || "ETFFK".equals(ywbz) || "ETFRGZQ".equals(ywbz))
           return BigDecimal(cjsl).*(BigDecimal(cjjg)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
       }
-      if("3".equals(lsetcssysjjValues.value.getOrElse(tzh,"-1"))||"-1".equals(cjje)){
+
+      if ("3".equals(lsetcssysjjValues.value.getOrElse(tzh, "-1@-1").split("@")(0)) || "-1".equals(cjje)) {
         return BigDecimal(cjsl).*(BigDecimal(cjjg)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
       }
-      if("HG".equals(zqbz)&&zqdm.startsWith("203")){
+      if ("HG".equals(zqbz) && zqdm.startsWith("203")) {
         return BigDecimal(cjsl).*(BigDecimal(100)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
       }
       if ("ZQ".equals(zqbz)) {
-        if ("KJHSMZQ".equals(ywbz) || "KJHGSZQ".equals(ywbz)){
+        if ("KJHSMZQ".equals(ywbz) || "KJHGSZQ".equals(ywbz)) {
           return BigDecimal(cjje).+(BigDecimal(gzlx)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
         }
       }
@@ -350,8 +388,8 @@ object Shgh {
       val sqbh = row.getAs[String]("SQBH")
       val bs = row.getAs[String]("BS")
       val mjbh = row.getAs[String]("MJBH")
-      val zqbz = getZqbz(zqdm, cjjg)
-      val ywbz = getYwbz("117",zqbz, zqdm, cjjg, bs)
+      val zqbz = getZqbz(zqdm, cjjg, bcrq)
+      val ywbz = getYwbz("117", zqbz, zqdm, cjjg, bs, gsdm, bcrq)
       zqdm = getZqdm(zqdm, cjjg)
       //gsdm不够5位补0
       var length = gsdm.length
@@ -361,8 +399,6 @@ object Shgh {
       }
       ShghYssj(gddm, gdxw, bcrq, cjbh, gsdm, cjsj, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz)
     })
-
-    import spark.implicits._
     /**
       * 原始数据转换1
       * key = 本次日期+证券代码+公司代码/交易席位+买卖+申请编号

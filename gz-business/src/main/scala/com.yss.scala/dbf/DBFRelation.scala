@@ -1,6 +1,8 @@
 package com.yss.scala.dbf
 
 
+import java.io.FileNotFoundException
+
 import com.yss.java.dbf.{DBFField, DBFHeader}
 import com.yss.java.maprd.DBFInputFormat
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -54,8 +56,14 @@ case class DBFRelation(location: String)(@transient val sqlContext: SQLContext) 
     * @return StructType instance
     */
   override def schema = {
-    val path = new Path(location)
+    var path = new Path(location)
     val fs = FileSystem.get(path.toUri, sqlContext.sparkContext.hadoopConfiguration)
+    val iterator = fs.listFiles(path, true)
+    if (iterator.hasNext) {
+      path = iterator.next().getPath
+    } else {
+      throw new FileNotFoundException("File not find "+ path)
+    }
     using(fs.open(path)) { dataInputStream => {
       StructType(DBFHeader.read(dataInputStream).fields.asScala.map(toStructField(_)))
     }
