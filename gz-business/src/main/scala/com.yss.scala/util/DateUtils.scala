@@ -1,7 +1,7 @@
 package com.yss.scala.util
 
 import java.text.SimpleDateFormat
-import java.util.Calendar
+import java.util.{Calendar, Date}
 
 /**
   * @auther: lijiayan
@@ -41,6 +41,16 @@ object DateUtils {
     val resDate = DATEKEY_FORMAT.format(calender.getTime)
     calender.clear()
     resDate
+  }
+
+
+  /** 日期格式：yyyyMMdd */
+  val yyyyMMdd = "yyyyMMdd"
+
+  /** 获取当天的日期 */
+  def getToday(pattern: String) = {
+    val sdf = new SimpleDateFormat(pattern)
+    val today = sdf.format(new Date())
   }
 
 }
