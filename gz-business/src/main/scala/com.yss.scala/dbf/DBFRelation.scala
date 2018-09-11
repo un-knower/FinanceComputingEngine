@@ -12,6 +12,7 @@ import org.apache.spark.sql.sources.{BaseRelation, PrunedScan}
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConverters._
+import scala.util.control.Breaks
 
 /**
   * Extends `PrunedScan` to map the RDD to specified columns.
@@ -59,14 +60,18 @@ case class DBFRelation(location: String)(@transient val sqlContext: SQLContext) 
     var path = new Path(location)
     val fs = FileSystem.get(path.toUri, sqlContext.sparkContext.hadoopConfiguration)
     val iterator = fs.listFiles(path, true)
-    var realPath:Path = null
-    while (iterator.hasNext) {
-      val childPath = iterator.next().getPath
-      if(!childPath.getName.startsWith("_")){
-        realPath = childPath
+    var realPath: Path = null
+    val loop = new Breaks
+    loop.breakable {
+      while (iterator.hasNext) {
+        val childPath = iterator.next().getPath
+        if (!childPath.getName.startsWith("_")) {
+          realPath = childPath
+          loop.break
+        }
       }
     }
-    if(realPath == null) throw new FileNotFoundException("文件不存在："+path)
+    if (realPath == null) throw new FileNotFoundException("文件不存在：" + path)
     using(fs.open(realPath)) { dataInputStream => {
       StructType(DBFHeader.read(dataInputStream).fields.asScala.map(toStructField(_)))
     }
