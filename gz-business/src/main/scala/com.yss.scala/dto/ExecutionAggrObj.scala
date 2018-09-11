@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.scala.dto
 
 case class ExecutionAggrObj(
  Fdate:String ,//日期
