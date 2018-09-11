@@ -59,12 +59,15 @@ case class DBFRelation(location: String)(@transient val sqlContext: SQLContext) 
     var path = new Path(location)
     val fs = FileSystem.get(path.toUri, sqlContext.sparkContext.hadoopConfiguration)
     val iterator = fs.listFiles(path, true)
-    if (iterator.hasNext) {
-      path = iterator.next().getPath
-    } else {
-      throw new FileNotFoundException("File not find "+ path)
+    var realPath:Path = null
+    while (iterator.hasNext) {
+      val childPath = iterator.next().getPath
+      if(!childPath.getName.startsWith("_")){
+        realPath = childPath
+      }
     }
-    using(fs.open(path)) { dataInputStream => {
+    if(realPath == null) throw new FileNotFoundException("文件不存在："+path)
+    using(fs.open(realPath)) { dataInputStream => {
       StructType(DBFHeader.read(dataInputStream).fields.asScala.map(toStructField(_)))
     }
     }

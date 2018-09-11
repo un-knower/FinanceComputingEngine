@@ -51,6 +51,19 @@ object Util {
   }
 
   /**
+    * 获取文件输入路径
+    *
+    * @param fileName 文件输入名
+    */
+  def getDailyInputFilePath(fileName: String) = {
+    val today = DateUtils.getToday(DateUtils.yyyyMMdd)
+    val hdfsDir = "hdfs://nscluster/yss/guzhi/basic_list/"+today+"/"
+    val inputFilePath = hdfsDir + fileName
+    inputFilePath
+  }
+
+
+  /**
     * 用于测试，获取文件本地输入路径
     *
     * @param fileName 文件输入名
