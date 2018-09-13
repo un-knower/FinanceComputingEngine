@@ -2,7 +2,7 @@ package com.yss.scala.util
 
 import java.io.FileInputStream
 import java.sql.{Connection, DriverManager}
-import java.util.{ Properties}
+import java.util.{Properties}
 
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import java.net.{InetAddress}
@@ -31,11 +31,11 @@ object Util {
     * @param sparkSession
     * @return
     */
-  def readCSV(path: String, sparkSession: SparkSession) = {
+  def readCSV(path: String, sparkSession: SparkSession, header: Boolean = true) = {
     sparkSession.read.format("csv")
       .option("sep", ",")
       .option("inferSchema", "false")
-      .option("header", "true")
+      .option("header", header)
       .load(path)
   }
 
@@ -57,7 +57,7 @@ object Util {
     */
   def getDailyInputFilePath(fileName: String) = {
     val today = DateUtils.getToday(DateUtils.yyyyMMdd)
-    val hdfsDir = "hdfs://nscluster/yss/guzhi/basic_list/"+today+"/"
+    val hdfsDir = "hdfs://nscluster/yss/guzhi/basic_list/" + today + "/"
     val inputFilePath = hdfsDir + fileName
     inputFilePath
   }
