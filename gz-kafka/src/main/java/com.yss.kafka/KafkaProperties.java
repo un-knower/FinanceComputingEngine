@@ -1,5 +1,9 @@
 package com.yss.kafka;
 
+
+/**
+ * created by 张锴
+ */
 public class KafkaProperties {
     public static final String TOPIC = "newtopic";
     public static final String KAFKA_SERVER_URL = "192.168.102.120";

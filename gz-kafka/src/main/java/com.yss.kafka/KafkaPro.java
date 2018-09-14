@@ -8,7 +8,8 @@ import java.io.FileReader;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
-/***
+/**
+ * created by 张锴
  * kafka 生产数据
  */
 
@@ -16,6 +17,7 @@ import java.util.concurrent.Future;
 public class KafkaPro {
 
     public static void main(String[] args){
+
         //192.168.102.115:9092
         Properties props = new Properties();//get an properties
         props.put("zookeeper.connect", "192.168.102.120:2181,192.168.102.121:2181,192.168.102.122:2181");

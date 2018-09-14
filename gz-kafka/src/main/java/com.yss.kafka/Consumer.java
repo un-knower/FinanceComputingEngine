@@ -16,6 +16,11 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ *
+ * created by 张锴
+ * 消费数据到hbase
+ */
 public class Consumer extends ShutdownableThread {
     private final KafkaConsumer<Integer, String> consumer;
     private final String topic;

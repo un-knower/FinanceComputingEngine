@@ -10,6 +10,11 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+
+/**
+ * created by 张锴
+ *
+ */
 public class HbaseClient {
 
     private static final String TABLE_NAME = "TestTable";
