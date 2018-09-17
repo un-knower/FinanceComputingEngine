@@ -13,3 +13,9 @@ a117CsTsKm 特殊科目设置表
 路径为：/yss/guzhi/basic_list/当天日期
 
 http://192.168.102.120:50070/explorer.html#/yss/guzhi/basic_list/
+
+
+# HDFS 路径规则
+${date}格式，例如20180917
+hdfs://hostname:9000/yss/guzhi/interface/${date}/接口名称/数据文件
+hdfs://hostname:9000/yss/guzhi/base_list/${date}/表名/数据文件
