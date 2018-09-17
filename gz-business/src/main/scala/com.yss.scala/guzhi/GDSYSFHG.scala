@@ -1,11 +1,12 @@
 package com.yss.scala.guzhi
 
-import com.yss.scala.util.DateUtils
+import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.storage.StorageLevel
 
 import scala.math.BigDecimal.RoundingMode
+import scala.util.control.Breaks
 
 /**
   * @auther: lijiayan
@@ -66,9 +67,24 @@ object GDSYSFHG {
       .appName(GDSYSFHG.getClass.getSimpleName)
       .master("local[*]")
       .getOrCreate()
+
+
+    //创建佣金临时表
+    createYJLLTempTable(spark)
+    //查询佣金临时表,并广播出去
+    val fvRows: Array[Row] = spark.sql("select * from FVTable").rdd.collect()
+    val fvRowsBroad = spark.sparkContext.broadcast(fvRows)
+
+    //创建参数临时表
+    createVarTempTable(spark)
+    //查询参数临时表,并广播出去
+    val varRows: Array[Row] = spark.sql("select * from VARTable").rdd.collect()
+    val varRowsBroad = spark.sparkContext.broadcast(varRows)
+
     import com.yss.scala.dbf.dbf._
     //读取结算明细文件jsmx.dbf
     val jsmxRDD: RDD[Row] = spark.sqlContext.dbfFile(jsmxFilePath).rdd
+
 
     //过滤数据,仅处理JLLX='003' and JYFS=‘106’ and YWLX in ('680','681','682','683') and JGDM = '0000'（正常交收）的数据
     val jsmxFiltedRDD = jsmxRDD.filter(row => {
@@ -98,12 +114,30 @@ object GDSYSFHG {
       var Fyj = BigDecimal(0)
 
       var FCSGHQX: Long = 0L //到期日期-首期日期
-
+      val FJyxwh = row.getAs[String]("XWH1").trim
       if ("680".equals(YWLX)) {
         FInDate = row.getAs[String]("QTRQ").trim
 
         //业务类型为680时，席位佣金=成交金额 * 佣金利率；
-        Fyj = Fje.*(BigDecimal(0.00025) /*TODO 这里的佣金利率怎么求得*/)
+
+        //从广播变量中获取佣金
+        val loop = new Breaks
+        var fv = "0"
+        loop.breakable({
+          for (row <- fvRowsBroad.value) {
+            val FZQLB = row.getAs[String]("FZQLB")
+            val FSZSH = row.getAs[String]("FSZSH")
+            val FLV = row.getAs[String]("FLV")
+            val XWH = row.getAs[String]("XWH")
+            //TODO 这里测试环境是固定的值,上线需要更改
+            if ("GP".equals(FZQLB) && "S".equals(FSZSH) && "000001".equals(XWH)) {
+              fv = FLV
+              loop.break()
+            }
+          }
+        })
+
+        Fyj = Fje.*(BigDecimal(fv))
         /*.setScale(2, RoundingMode.HALF_UP)*/
 
         FCSGHQX = DateUtils.absDays(FInDate, FDate)
@@ -121,9 +155,9 @@ object GDSYSFHG {
       }
 
 
-      val FZqdm = " " //TODO 这里是不是需要ZQDM1的值
+      val FZqdm = " "
       val FSzsh = "G"
-      val FJyxwh = row.getAs[String]("XWH1").trim
+
       //Fje
       val Fjsf = BigDecimal(row.getAs[String]("JSF").trim).abs /*.setScale(2, RoundingMode.HALF_UP)*/
 
@@ -154,12 +188,12 @@ object GDSYSFHG {
 
       val Fsh = "1"
 
-      val Fzzr = " " //TODO 怎么读到当前用户
+      val Fzzr = "admin"
 
-      val Fchk = " " //TODO 怎么读取当前用户
+      val Fchk = "admin"
       val FHTXH = row.getAs[String]("CJBH").trim
 
-      val FSETCODE = " " //TODO 套账取值
+      val FSETCODE = "117" //TODO 套账取值
 
       val FSJLY = "ZD"
 
@@ -280,7 +314,47 @@ object GDSYSFHG {
       val FSzsh = "G"
       val FJyxwh = row1.getAs[String]("XWH1").trim
       val Fje = BigDecimal(row1.getAs[String]("QSJE").trim).abs
-      val Fyj = BigDecimal(0.00) //TODO 根据交易所回购计算佣金选项如果为true；成交金额 * 佣金利率（券商佣金利率页面维护的利率）；false：佣金为0；
+      val FSETCODE = "117" // TODO 套账取值
+
+      var Fyj = BigDecimal(0.00)
+
+      //根据交易所回购计算佣金选项如果为true；成交金额 * 佣金利率（券商佣金利率页面维护的利率）；false：佣金为0；
+      //1.读取 交易所回购计算佣金的选项
+      //val yjVar = getVarBooleanValue(spark, FSETCODE + "交易所回购计算佣金")
+      var yjVar = false
+      val break = new Breaks
+      break.breakable({
+        for (row <- varRowsBroad.value) {
+          val VARNAME = row.getAs[String]("VARNAME")
+          val VARVALUE = row.getAs[String]("VARVALUE")
+          if ((FSETCODE + "交易所回购计算佣金").equals(VARNAME)) {
+            yjVar = "1".equals(VARVALUE)
+          }
+        }
+
+      })
+
+
+      if (yjVar) {
+        //读取佣金利率
+        //getYJFV(spark, "GP", "S", "000001")
+        var fv = "0"
+        break.breakable({
+          for (row <- fvRowsBroad.value) {
+            val FZQLB = row.getAs[String]("FZQLB")
+            val FSZSH = row.getAs[String]("FZQLB")
+            val FLV = row.getAs[String]("FLV")
+            val XWH = row.getAs[String]("XWH")
+            //TODO 这里测试环境是固定的值,上线需要更改
+            if ("GP".equals(FZQLB) && "S".equals(FSZSH) && "000001".equals(XWH)) {
+              fv = FLV
+              break.break()
+            }
+          }
+        })
+        Fyj = Fje * BigDecimal(fv)
+      }
+
       val Fjsf = BigDecimal(row1.getAs[String]("JSF").trim).abs
       val FCSGHQX = days
       val FHggain = Fje * BigDecimal(row1.getAs[String]("JG1").trim) / 100 * FCSGHQX / 365
@@ -297,17 +371,17 @@ object GDSYSFHG {
       }
 
       val Fsh = "1"
-      val Fzzr = " " //TODO 当前用户
-      val Fchk = " " //TODO 当前用户
+      val Fzzr = "admin"
+      val Fchk = "admin"
 
       val FHTXH = row1.getAs[String]("CJBH").trim
-      val FSETCODE = " " // TODO 套账取值
+
 
       val FRZLV = BigDecimal(row1.getAs[String]("JG1").trim)
       val FSJLY = "ZD"
 
       val FCSHTXH = row1.getAs[String]("SQBH").trim
-      val FBS = MMBZ //TODO 是不是等于买卖标志
+      val FBS = MMBZ
       val FSL = BigDecimal(row1.getAs[String]("SL").trim)
       val Fyhs = BigDecimal(row1.getAs[String]("YHS").trim)
       val Fzgf = BigDecimal(row1.getAs[String]("ZGF").trim)
@@ -387,7 +461,7 @@ object GDSYSFHG {
       val Fyj = BigDecimal(0.00)
       val Fjsf = BigDecimal(0.00)
 
-      val FHggain = Fje * BigDecimal("0.00025" /*TODO 这里是初始回购利率*/) / 100 * FCSGHQX / 365
+      val FHggain = Fje * BigDecimal(row1.getAs[String]("JG1").trim) / 100 * FCSGHQX / 365
       val Fsssfje = BigDecimal(row1.getAs[String]("QTJE1").trim).abs
 
       val FZqbz = "ZQ"
@@ -402,17 +476,17 @@ object GDSYSFHG {
       }
 
       val Fsh = "1"
-      val Fzzr = " " //TODO 当前用户
-      val Fchk = " " //TODO 当前用户
+      val Fzzr = "admin"
+      val Fchk = "admin"
 
       val FHTXH = row1.getAs[String]("CJBH").trim
-      val FSETCODE = " " // TODO 套账取值
+      val FSETCODE = "117" // TODO 套账取值
 
       val FRZLV = BigDecimal(row1.getAs[String]("JG1").trim)
       val FSJLY = "ZD"
 
       val FCSHTXH = row1.getAs[String]("SQBH").trim
-      val FBS = MMBZ //TODO 是不是等于买卖标志
+      val FBS = MMBZ
       val FSL = BigDecimal(row1.getAs[String]("SL").trim)
       val Fyhs = BigDecimal(row1.getAs[String]("YHS").trim)
       val Fzgf = BigDecimal(row1.getAs[String]("ZGF").trim)
@@ -479,7 +553,78 @@ object GDSYSFHG {
     val resultRDD = jsmx013ResultRDD.union(xzhyxkRDD).union(xzqqhyljRDD)
     resultRDD.collect().foreach(println(_))
 
+    spark.catalog.dropTempView("originDataTable")
+    spark.catalog.dropTempView("FVTable")
+    spark.catalog.dropTempView("originVarDataTable")
+    spark.catalog.dropTempView("VARTable")
     spark.stop()
+  }
+
+
+  /**
+    * 创建佣金利率临时表 FVTable
+    * FZQLB  FSZSH  FLV XWH
+    *
+    * @param spark
+    */
+  def createYJLLTempTable(spark: SparkSession): Unit = {
+    val date = DateUtils.formatDate(System.currentTimeMillis())
+    val path = "hdfs://bj-rack001-hadoop002:8020/yss/guzhi/basic_list/" + date + "/A117CSYJLV/"
+    //原始数据
+    val originDF: DataFrame = Util.readCSV(path, spark, header = false)
+    //创建原始数据表
+    originDF.createTempView("originDataTable")
+    //从原始数据表中查出我们需要的字段：FZQLB(1),FSZSH(2),FLV(3),FSTR1(6) 并注册费率表FVTable
+    spark.sql("select originDataTable._c1 as FZQLB,originDataTable._c2 as FSZSH,originDataTable._c3 as FLV,originDataTable._c6 as XWH from originDataTable")
+      .createTempView("FVTable")
+  }
+
+
+  /**
+    *
+    * @param spark SparkSession
+    * @param FZQLB 证券类别：默认ZQZYSFHG
+    * @param FSZSH 默认：G
+    * @param XWH   席位号
+    * @return 返回字符串类型的佣金
+    */
+  def getYJFV(spark: SparkSession, FZQLB: String = "ZQZYSFHG", FSZSH: String = "G", XWH: String): String = {
+    spark.sql(s"select FLV from FVTable where FZQLB='$FZQLB' and FSZSH='$FSZSH' and XWH='$XWH'")
+      .rdd.collect()(0).getAs[String]("FLV").trim
+  }
+
+
+  /**
+    * 创建参数表的临时表VARTable
+    * VARNAME  VARVALUE
+    *
+    * @param spark SparkSession
+    */
+  def createVarTempTable(spark: SparkSession): Unit = {
+    val date = DateUtils.formatDate(System.currentTimeMillis())
+    val path = "hdfs://bj-rack001-hadoop002:8020/yss/guzhi/basic_list/" + date + "/LVARLIST/"
+    //原始数据
+    val originDF: DataFrame = Util.readCSV(path, spark, header = false)
+    //创建原始数据表
+    originDF.createTempView("originVarDataTable")
+    spark.sql("select originVarDataTable._c0 as VARNAME,originVarDataTable._c1 as VARVALUE from originVarDataTable")
+      .createTempView("VARTable")
+  }
+
+  /**
+    * 获取参数值
+    *
+    * @param spark        SparkSession
+    * @param varName      参数名
+    * @param defaultValue 默认值
+    * @return
+    */
+  def getVarBooleanValue(spark: SparkSession, varName: String, defaultValue: Boolean = false): Boolean = {
+    val value: String = spark.sql(s"select VARVALUE from VARTable where VARNAME='$varName'")
+      .rdd.collect()(0).getAs[String]("VARVALUE")
+    var res = defaultValue
+    if ("1".equals(value)) res = true
+    res
   }
 
 
