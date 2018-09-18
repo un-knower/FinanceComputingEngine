@@ -7,3 +7,13 @@ build.properties
 .idea/
 src/target/
 /GuZhi.iml
+gz-business/target
+gz-business/gz-business.iml
+gz-flume/gz-flume.iml
+gz-hbase/target
+gz-hbase/gz-hbase.iml
+gz-kafka/target
+gz-kafka/gz-kafka.iml
+gz-oozie/target
+gz-oozie/gz-oozie.iml
+
