@@ -47,6 +47,11 @@ object DateUtils {
   /** 日期格式：yyyyMMdd */
   val yyyyMMdd = "yyyyMMdd"
 
+  /** 日期格式：yyyy-MM-dd HH:mm:ss */
+  val yyyyMMddHHmmss = "yyyy-MM-dd HH:mm:ss"
+
+  val yyyy_MM_dd = "yyyy-MM-dd"
+
   /** 获取当天的日期 */
   def getToday(pattern: String) = {
     val sdf = new SimpleDateFormat(pattern)
@@ -65,5 +70,15 @@ object DateUtils {
     DATEKEY_FORMAT.format(date)
   }
 
+  /**
+    * 将格式化的时间转化成时间戳
+    *
+    * @param formattedDate 格式化的时间:eg:2018-01-01 00:00:00
+    * @param pattern       时间格式
+    * @return
+    */
+  def formattedDate2Long(formattedDate: String, pattern: String): Long = {
+    new SimpleDateFormat(pattern).parse(formattedDate).getTime
+  }
 
 }
