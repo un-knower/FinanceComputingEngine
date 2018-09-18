@@ -1,14 +1,11 @@
 package com.yss.scala.guzhi
 
 import com.yss.scala.dto.{ShghDto, ShghFee, ShghYssj}
+import com.yss.scala.guzhi.ShghContants._
 import com.yss.scala.util.Util
-import org.apache.hadoop.io.{LongWritable, Text}
-import org.apache.hadoop.mapred.TextInputFormat
 import org.apache.spark.sql.SparkSession
 
-import scala.collection.mutable
 import scala.math.BigDecimal.RoundingMode
-import com.yss.scala.guzhi.ShghContants._
 
 /**
   * @author ws
@@ -20,124 +17,243 @@ import com.yss.scala.guzhi.ShghContants._
 object Shgh {
 
   def main(args: Array[String]): Unit = {
+    //    doIt()
     test01()
   }
 
+  /** 测试使用 */
   def test01() = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val csjjxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSJJXX_201809051144.csv", spark)
-    val csjjxxMap = new mutable.HashMap[String, Array[String]]
-    for (elem <- csjjxx.columns) {
-      val values = csjjxx.select(elem).rdd.map(row => String.valueOf(row.get(0))).collect()
-      csjjxxMap.+=((elem, values))
-    }
-    println(csjjxxMap("FZQDMETF1").contains("510051"))
-    println(csjjxxMap("FZQDMETF2").contains("510052"))
-    println(csjjxxMap("FZQDMETF3").contains("510053"))
-    println(csjjxxMap("FZQDMETF4").contains("510054"))
+    //    val csjjxxMap = new mutable.HashMap[String, Array[String]]
+    //    for (elem <- csjjxx.columns) {
+    //      val values = csjjxx.select(elem).rdd.map(row => String.valueOf(row.get(0))).collect()
+    //      csjjxxMap.+=((elem, values))
+    //    }
+    //    println(csjjxxMap("FZQDMETF1").contains("510051"))
+    //    println(csjjxxMap("FZQDMETF2").contains("510052"))
+    //    println(csjjxxMap("FZQDMETF3").contains("510053"))
+    //    println(csjjxxMap("FZQDMETF4").contains("510054"))
+    spark.stop()
   }
 
   private def doIt(): Unit = {
 
-    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
+    val spark = SparkSession.builder().appName("SHGH").master("local[*]").getOrCreate()
     val sc = spark.sparkContext
     //原始数据
     import com.yss.scala.dbf.dbf._
-    import spark.implicits._
-    val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\new\\data\\gh23341.dbf")
+    val sourcePath = Util.getInputFilePath("gh23341.dbf")
+    val df = spark.sqlContext.dbfFile(sourcePath)
     //    val df = spark.sqlContext.dbfFile(Util.getInputFilePath("dgh00001.dbf"))
-
-    //参数表,编码格式的转换
-    val csb = sc.hadoopFile("C:\\Users\\wuson\\Desktop\\new\\data\\参数.csv", classOf[TextInputFormat], classOf[LongWritable], classOf[Text])
-      .map(pair => new String(pair._2.getBytes, 0, pair._2.getLength, "GBK"))
-
-    //费率表
-    val flb = Util.readCSV("C:\\Users\\wuson\\Desktop\\new\\data\\交易利率.csv", spark)
-    //佣金表
-    val yjb = Util.readCSV("C:\\Users\\wuson\\Desktop\\new\\data\\佣金利率.csv", spark)
+    //公共的参数表
+    val csbPath = Util.getDailyInputFilePath("LVARLIST")
+    val csb = sc.textFile(csbPath)
+    //公共的费率表
+    val flbPath = Util.getDailyInputFilePath("CSJYLV")
+    val flb = sc.textFile(flbPath)
+    //117的佣金利率表
+    val yjPath = Util.getDailyInputFilePath("A117CSYJLV")
+    val yjb = sc.textFile(yjPath)
 
 
     //将参数表转换成map结构
     val csbMap = csb.map(row => {
-      val fields = row.replaceAll(""""""", "").split(SEPARATE2)
+      val fields = row.split(SEPARATE2)
       val key = fields(0)
       //参数名
       val value = fields(1) //参数值
       (key, value)
-    }).collectAsMap()
+    })
+      .collectAsMap()
 
     //将佣金表转换成map结构
-    val yjbMapValues = yjb.rdd.map(row => {
-      val zqlb = row.get(1).toString //证券类别
-      val sh = row.get(2).toString //市场
-      val lv = row.get(3).toString //利率
-      val minLv = row.get(4).toString //最低利率
-      val startDate = row.get(14).toString //启用日期
+    val yjbMapValues = yjb.map(row => {
+      val fields = row.split(SEPARATE2)
+      val zqlb = fields(1) //证券类别
+      val sh = fields(2) //市场
+      val lv = fields(3) //利率
+      val minLv = fields(4) //最低利率
+      val startDate = fields(14) //启用日期
       //      val zch = row.get(15).toString // 资产
-      val zk = row.get(10).toString //折扣
-      val fstr1 = row.get(6).toString //交易席位/公司代码
+      val zk = fields(10) //折扣
+      val fstr1 = fields(6) //交易席位/公司代码
       val key = zqlb + SEPARATE1 + sh + SEPARATE1 + fstr1 //证券类别+市场+交易席位/公司代码
       val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk + SEPARATE1 + minLv //启用日期+利率+折扣+最低佣金值
       (key, value)
-    }).groupByKey().mapValues(item => { //分组完成后进行排序取最大的启用日期的数据
+    })
+      .groupByKey()
+      .mapValues(item => { //分组完成后进行排序取最大的启用日期的数据
       item.toArray.sortWith((str1, str2) => {
         str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0
       })
-    }).collectAsMap()
+    })
+      .collectAsMap()
 
     //将费率表转换成map结构
-    val flbMapValue = flb.rdd.map(row => {
-      val zqlb = row.get(0).toString
+    val flbMapValue = flb.map(row => {
+      val fields = row.split(SEPARATE2)
+      val zqlb = fields(0)
       //证券类别
-      val sh = row.get(1).toString
+      val sh = fields(1)
       //市场
-      val lvlb = row.get(2).toString
+      val lvlb = fields(2)
       //利率类别
-      val lv = row.get(3).toString //利率
-      val zk = row.get(5).toString //折扣
-      val zch = row.get(10).toString //资产号
-      val startDate = row.get(13).toString
+      val lv = fields(3) //利率
+      val zk = fields(5) //折扣
+      val zch = fields(10) //资产号
+      val startDate = fields(13)
       //启用日期
       val key = zqlb + SEPARATE1 + sh + SEPARATE1 + zch + SEPARATE1 + lvlb //证券类别+市场+资产号+利率类别
       val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk //启用日期+利率+折扣
       (key, value)
-    }).groupByKey().mapValues(item => { //分组完成后进行排序
+    })
+      .groupByKey()
+      .mapValues(item => { //分组完成后进行排序
       item.toArray.sortWith((str1, str2) => {
         str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0
       })
-    }).collectAsMap()
+    })
+      .collectAsMap()
 
-    //读取基金信息表，并转换成map结构
-    val csjjxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSJJXX_201809051144.csv", spark)
-    val csjjxxMap = new mutable.HashMap[String, Array[String]]
-    for (elem <- csjjxx.columns) {
-      val values = csjjxx.select(elem).rdd.map(row => String.valueOf(row.get(0))).collect()
-      csjjxxMap.+=((elem, values))
-    }
-
-    //读取CsOsXw表
-    val csqsxw = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSQSXW_201809051145.csv", spark)
-    val csqsxwMap = csqsxw.rdd.map(row => row.getAs[String]("FQSXW")).collect()
-
-
-    val csqsxwValue = sc.broadcast(csqsxwMap)
-    val csjjxxValues = sc.broadcast(csjjxxMap)
-    val csbValues = sc.broadcast(csbMap)
     //将佣金表进行广播
     val yjbValues = sc.broadcast(yjbMapValues)
     val flbValues = sc.broadcast(flbMapValue)
+    val csbValues = sc.broadcast(csbMap)
 
-    /** 获取基金类型 */
-    val lsetcssysjj = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\LSETCSSYSJJ_201809051145.csv", spark)
-    val lsetcssysjjMap = lsetcssysjj.rdd.map(row => (row.getAs[String]("FSETCODE"), row.getAs[String]("FJJLX") + "@" + row.getAs[String]("FJJLB"))).collectAsMap()
-    val lsetcssysjjValues = sc.broadcast(lsetcssysjjMap)
+    //读取基金信息表，并转换成map结构
+    val csjjxxPath = Util.getDailyInputFilePath("CSJJXX")
+    val csjjxx = sc.textFile(csjjxxPath)
+      .filter(row => {
+        val fields = row.split(SEPARATE2)
+        val fsh = fields(10)
+        val fszsh = fields(8)
+        if ("1".equals(fsh) && "H".equals(fszsh)) true
+        else false
+      })
+      .map(row => {
+      val fields = row.split(SEPARATE2)
+      val zqdm = fields(1) //证券代码
+      val fzqlx = fields(9) //基金类型
+      (zqdm + SEPARATE1 + fzqlx, row)
+    })
+      .groupByKey()
+      .mapValues(rows => {
+        //  fetftype='0'
+        val filteredRows = rows.filter(str => str.split(",")(17).equals("0"))
+        (filteredRows.toArray.sortWith((str1, str2) => {
+        str1.split(SEPARATE2)(14).compareTo(str2.split(SEPARATE2)(14)) < 0
+      })(0),
+        rows.toArray.sortWith((str1, str2) => {
+        str1.split(SEPARATE2)(14).compareTo(str2.split(SEPARATE2)(14)) < 0
+      })(0))
+    })
+
+    //基金信息(CsJjXx表)中维护的FZQDMETF1=该zqdm
+    val csjjxx01Map = csjjxx.map(row => {
+      val fields = row._2._2.split(SEPARATE2)
+      val FZQLX = fields(9)
+      val FZQDMETF0 = fields(2)
+      val FSTARTDATE = fields(14)
+      (FZQLX+SEPARATE2+FZQDMETF0, FSTARTDATE)
+    }).collectAsMap()
+    val csjjxx02Map = csjjxx.map(row => {
+      val fields = row._2._2.split(SEPARATE2)
+      val FZQLX = fields(9)
+      val FZQDMETF0 = fields(4)
+      val FSTARTDATE = fields(14)
+      (FZQLX+SEPARATE2+FZQDMETF0, FSTARTDATE)
+    }).collectAsMap()
+    val csjjxx05Map = csjjxx.map(row => {
+      val fields = row._2._2.split(SEPARATE2)
+      val FZQLX = fields(9)
+      val FZQDMETF0 = fields(16)
+      val FSTARTDATE = fields(14)
+      (FZQLX+SEPARATE2+FZQDMETF0, FSTARTDATE)
+    }).collectAsMap()
+    val csjjxx03Map = csjjxx.map(row => {
+      val fields = row._2._2.split(SEPARATE2)
+      val FZQLX = fields(9)
+      val FZQDMETF0 = fields(5)
+      val FSTARTDATE = fields(14)
+      (FZQLX+SEPARATE2+FZQDMETF0, FSTARTDATE)
+    }).collectAsMap()
+    val csjjxx04Map = csjjxx.map(row => {
+      val fields = row._2._2.split(SEPARATE2)
+      val FZQLX = fields(9)
+      val FZQDMETF0 = fields(6)
+      val FSTARTDATE = fields(14)
+      (FZQLX+SEPARATE2+FZQDMETF0, FSTARTDATE)
+    }).collectAsMap()
+    val csjjxx00Map = csjjxx.map(row => {
+      val fields = row._2._2.split(SEPARATE2)
+      val FZQLX = fields(9)
+      val FZQDMETF0 = fields(2)
+      val FSTARTDATE = fields(14)
+      (FZQLX+SEPARATE2+FZQDMETF0, FSTARTDATE)
+    }).collectAsMap()
+    val csjjxx01HPMap = csjjxx.map(row => {
+      val fields = row._2._1.split(SEPARATE2)
+      val FZQLX = fields(9)
+      val FZQDMETF0 = fields(2)
+      val FSTARTDATE = fields(14)
+      (FZQLX+SEPARATE2+FZQDMETF0, FSTARTDATE)
+    }).collectAsMap()
+    val csjjxxMap = Map((0, csjjxx00Map),(1, csjjxx01Map), (2, csjjxx02Map),(3,csjjxx03Map),(4,csjjxx04Map), (5, csjjxx05Map),(6,csjjxx01HPMap))
+    val csjjxxValues = sc.broadcast(csjjxxMap)
+
+
+    //基金信息中维护的FZQDMETF2=该zqdm
+    def jjxxbwh(fzqlx:String,zqdm: String, bcrq: String, flag: Int): Boolean = {
+      val map = csjjxxValues.value(flag)
+      val maybeString = map.get(fzqlx+SEPARATE2+zqdm)
+      if (maybeString.isDefined) {
+        if (bcrq.compareTo(maybeString.get) >= 0) return true
+      }
+      return false
+    }
 
     /** 判断配股股票 */
     val csqyxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\csqyxx.csv", spark)
-    csqyxx.createOrReplaceTempView("csqyxx")
-    val csTsKm = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSQSXW_201809051145.csv", spark)
-    val csTsKmMap = csTsKm.rdd.map(row => row).collect()
-    val csTsKmValue = sc.broadcast(csTsKmMap)
+    val csqyxMap = csqyxx.rdd
+      .map(row => {
+      val fzqdm = row.getAs[String](2)
+      (fzqdm, row)
+    })
+      .groupByKey()
+      .collectAsMap()
+    val csqyxValues = sc.broadcast(csqyxMap)
+
+    /**
+      * 判断是否是配股股票
+      * select 1 from csqyxx where fqylx='PG' and fqydjr<=读数日期 and fjkjzr>=读数日期
+      * and fstartdate<=读数日期 and fqybl not in('银行间','上交所','深交所','场外')
+      * and fsh=1 and fzqdm='gh文件中的zqdm'
+      *
+      * @param zqdm 证券代码
+      * @param bcrq 读数日期
+      * @return
+      */
+    def sfspggp(zqdm: String, bcrq: String): Boolean = {
+      val maybeRows = csqyxValues.value.get(zqdm)
+      if (maybeRows.isDefined) {
+        val condition1 = Array("银行间", "上交所", "深交所", "场外")
+        for (row <- maybeRows.get) {
+          val fqylx = String.valueOf(row.get(1))
+          val fqydjr = String.valueOf(row.get(4))
+          val fjkjzr = String.valueOf(row.get(6))
+          val fstartdate = String.valueOf(row.get(11))
+          val fqybl = String.valueOf(row.get(2))
+          val fsh = String.valueOf(row.get(7))
+          if ("PG".equals(fqylx) && "1".equals(fsh)
+            && bcrq.compareTo(fqydjr) >= 0
+            && bcrq.compareTo(fjkjzr) <= 0
+            && bcrq.compareTo(fstartdate) >= 0
+            && !condition1.contains(fqybl)) return true
+        }
+      }
+      return false
+    }
 
     /**
       * 获取证券标志
@@ -147,20 +263,15 @@ object Shgh {
       * @return
       */
     def getZqbz(zqdm: String, cjjg: String, bcrq: String): String = {
-      val sql = "select 1 from csqyxx where fqylx='PG' " +
-        "and FQYDJR<='" + bcrq + "' and fjkjzr>='" + bcrq +
-        "' and FSTARTDATE<= '" + bcrq +
-        "' and FQYBL not in('银行间','上交所','深交所','场外') " +
-        "and FSH=1 and FZQDM='" + zqdm + "'"
       if (zqdm.startsWith("6")) {
         if (zqdm.startsWith("609")) return "CDRGP"
         else return "GP"
       }
       if (zqdm.startsWith("5")) {
         if (cjjg.equals("0")) {
-          if (csjjxxValues.value("FZQDMETF1").contains(zqdm)) return "EJDM"
-          if (csjjxxValues.value("FZQDMETF2").contains(zqdm)) return "XJTD"
-          if (csjjxxValues.value("FZQDMETF5").contains(zqdm)) return "XJTD_KSC"
+          if (jjxxbwh("ETF",zqdm, bcrq, 1)) return "EJDM"
+          if (jjxxbwh("ETF",zqdm, bcrq, 2)) return "XJTD"
+          if (jjxxbwh("ETF",zqdm, bcrq, 5)) return "XJTD_KSC"
         } else return "JJ"
       }
       if (zqdm.startsWith("0") || zqdm.startsWith("1")) return "ZQ"
@@ -171,17 +282,104 @@ object Shgh {
         || zqdm.startsWith("740") || zqdm.startsWith("790")) return "XG"
       if (zqdm.startsWith("742")) return "QY"
       if (zqdm.startsWith("714") || zqdm.startsWith("760") || zqdm.startsWith("781")) {
-        if (spark.sql(sql).count() > 0) return "QY"
+        if (sfspggp(zqdm, bcrq)) return "QY"
         return "XG"
       }
       if (zqdm.startsWith("73")) return "XG"
       if (zqdm.startsWith("70")) {
         if ("100".equals(cjjg)) return "XZ"
-        if (spark.sql(sql).count() > 0) return "QY"
+        val str = sfspggp(zqdm, bcrq)
+        if (sfspggp(zqdm, bcrq)) return "QY"
         return "XG"
       }
       null
     }
+
+
+    //TODO 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
+    val dffs = df.rdd.map(row => {
+      val gddm = row.getAs[String]("GDDM")
+      //      val gdxw = row.getAs[String]("GDXM")
+      val bcrq = row.getAs[String]("BCRQ")
+      val cjbh = row.getAs[String]("CJBH")
+      var gsdm = row.getAs[String]("GSDM")
+      val cjsl = row.getAs[String]("CJSL")
+      val bcye = row.getAs[String]("BCYE")
+      var zqdm = row.getAs[String]("ZQDM")
+      val sbsj = row.getAs[String]("SBSJ")
+      val cjsj = row.getAs[String]("CJSJ")
+      val cjjg = row.getAs[String]("CJJG")
+      val cjje = row.getAs[String]("CJJE")
+      val sqbh = row.getAs[String]("SQBH")
+      val bs = row.getAs[String]("BS")
+      val mjbh = row.getAs[String]("MJBH")
+      val zqbz = getZqbz(zqdm, cjjg, bcrq)
+      //      val ywbz = getYwbz("117", zqbz, zqdm, cjjg, bs, gsdm, bcrq)
+      //      zqdm = getZqdm(zqdm, cjjg)
+      //gsdm不够5位补0
+      var length = gsdm.length
+      while (length < 5) {
+        gsdm = "0" + gsdm
+        length += 1
+      }
+      ShghYssj(gddm, "", bcrq, cjbh, gsdm, cjsj, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, "xxx")
+    })
+
+    dffs.foreach(println(_))
+
+
+    //读取CsOsXw表
+    val csqsxwPath = Util.getDailyInputFilePath("CSQSXW")
+    val csqsxw = sc.textFile(csqsxwPath)
+      .filter(row => {
+        val fields = row.split(SEPARATE2)
+        val fxwlb = fields(4)
+        val fsh = fields(6)
+        if ("1".equals(fsh) && ("ZS".equals(fxwlb) || "ZYZS".equals(fxwlb))) true
+        else false
+      })
+      .map(row => {
+        val fields = row.split(SEPARATE2)
+        val fstartdate = fields(9)
+        val fqsxw = fields(3)
+        val fsetcode = fields(5)
+        (fsetcode + SEPARATE1 + fqsxw, fstartdate)
+      })
+      .groupByKey()
+      .mapValues(rows => {
+      rows.toArray.sortWith(_.compareTo(_) <= 0)(0)
+    })
+      .collectAsMap()
+    val csqsxwValue = sc.broadcast(csqsxw)
+
+    //读取CsTsKm表
+    val csTsKmPath = Util.getDailyInputFilePath("A117CSTSKM")
+    val csTsKm = sc.textFile(csTsKmPath)
+      .map(row => {
+        val fields = row.split(SEPARATE2)
+        val fsh = fields(2)
+        val fbz = fields(1)
+        val fzqdm = fields(0)
+        val startdate = fields(5)
+        (fsh+SEPARATE1+fbz+SEPARATE1+fzqdm,startdate)
+      })
+      .groupByKey()
+      .mapValues(rows => {
+        rows.toArray.sortWith(_.compareTo(_) <= 0)(0)
+      })
+      .collectAsMap()
+    val csTsKmValue = sc.broadcast(csTsKm)
+
+
+    /** 获取基金类型 */
+    val lsetcssysjj = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\LSETCSSYSJJ_201809051145.csv", spark)
+    val lsetcssysjjMap = lsetcssysjj.rdd
+      .map(row =>
+        (row.getAs[String](0), row.getAs[String](1) + SEPARATE1 + row.getAs[String](3))
+      )
+      .collectAsMap()
+    val lsetcssysjjValues = sc.broadcast(lsetcssysjjMap)
+
 
     /**
       * 获取业务标识
@@ -194,32 +392,48 @@ object Shgh {
       */
     def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String): String = {
       if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
-        val sql1 = "select 1 from A117CsTsKm " +
-          "where fstartdate<=' " + bcrq +
-          "' and fsh=1 and fbz =3 " +
-          "and fzqdm='" + zqdm + "'"
-        val sql2 = "select 1 from A117CsTsKm " +
-          "where fstartdate<=' " + bcrq +
-          "' and fsh=1 and fbz =2 " +
-          "and fzqdm='" + zqdm + "'"
+
         val condition = csbValues.value(tzh + "指数、指标股票按特殊科目设置页面处理")
         if ("1".equals(condition)) {
-          if (csqsxwValue.value.contains(gsdm) || spark.sql(sql1).count() > 0) {
-            return "ZS"
+          //gh文件中的gsdm字段在CsQsXw表中有数据
+          val maybeString = csqsxwValue.value.get(tzh + SEPARATE1 + gsdm)
+          if (maybeString.isDefined) {
+            if (bcrq.compareTo(maybeString.get) >= 0) return "ZS"
           }
-          if (spark.sql(sql2).count() > 0) return "ZB"
+          //zqdm字段在CsTsKm表中有数据
+          val maybeString1 = csTsKmValue.value.get(1+SEPARATE1+3+SEPARATE1+zqdm)
+          if(maybeString1.isDefined){
+            if(bcrq.compareTo(maybeString1.get) >=0 ) return "ZS"
+          }
+          //zqdm字段在CsTsKm表中有数据
+          val maybeString2 = csTsKmValue.value.get(1+SEPARATE1+2+SEPARATE1+zqdm)
+          if(maybeString2.isDefined){
+            if(bcrq.compareTo(maybeString2.get) >=0 ) return "ZB"
+          }
         }
+
+        //LSetCsSysJj表中FJJLX=0 (WHERE FSETCODE=套帐号)
         val lset = lsetcssysjjValues.value.getOrElse(tzh, "-1@-1").split("@")
         if ("0".equals(lset(0))) {
           if ("1".equals(lset(1)) || "5".equals(lset(1)) || "7".equals(lset(1))) {}
-          if (csqsxwValue.value.contains(gsdm) || spark.sql(sql1).count() > 0) {
-            return "ZS"
+          //gh文件中的gsdm字段在CsQsXw表中有数据
+          val maybeString = csqsxwValue.value.get(tzh + SEPARATE1 + gsdm)
+          if (maybeString.isDefined) {
+            if (bcrq.compareTo(maybeString.get) >= 0) return "ZS"
+          }
+          //zqdm字段在CsTsKm表中有数据
+          val maybeString1 = csTsKmValue.value.get(1+SEPARATE1+3+SEPARATE1+zqdm)
+          if(maybeString1.isDefined){
+            if(bcrq.compareTo(maybeString1.get) >=0 ) return "ZS"
           }
         }
-        if ("0".equals(lset(0)) && "2".equals(lset(1)) && spark.sql(sql2).count() > 0) {
-          //          if()
+        if ("0".equals(lset(0)) && "2".equals(lset(1))) {
+          //zqdm字段在CsTsKm表中有数据
+          val maybeString2 = csTsKmValue.value.get(1+SEPARATE1+2+SEPARATE1+zqdm)
+          if(maybeString2.isDefined){
+            if(bcrq.compareTo(maybeString2.get) >=0 ) return "ZB"
+          }
         }
-
         return "PT"
       }
       if ("EJDM".equals(zqbz) || "XJTD".equals(zqbz) || "XJTD_KSC".equals(zqbz)) {
@@ -229,7 +443,27 @@ object Shgh {
       if ("JJ".equals(zqbz)) {
         if (zqdm.startsWith("501") || zqdm.startsWith("502")) return "LOF"
         if (zqdm.startsWith("518")) return "HJETF"
-        //TODO
+        if("0".equals(cjjg)&& (jjxxbwh("ETF",zqdm, bcrq, 0)||jjxxbwh("ETF",zqdm, bcrq, 1))){
+          if("B".equals(bs)) return "ETFSG"
+          else return "ETFSH"
+        }
+        if(jjxxbwh("ETF",zqdm, bcrq, 2)||jjxxbwh("ETF",zqdm, bcrq, 5)){
+          if("B".equals(bs)) return "ETFSG"
+          else return "ETFSH"
+        }
+        if(jjxxbwh("ETF",zqdm, bcrq, 3)){
+          if("B".equals(bs)) return "ETFRG"
+          else return "ETFFK"
+        }
+        if(jjxxbwh("ETF",zqdm, bcrq, 4)){
+          if("B".equals(bs)) return "ETFRGZQ"
+        }
+        if(jjxxbwh("HB",zqdm, bcrq, 6)){
+          return "HBETF"
+        }
+        if(jjxxbwh("ETF",zqdm, bcrq, 0)){
+          return "ETF"
+        }else return "FBS"
       }
       if ("ZQ".equals(zqbz)) {
         //TODO
@@ -349,7 +583,7 @@ object Shgh {
     }
 
     /**
-      * 转换
+      * 转换cjje
       **/
     def getCjje(tzh: String, zqdm: String, zqbz: String, ywbz: String, cjje: String, cjsl: String, cjjg: String, gzlx: String): String = {
       if ("JJ".equals(zqbz)) {
@@ -371,34 +605,8 @@ object Shgh {
       return cjje
     }
 
-    //TODO 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
-    val dffs = df.rdd.map(row => {
-      val gddm = row.getAs[String]("GDDM")
-      val gdxw = row.getAs[String]("GDXW")
-      val bcrq = row.getAs[String]("BCRQ")
-      val cjbh = row.getAs[String]("CJBH")
-      var gsdm = row.getAs[String]("GSDM")
-      val cjsl = row.getAs[String]("CJSL")
-      val bcye = row.getAs[String]("BCYE")
-      var zqdm = row.getAs[String]("ZQDM")
-      val sbsj = row.getAs[String]("SBSJ")
-      val cjsj = row.getAs[String]("CJSJ")
-      val cjjg = row.getAs[String]("CJJG")
-      val cjje = row.getAs[String]("CJJE")
-      val sqbh = row.getAs[String]("SQBH")
-      val bs = row.getAs[String]("BS")
-      val mjbh = row.getAs[String]("MJBH")
-      val zqbz = getZqbz(zqdm, cjjg, bcrq)
-      val ywbz = getYwbz("117", zqbz, zqdm, cjjg, bs, gsdm, bcrq)
-      zqdm = getZqdm(zqdm, cjjg)
-      //gsdm不够5位补0
-      var length = gsdm.length
-      while (length < 5) {
-        gsdm = "0" + gsdm
-        length += 1
-      }
-      ShghYssj(gddm, gdxw, bcrq, cjbh, gsdm, cjsj, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz)
-    })
+
+    //TODO --------------计算--------------
     /**
       * 原始数据转换1
       * key = 本次日期+证券代码+公司代码/交易席位+买卖+申请编号
@@ -1035,7 +1243,7 @@ object Shgh {
           ZqDm, FJyFS, Fsh, Fzzr, Fchk, fzlh, ftzbz, FBQsghf.formatted("%.2f"), FSQsghf.formatted("%.2f"), FGddm, FHGGAIN.formatted("%.2f"))
     }
 
-    Util.outputMySql(result.toDF(), "SHGH2")
+    //    Util.outputMySql(result.toDF(), "SHGH2")
     spark.stop()
 
   }
