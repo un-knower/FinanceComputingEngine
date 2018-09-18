@@ -9,6 +9,7 @@ src/target/
 /GuZhi.iml
 gz-business/target
 gz-business/gz-business.iml
+gz-flume/target
 gz-flume/gz-flume.iml
 gz-hbase/target
 gz-hbase/gz-hbase.iml
