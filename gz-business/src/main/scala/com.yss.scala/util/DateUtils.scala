@@ -55,7 +55,7 @@ object DateUtils {
   /** 获取当天的日期 */
   def getToday(pattern: String) = {
     val sdf = new SimpleDateFormat(pattern)
-    val today = sdf.format(new Date())
+    sdf.format(new Date())
   }
 
   /**
