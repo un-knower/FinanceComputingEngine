@@ -24,8 +24,8 @@ object GuDingShouYiSFHG {
     val path = "hdfs://192.168.13.110:9000/guzhi/etl/sfgu/20180918/"
     val sfhgDataRDD = Util.readCSV(path, spark).rdd.map(row => {
       val xwh = row.getAs[String]("XWH1").trim
-      /*TODO (xwh, row)*/
-      ("259700", row)
+      (xwh, row)
+      /*("259700", row)*/
     })
 
     // 读取csqsxw,并得到<席位号,套账号>的RDD
@@ -53,8 +53,8 @@ object GuDingShouYiSFHG {
     //<证券类别|席位号|市场号,(数据,套账号,选项结果)>
     val zqlbAndXwhAndSC2RowDataAndTzhAndSelected: RDD[(String, (Row, String, Boolean))] = rowDataAndTzhAndSelected.map(item => {
       val xwh = item._1.getAs[String]("XWH1").trim
-      /*TODO ("ZQZYSFHG|" + xwh + "|G", item)*/
-      ("GP|" + "000001" + "|S", item)
+      ("ZQZYSFHG|" + xwh + "|G", item)
+      /*("GP|" + "000001" + "|S", item)*/
     })
 
     //<数据,套账号,选项结果,佣金利率>
@@ -265,7 +265,7 @@ object GuDingShouYiSFHG {
           Fje = BigDecimal(row.getAs[String]("QTJE1").trim).abs / (1 + FRZLV.setScale(4, BigDecimal.RoundingMode.HALF_UP) / 100 * FCSGHQX / 365)
           Fyj = BigDecimal(0.00).setScale(2, BigDecimal.RoundingMode.HALF_UP)
           Fjsf = BigDecimal(0.00).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-          FSSSFJE = BigDecimal(row.getAs[String]("QTJE1")).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+          FSSSFJE = BigDecimal(row.getAs[String]("QTJE1").trim).setScale(2, BigDecimal.RoundingMode.HALF_UP)
         }
 
       }

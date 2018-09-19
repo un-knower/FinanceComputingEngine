@@ -1,11 +1,12 @@
 package com.yss.scala.guzhi
 
 import java.net.URI
+import java.util.Properties
 
 import com.yss.scala.util.{DateUtils, Util}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 /**
   * @auther: lijiayan
@@ -47,7 +48,11 @@ object GuDingShouYiSFHGETL {
     if (fs.exists(new Path(path))) {
       fs.delete(new Path(path), true)
     }
+
+    res.collect().foreach(println(_))
     saveAsCSV(spark, res, path)
+    saveMySQL(spark, res, path)
+
     spark.stop()
   }
 
@@ -112,6 +117,68 @@ object GuDingShouYiSFHGETL {
       .option("delimiter", ",")
       .option("charset", "UTF-8")
       .csv(path)
+  }
+
+  private def saveMySQL(spark: SparkSession, res: RDD[SFHGETL], path: String): Unit = {
+    import spark.implicits._
+    val resDF = res.toDF(
+      "SCDM",
+      "JLLX",
+      "JYFS",
+      "JSFS",
+      "YWLX",
+      "QSBZ",
+      "GHLX",
+      "JSBH",
+      "CJBH",
+      "SQBH",
+      "WTBH",
+      "JYRQ",
+      "QSRQ",
+      "JSRQ",
+      "QTRQ",
+      "WTSJ",
+      "CJSJ",
+      "XWH1",
+      "XWH2",
+      "XWHY",
+      "JSHY",
+      "TGHY",
+      "ZQZH",
+      "ZQDM1",
+      "ZQDM2",
+      "ZQLB",
+      "LTLX",
+      "QYLB",
+      "GPNF",
+      "MMBZ",
+      "SL",
+      "CJSL",
+      "ZJZH",
+      "BZ",
+      "JG1",
+      "JG2",
+      "QSJE",
+      "YHS",
+      "JSF",
+      "GHF",
+      "ZGF",
+      "SXF",
+      "QTJE1",
+      "QTJE2",
+      "QTJE3",
+      "SJSF",
+      "JGDM",
+      "FJSM",
+      "FZQBZ",
+      "FJYBZ",
+      "QTRQCJRQ"
+    )
+    val properties = new Properties()
+    properties.put("user", "root")
+    properties.put("password", "root1234")
+    resDF.toDF().write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "JSMX03_WDQ_ETL", properties)
+
   }
 
   private def jsmx2Entity(jsmx2RDD: RDD[Row], wdqRDD: RDD[Row]) = {
