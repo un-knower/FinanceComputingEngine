@@ -1,4 +1,4 @@
-package com.yss.flumesink;//package com.yss.flumesink;
+//package com.yss.flumesink;//package com.yss.flumesink;
 //
 //import com.google.common.base.Charsets;
 //import com.google.common.base.Optional;

@@ -2,7 +2,7 @@ package com.yss.scala.util
 
 import java.io.FileInputStream
 import java.sql.{Connection, DriverManager}
-import java.util.{ Properties}
+import java.util.{Properties}
 
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import java.net.{InetAddress}
@@ -31,11 +31,11 @@ object Util {
     * @param sparkSession
     * @return
     */
-  def readCSV(path: String, sparkSession: SparkSession) = {
+  def readCSV(path: String, sparkSession: SparkSession, header: Boolean = true) = {
     sparkSession.read.format("csv")
       .option("sep", ",")
       .option("inferSchema", "false")
-      .option("header", "true")
+      .option("header", header)
       .load(path)
   }
 
@@ -45,7 +45,7 @@ object Util {
     * @param fileName 文件输入名
     */
   def getInputFilePath(fileName: String) = {
-    val hdfsDir = "hdfs://nscluster/yss/guzhi/"
+    val hdfsDir = "hdfs://192.168.102.120:8020/yss/guzhi/"
     val inputFilePath = hdfsDir + fileName
     inputFilePath
   }
@@ -57,7 +57,7 @@ object Util {
     */
   def getDailyInputFilePath(fileName: String) = {
     val today = DateUtils.getToday(DateUtils.yyyyMMdd)
-    val hdfsDir = "hdfs://nscluster/yss/guzhi/basic_list/"+today+"/"
+    val hdfsDir = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/" + today + "/"
     val inputFilePath = hdfsDir + fileName
     inputFilePath
   }
@@ -86,7 +86,8 @@ object Util {
     val properties = new Properties()
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
-    DF.write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.119/JJCWGZ?useUnicode=true&characterEncoding=utf8", tableName, properties)
+    properties.setProperty("driver", "com.mysql.jdbc.Driver") //这句话一定要加上不然报错缺少jdbc驱动
+    DF.write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.120/JJCWGZ?useUnicode=true&characterEncoding=utf8", tableName, properties)
   }
 
   /**
