@@ -8,7 +8,11 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SQLContext}
 import com.yss.kafka.Common._
-
+/**
+  * @author wfy
+  * @version 2018-09-10
+  *          描述：Spark读取HDFS数据,由KAFKA生产者发布
+  */
 object KafkaProducer {
 
   def getHDFSInputPath () : String = {

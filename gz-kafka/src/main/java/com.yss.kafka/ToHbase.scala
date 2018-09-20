@@ -6,7 +6,11 @@ import org.apache.hadoop.hbase.client.{Admin, Connection, Put}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HColumnDescriptor, HTableDescriptor, TableName}
 import com.yss.kafka.Common._
-
+/**
+  * @author wfy
+  * @version 2018-09-10
+  *          描述：将KAFKA消费的数据存入HBASE
+  */
 
 object ToHbase{
 
