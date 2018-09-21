@@ -7,3 +7,4 @@ build.properties
 .idea/
 src/target/
 /GuZhi.iml
+*.iml
