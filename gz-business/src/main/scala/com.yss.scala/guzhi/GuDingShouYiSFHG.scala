@@ -21,7 +21,8 @@ object GuDingShouYiSFHG {
       .getOrCreate()
 
     // 读取etl后的csv文件并转化成RDD
-    val sfhgDataRDD = Util.readCSV(args(0), spark).rdd.map(row => {
+    val path = "hdfs://192.168.13.110:9000/guzhi/etl/sfgu/20180918/"
+    val sfhgDataRDD = Util.readCSV(path, spark).rdd.map(row => {
       val xwh = row.getAs[String]("XWH1").trim
       /*TODO (xwh, row)*/
       ("259700", row)
@@ -64,7 +65,6 @@ object GuDingShouYiSFHG {
     //开始计算
     val resSFHGRDD: RDD[SFHG] = calculate(rowDataAndTzhAndSelectedAndYjFV)
     resSFHGRDD.collect().foreach(println(_))
-
 
     spark.stop()
 
@@ -261,6 +261,7 @@ object GuDingShouYiSFHG {
         //682续作前期合约了结数据取值规则
         else {
           FInDate = FDate
+          FCSGHQX = BigDecimal(QTRQCJRQ)
           Fje = BigDecimal(row.getAs[String]("QTJE1").trim).abs / (1 + FRZLV.setScale(4, BigDecimal.RoundingMode.HALF_UP) / 100 * FCSGHQX / 365)
           Fyj = BigDecimal(0.00).setScale(2, BigDecimal.RoundingMode.HALF_UP)
           Fjsf = BigDecimal(0.00).setScale(2, BigDecimal.RoundingMode.HALF_UP)

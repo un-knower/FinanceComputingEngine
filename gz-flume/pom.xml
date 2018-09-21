@@ -82,7 +82,16 @@
             <artifactId>flume-ng-configuration</artifactId>
             <version>1.8.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.linuxense</groupId>
+            <artifactId>javadbf</artifactId>
+            <version>0.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20180813</version>
+        </dependency>
     </dependencies>
 
 </project>

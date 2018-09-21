@@ -2,8 +2,7 @@ package com.yss.scala.guzhi
 
 import java.net.URI
 
-import com.yss.scala.dbf.dbf._
-import com.yss.scala.util.DateUtils
+import com.yss.scala.util.{DateUtils, Util}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
@@ -23,7 +22,9 @@ object GuDingShouYiSFHGETL {
       .config("user", "hadoop")
       .getOrCreate()
 
-    val jsmxRDD: RDD[Row] = readJsmxFileAndFilted(spark, args(0))
+    val jsmxpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/20180918/jsmx03_jsjc1.528.csv"
+    val wdqpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/20180918/wdqjsjc1.528.csv"
+    val jsmxRDD: RDD[Row] = readJsmxFileAndFilted(spark, jsmxpath)
 
     val jsmx013FiltedRDD = jsmxRDD.filter(row => {
       val YWLX = row.getAs[String]("YWLX").trim
@@ -33,7 +34,7 @@ object GuDingShouYiSFHGETL {
     val jsmx013SFHGETL: RDD[SFHGETL] = jsmx013Entity(jsmx013FiltedRDD)
 
     val jsmx2RDD: RDD[Row] = jsmxRDD.subtract(jsmx013FiltedRDD)
-    val wdqRDD: RDD[Row] = readWdqFileAndFilted(spark, args(1))
+    val wdqRDD: RDD[Row] = readWdqFileAndFilted(spark, wdqpath)
 
     val jsmx2SFHGETL: RDD[SFHGETL] = jsmx2Entity(jsmx2RDD, wdqRDD)
 
@@ -348,8 +349,7 @@ object GuDingShouYiSFHGETL {
     * @return
     */
   private def readJsmxFileAndFilted(spark: SparkSession, jsmxFilePath: String): RDD[Row] = {
-    val jsmxRDD: RDD[Row] = spark.sqlContext.dbfFile(jsmxFilePath).rdd
-
+    val jsmxRDD: RDD[Row] = Util.readCSV(jsmxFilePath, spark).rdd
     jsmxRDD.filter(row => {
       val JLLX = row.getAs[String]("JLLX").trim
       val JYFS = row.getAs[String]("JYFS").trim
@@ -363,7 +363,7 @@ object GuDingShouYiSFHGETL {
 
 
   private def readWdqFileAndFilted(spark: SparkSession, wdqFilePath: String): RDD[Row] = {
-    val wdqRDD: RDD[Row] = spark.sqlContext.dbfFile(wdqFilePath).rdd
+    val wdqRDD: RDD[Row] = Util.readCSV(wdqFilePath, spark).rdd
     //过滤数据,wdq（未到期）文件中：scdm=‘01’and wdqlb=‘008’的所有数据
     wdqRDD.filter(row => {
       val SCDM = row.getAs[String]("SCDM").trim
