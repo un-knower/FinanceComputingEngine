@@ -1,7 +1,10 @@
 package com.yss.scala.guzhi
 
+import java.text.SimpleDateFormat
+
 import com.twitter.chill.java.IterableRegistrar
 import com.yss.scala.dto.{ExeOriginalObj, ExecutionAggrObj}
+import com.yss.scala.guzhi.ShghContants.SEPARATE1
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import com.yss.scala.util.Util
@@ -27,8 +30,17 @@ object ExecutionETL {
     val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
     val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-    val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\估值资料\\execution_aggr_F000995F0401_1_20180808(2).tsv")
- //   val exe=sc.textFile("C:\\Users\\hgd\\Desktop\\execution_aggr_tgwid_1_20180124.tsv")
+    val path="C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv"
+
+    val dateSplit=path.split("/")
+    val dateSplit1= dateSplit(4).split("_")
+    val fileDate= dateSplit1(4).substring(0,8)
+    val sdf1=new SimpleDateFormat("yyyyMMdd")
+    val parseDate1=sdf1.parse(fileDate)  //解析成date
+    val dateTime1=parseDate1.getTime
+
+ //   val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_F000995F0401_1_20180808(2).tsv")
+     val exe=sc.textFile("C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv")
     /**
       *  1.读取原始数据表
       */
@@ -95,13 +107,41 @@ object ExecutionETL {
       }
     }.collectAsMap()
 
+    /**
+      *
+      * 6.读取基金信息表
+      */
+    val CSJJXX = sc.textFile("C:/Users/hgd/Desktop/估值资料/test.tsv")//hdfs://nscluster/yss/guzhi/basic_list/20180917/CSJJXX
+    val CSJJXXValue = CSJJXX.map {
+      x => {
+        val value = x.split("\t")
+        val FSCZQDM = value(0) //市场证券代码
+        val  FSZSH= value(8) //市场
+        val  FZQLX= value(9) //基金类型
+        //日期
+        val fSatrtDate=value(14)
+
+        //将日期转化成时间戳形式
+         val sdf=new SimpleDateFormat("yyyy-MM-dd")
+         val parseDate=sdf.parse(fSatrtDate)  //解析成date
+         val dateTime=parseDate.getTime
+         val key=FSCZQDM+"_"+FZQLX
+        (key, dateTime)
+      }
+    }.groupByKey().mapValues(item => { //分组完成后进行排序
+      item.toArray.sortWith((str1, str2) => {
+        str1.compareTo(str2) > 0  //从大到小排序
+      })
+    }).collectAsMap()
+
+
 
     //将map进行广播
     val xwValues = sc.broadcast(xwValue)
     val varlistValues = sc.broadcast(varlistValue)
     val cstskmValues = sc.broadcast(cstskmValue)
     val LSETCSSYSJJValues = sc.broadcast(LSETCSSYSJJValue)
-
+    val CSJJXXValues = sc.broadcast(CSJJXXValue)
 
 
 
@@ -149,6 +189,8 @@ object ExecutionETL {
           val FARVALUE = varlistValues.value.getOrElse("117指数、指标股票按特殊科目设置页面处理", -1) //-1
           val Fbz = cstskmValues.value.getOrElse(key, -1) // -1
           val FJJLX = LSETCSSYSJJValues.value.getOrElse("117", -1) //0
+
+
 
           //进行第一个判断
           if (FARVALUE == 1 && (FXWLB.equals("ZS") || Fbz == 3)) {
@@ -246,6 +288,28 @@ object ExecutionETL {
             fzqbz("fzqbz") = "QZ"
             fywbz("fywbz") = "RZQZ"
           }
+        }else if(key.substring(0, 2) == "15") {
+
+
+          val dateLong = CSJJXXValues.value.get(key + "_" + "HB")
+
+          if(dateLong.isDefined){
+           val  jjDate = dateLong.get(0)
+
+            if (key.substring(0, 3) == "159" && jjDate != "0" && dateTime1.toString >= jjDate.toString) {
+              fzqbz("fzqbz") = "JJ"
+              fywbz("fywbz") = "HBETF"
+
+            } else if (key.substring(0, 4) == "1599") {
+              fzqbz("fzqbz") = "JJ"
+              fywbz("fywbz") = "ETF"
+            } else {
+
+              fzqbz("fzqbz") = "JJ"
+              fywbz("fywbz") = "LOF"
+
+            }
+          }
         }
        //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
 
@@ -266,8 +330,8 @@ object ExecutionETL {
       .mode(SaveMode.Overwrite)
       .save()
 
-/*
-    result.toDF().show()*/
+
+    // result.toDF().show()
 
 
     //  exeDF.createOrReplaceTempView("exeDF")
