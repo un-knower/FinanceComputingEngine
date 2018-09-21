@@ -356,7 +356,7 @@ public class TailFile {
         HashMap<String, String> map = new HashMap<>();
         String replace = filePath.getAbsolutePath().replace("/data/gz_interface/", "");
         if (replace.length() > 4) {
-            map.put("fileName", replace.substring(0, replace.length() - 4));
+            map.put("fileName", replace.substring(replace.length() - 4));
         } else {
             map.put("fileName", replace);
         }
