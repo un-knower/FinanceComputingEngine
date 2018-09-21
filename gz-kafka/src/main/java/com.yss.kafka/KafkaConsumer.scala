@@ -10,6 +10,11 @@ import com.yss.kafka.Common._
 import com.yss.kafka.ToHbase._
 import kafka.consumer.ConsumerConfig
 
+/**
+  * @author wfy
+  * @version 2018-09-10
+  *          描述：KAFKA消费数据
+  */
 
 
 
