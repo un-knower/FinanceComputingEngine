@@ -1,5 +1,11 @@
 package com.yss.kafka
 
+/**
+  * @author wfy
+  * @version 2018-09-10
+  *          描述：常量
+  */
+
 object Common {
 
   /*

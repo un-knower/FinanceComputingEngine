@@ -91,10 +91,12 @@ public class TailFile {
     return lastUpdated;
   }
 
+
   public String getFileLastUpdated(){
 
     return new File(this.getPath()).lastModified()+"";
   }
+
 
   public boolean needTail() {
     return needTail;
@@ -123,6 +125,7 @@ public class TailFile {
   public void setLineReadPos(long lineReadPos) {
     this.lineReadPos = lineReadPos;
   }
+
 
   public boolean updatePos(String path, long inode, long pos) throws IOException {
     if (this.inode == inode && this.path.equals(path)) {
@@ -210,7 +213,7 @@ public class TailFile {
 //        if (buffer[i] == BYTE_NL) {
 //          int oldLen = oldBuffer.length;
 //          // Don't copy last byte(NEW_LINE)
-//          int lineLen = i - bufferPos+1;
+//          int lineLen = i - bufferPos;
 //          // For windows, check for CR
 ////          if (i > 0 && buffer[i - 1] == BYTE_CR) {
 ////            lineLen -= 1;
