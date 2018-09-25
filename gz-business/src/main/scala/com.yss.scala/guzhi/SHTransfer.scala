@@ -2,7 +2,9 @@ package com.yss.scala.guzhi
 
 import com.yss.scala.dto.{Hzjkqs, ShghDto, ShghFee, ShghYssj}
 import com.yss.scala.guzhi.ShghContants._
-import com.yss.scala.util.Util
+import com.yss.scala.util.{DateUtils, Util}
+import org.apache.spark
+import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -15,10 +17,11 @@ import scala.math.BigDecimal.RoundingMode
   *          源文件：gdh.dbf
   *          结果表：SHDZGH
   */
-object Shgh {
+object SHTransfer {
 
   def main(args: Array[String]): Unit = {
-    //    testEtl()
+//        testEtl()
+    doSum()
   }
 
   /** 测试使用 */
@@ -29,35 +32,45 @@ object Shgh {
   }
 
   def testEtl() = {
-    val spark = SparkSession.builder().appName("SHGH").master("local[*]").getOrCreate()
-    val etlRdd = doETL(spark)
+    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
+    val broadcastLvarList = loadLvarlist(spark.sparkContext)
+    val df = doETL(spark,broadcastLvarList)
     import spark.implicits._
-    Util.outputMySql(etlRdd.toDF(), "shgh_etl_ws")
+    Util.outputMySql(df.toDF,"shgh_etl_ws")
     spark.stop()
   }
 
+
+  def doSum() = {
+    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
+    val broadcastLvarList = loadLvarlist(spark.sparkContext)
+    val df = doETL(spark,broadcastLvarList)
+    import spark.implicits._
+    doExec(spark,df.toDF(),broadcastLvarList)
+    spark.stop()
+  }
+
+  /** * 加载公共参数表lvarlist */
+  def loadLvarlist(sc:SparkContext) = {
+    //公共的参数表
+    val csbPath = Util.getDailyInputFilePath("LVARLIST")
+    val csb = sc.textFile(csbPath)
+
+    //将参数表转换成map结构
+    val csbMap = csb.map(row => {
+      val fields = row.split(SEPARATE2)
+      val key = fields(0)
+      val value = fields(1)
+      (key, value)
+    })
+      .collectAsMap()
+    sc.broadcast(csbMap)
+  }
+
   /** 加载各种基础信息表，并广播 */
-  def loadTables(spark: SparkSession) = {
+  def loadTables(spark: SparkSession,today:String) = {
 
     val sc = spark.sparkContext
-
-    /** * 加载参数表lvarlist */
-    def loadLvarlist() = {
-      //公共的参数表
-      val csbPath = Util.getDailyInputFilePath("LVARLIST")
-      val csb = sc.textFile(csbPath)
-
-      //将参数表转换成map结构
-      val csbMap = csb.map(row => {
-        val fields = row.split(SEPARATE2)
-        val key = fields(0)
-        //参数名
-        val value = fields(1) //参数值
-        (key, value)
-      })
-        .collectAsMap()
-      sc.broadcast(csbMap)
-    }
 
     /** * 读取基金信息表csjjxx */
     def loadCsjjxx() = {
@@ -151,9 +164,34 @@ object Shgh {
     }
 
     /** 加载权益信息表csqyxx， */
+//    def loadCsqyxx() = {
+//      val csqyxx = Util.getDailyInputFilePath("CSQYXX")
+//      val csqyxMap = sc.textFile(csqyxx)
+//        .filter(row => {
+//          val fields = row.split(SEPARATE2)
+//          val fqylx = fields(1)
+//          val fsh = fields(7)
+//          if ("PG".equals(fqylx) && "1".equals(fsh)) true
+//          else false
+//        })
+//        .map(row => {
+//          val fields = row.split(SEPARATE2)
+//          val fzqdm = fields(2)
+//          (fzqdm, row)
+//        })
+//        .groupByKey()
+//        .collectAsMap()
+//      sc.broadcast(csqyxMap)
+//    }
     def loadCsqyxx() = {
       val csqyxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\csqyxx.csv", spark)
       val csqyxMap = csqyxx.rdd
+          .filter(row => {
+            val fqylx = String.valueOf(row.get(1))
+            val fsh = String.valueOf(row.get(7))
+            if ("PG".equals(fqylx) && "1".equals(fsh)) true
+            else false
+          })
         .map(row => {
           val fzqdm = row.getAs[String](2)
           (fzqdm, row)
@@ -310,26 +348,72 @@ object Shgh {
     }
 
     /** 已计提国债利息 JJGZLX */
+//    def loadGzlx() = {
+//      val jjgzlxPath = Util.getDailyInputFilePath("JJGZLX")
+//      val jjgzlxMap = sc.textFile(jjgzlxPath)
+//        .map(str => {
+//          val fields = str.split(SEPARATE2)
+//          val fjxrq = fields(1)
+//          val fgzdm = fields(0)
+//          val fyjlx = fields(2)
+//          (fgzdm + SEPARATE1 + fjxrq, fyjlx)
+//        }).collectAsMap()
+//      sc.broadcast(jjgzlxMap)
+//    }
     def loadGzlx() = {
-      val jjgzlxPath = Util.getDailyInputFilePath("JJGZLX")
-      val jjgzlxMap = sc.textFile(jjgzlxPath)
+      val jjgzlxPath = "C:\\Users\\wuson\\Desktop\\GuZhi\\data\\JJGZLX.csv"
+      val jjgzlxMap = Util.readCSV(jjgzlxPath,spark).rdd
         .map(str => {
-          val fields = str.split(SEPARATE2)
-          val fjxrq = fields(1)
-          val fgzdm = fields(0)
-          val fyjlx = fields(2)
+          val fjxrq = str.getAs[String](1)
+          val fgzdm = str.getAs[String](0)
+          val fyjlx = str.getAs[String](2)
           (fgzdm + SEPARATE1 + fjxrq, fyjlx)
         }).collectAsMap()
       sc.broadcast(jjgzlxMap)
     }
 
-    (loadLvarlist(), loadCsjjxx(), loadCsqyxx(), loadCsqsxw(),
-      loadCsTsKm(), loadCssysjj(), loadCszqxx(), loadCsgdzh(), loadCsjylv(), loadGzlx())
+    /** 加载节假日表 csholiday*/
+//    def loadCsholiday() = {
+//      val csholidayPath = Util.getDailyInputFilePath("CSHOLIDAY")
+//      val csholidayList = sc.textFile(csholidayPath)
+//          .filter(str => {
+//            val fields = str.split(SEPARATE2)
+//            val fdate = fields(0)
+//            val fbz = fields(1)
+//            val fsh = fields(3)
+//            if("0".equals(fbz) && "1".equals(fsh) && fdate.compareTo(today)>=0) true
+//            else false
+//          })
+//        .map(str => {
+//          str.split(SEPARATE2)(0)
+//        }).takeOrdered(1)
+//      if(csholidayList.length == 0) throw new Exception("获取工作日信息有误!")
+//      csholidayList(0)
+//    }
+    def loadCsholiday() = {
+      val csholidayPath = "C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSHOLIDAY.csv"
+      val csholidayList = Util.readCSV(csholidayPath,spark).rdd
+        .filter(str => {
+          val fdate = str.getAs[String](0)
+          val fbz = str.getAs[String](1)
+          val fsh = str.getAs[String](3)
+          if("0".equals(fbz) && "1".equals(fsh) && fdate.compareTo(today)>=0) true
+          else false
+        })
+        .map(str => {
+          str.getAs[String](0)
+        }).takeOrdered(1)
+      if(csholidayList.length == 0) throw new Exception("获取工作日信息有误!")
+      csholidayList(0)
+    }
+
+    (loadCsjjxx(), loadCsqyxx(), loadCsqsxw(),
+      loadCsTsKm(), loadCssysjj(), loadCszqxx(), loadCsgdzh(), loadCsjylv(), loadGzlx(),loadCsholiday())
     //    (larlistValue, csjjxxValue,csqyxxValue, csqsxwValue, csTsKmValue, lsetcssysjjValue, csqzxxValue, csgdzhValue)
   }
 
   /** 进行原始数据的转换包括：规则1，2，3，4，5 */
-  def doETL(spark: SparkSession) = {
+  def doETL(spark: SparkSession,csb:Broadcast[collection.Map[String, String]]) = {
     val sc = spark.sparkContext
 
     import com.yss.scala.dbf.dbf._
@@ -337,19 +421,20 @@ object Shgh {
     //原始数据
     val sourcePath = "C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.dbf"
     val df = spark.sqlContext.dbfFile(sourcePath)
-
+    val today = DateUtils.getToday(DateUtils.yyyy_MM_dd)
     // (larlistValue, csjjxxValue,csqyxxValue, csqsxwValue, csTsKmValue, lsetcssysjjValue, csqzxxValue, csgdzhValue)
-    val broadcaseValues = loadTables(spark)
-    val csbValues = broadcaseValues._1
-    val csjjxxValues = broadcaseValues._2
-    val csqyxValues = broadcaseValues._3
-    val csqsxwValue = broadcaseValues._4
-    val csTsKmValue = broadcaseValues._5
-    val lsetcssysjjValues = broadcaseValues._6
-    val cszqxxValues = broadcaseValues._7
-    val csgdzhValues = broadcaseValues._8
-    val csjylvValues = broadcaseValues._9
-    val gzlxValues = broadcaseValues._10
+    val broadcaseValues = loadTables(spark,today)
+    val csbValues = csb
+    val csjjxxValues = broadcaseValues._1
+    val csqyxValues = broadcaseValues._2
+    val csqsxwValue = broadcaseValues._3
+    val csTsKmValue = broadcaseValues._4
+    val lsetcssysjjValues = broadcaseValues._5
+    val cszqxxValues = broadcaseValues._6
+    val csgdzhValues = broadcaseValues._7
+    val csjylvValues = broadcaseValues._8
+    val gzlxValues = broadcaseValues._9
+    val csholiday = broadcaseValues._10
 
     /**
       * 计算国债利息
@@ -428,14 +513,13 @@ object Shgh {
       if (maybeRows.isDefined) {
         val condition1 = Array("银行间", "上交所", "深交所", "场外")
         for (row <- maybeRows.get) {
-          val fqylx = String.valueOf(row.get(1))
+
           val fqydjr = String.valueOf(row.get(4))
           val fjkjzr = String.valueOf(row.get(6))
           val fstartdate = String.valueOf(row.get(11))
           val fqybl = String.valueOf(row.get(2))
-          val fsh = String.valueOf(row.get(7))
-          if ("PG".equals(fqylx) && "1".equals(fsh)
-            && bcrq.compareTo(fqydjr) >= 0
+
+          if (bcrq.compareTo(fqydjr) >= 0
             && bcrq.compareTo(fjkjzr) <= 0
             && bcrq.compareTo(fstartdate) >= 0
             && !condition1.contains(fqybl)) return true
@@ -819,28 +903,41 @@ object Shgh {
       return cjje
     }
 
+    /**
+      *   勾选了“上交所是否启用企债净价交易”则获取工作日
+      * @param bcrq 源文件日期
+      * @param tzh 套账号
+      * @return
+      */
+    def getFindate(bcrq:String,tzh:String) = {
+      val value= csbValues.value.get(tzh+"上交所是否启用企债净价交易")
+      if(value.isDefined && "1".equals(value.get)) csholiday
+      else bcrq
+    }
+
     // 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
     val etlRdd = df.rdd.map(row => {
-      val gddm = row.getAs[String]("GDDM")
-      //      val gdxw = row.getAs[String]("GDXM")
-      val bcrq = row.getAs[String]("BCRQ")
-      val cjbh = row.getAs[String]("CJBH")
-      var gsdm = row.getAs[String]("GSDM")
-      var cjsl = row.getAs[String]("CJSL")
-      val bcye = row.getAs[String]("BCYE")
-      var zqdm = row.getAs[String]("ZQDM")
-      val sbsj = row.getAs[String]("SBSJ")
-      val cjsj = row.getAs[String]("CJSJ")
-      val cjjg = row.getAs[String]("CJJG")
-      var cjje = row.getAs[String]("CJJE")
-      val sqbh = row.getAs[String]("SQBH")
-      val bs = row.getAs[String]("BS")
-      val mjbh = row.getAs[String]("MJBH")
+      val gddm = row.getAs[String](0)
+      val gdxw = row.getAs[String](1)
+      val bcrq = row.getAs[String](2)
+      val cjbh = row.getAs[String](3)
+      var gsdm = row.getAs[String](4)
+      var cjsl = row.getAs[String](5)
+      val bcye = row.getAs[String](6)
+      var zqdm = row.getAs[String](7)
+      val sbsj = row.getAs[String](8)
+      val cjsj = row.getAs[String](9)
+      val cjjg = row.getAs[String](10)
+      var cjje = row.getAs[String](11)
+      val sqbh = row.getAs[String](12)
+      val bs = row.getAs[String](13)
+      val mjbh = row.getAs[String](14)
       val zqbz = getZqbz(zqdm, cjjg, bcrq)
       val tzh = getTzh(gddm)
       val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq)
       val gzlv = gzlx(zqbz, zqdm, bcrq, cjsl)
-      zqdm = getZqdm(zqbz, cjjg)
+      val findate = getFindate(bcrq,tzh)
+      zqdm = getZqdm(zqdm, cjjg)
       cjsl = getCjsl(zqdm, cjjg, cjsl)
       cjje = getCjje(tzh, zqdm, zqbz, ywbz, cjje, cjsl, cjjg, gzlv)
       val hggain = hgsy(bcrq, cjjg, cjsl, tzh, zqdm)
@@ -850,16 +947,17 @@ object Shgh {
         gsdm = "0" + gsdm
         length += 1
       }
-      ShghYssj(gddm, "", bcrq, cjbh, gsdm, cjsj, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, hggain)
+      ShghYssj(gddm, "", bcrq, cjbh, gsdm, cjsj, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, hggain,findate)
     })
     etlRdd
   }
 
   /** 汇总然后进行计算 */
-  def doExec(spark: SparkSession, df: DataFrame) = {
+  def doExec(spark: SparkSession, df: DataFrame,csb:Broadcast[collection.Map[String, String]]) = {
 
     val sc = spark.sparkContext
 
+    /** 加载公共费率表和佣金表*/
     def loadFeeTables() = {
       //公共的费率表
       val flbPath = Util.getDailyInputFilePath("CSJYLV")
@@ -867,20 +965,6 @@ object Shgh {
       //117的佣金利率表
       val yjPath = Util.getDailyInputFilePath("A117CSYJLV")
       val yjb = sc.textFile(yjPath)
-
-      //公共的参数表
-      val csbPath = Util.getDailyInputFilePath("LVARLIST")
-      val csb = sc.textFile(csbPath)
-
-      //将参数表转换成map结构
-      val csbMap = csb.map(row => {
-        val fields = row.split(SEPARATE2)
-        val key = fields(0)
-        //参数名
-        val value = fields(1) //参数值
-        (key, value)
-      })
-        .collectAsMap()
 
       //将佣金表转换成map结构
       val yjbMap = yjb.map(row => {
@@ -921,14 +1005,13 @@ object Shgh {
         .groupByKey()
         .collectAsMap()
 
-      (sc.broadcast(yjbMap), sc.broadcast(flbMap), sc.broadcast(csbMap)
-      )
+      (sc.broadcast(yjbMap), sc.broadcast(flbMap))
     }
 
     val broadcaseFee = loadFeeTables()
     val yjbValues = broadcaseFee._1
     val flbValues = broadcaseFee._2
-    val csbValues = broadcaseFee._3
+    val csbValues = csb
     /**
       * 原始数据转换1
       * key = 本次日期+证券代码+公司代码/交易席位+买卖+股东代码+套账号+证券标志+业务标志+申请编号
@@ -967,7 +1050,6 @@ object Shgh {
       (key, row)
     }).groupByKey()
 
-
     /**
       * 获取公共费率和佣金费率
       *
@@ -1001,12 +1083,12 @@ object Shgh {
         * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
         */
       def getCommonFee(fllb: String) = {
-        var rateStr = DEFORT_VALUE1
+        var rateStr = DEFORT_VALUE2
         var maybeRateStr = flbMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + zyzch + SEPARATE1 + fllb)
         if (maybeRateStr.isEmpty) {
-          maybeRateStr = flbMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gyzch + SEPARATE1 + fllb)
+          maybeRateStr = flbMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + zyzch + SEPARATE1 + fllb)
           if (maybeRateStr.isEmpty) {
-            maybeRateStr = flbMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + zyzch + SEPARATE1 + fllb)
+            maybeRateStr = flbMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gyzch + SEPARATE1 + fllb)
             if (maybeRateStr.isEmpty) {
               maybeRateStr = flbMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gyzch + SEPARATE1 + fllb)
             }
@@ -1237,7 +1319,7 @@ object Shgh {
 
     //第二种 相同申请编号的金额汇总*费率，各申请编号汇总后的金额相加
     val fee2 = value.map {
-      case (key, values) => {
+      case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
         val gsdm = fields(2) //交易席位
@@ -1267,7 +1349,7 @@ object Shgh {
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
         var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
-        val csResults = getGgcs("117")
+        val csResults = getGgcs(tzh)
         val cs1 = csResults._1
         var cs2 = csResults._2
         val cs3 = csResults._3
@@ -1330,10 +1412,10 @@ object Shgh {
           sumYj2 = BigDecimal(minYj)
         }
 
-        (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs,
+        (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs + SEPARATE1 +
+          gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz,
           ShghFee("2", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
             sumGhf2, sumFxj2, BigDecimal(0), BigDecimal(0)))
-      }
     }
       .groupByKey()
       .map {
@@ -1362,7 +1444,7 @@ object Shgh {
 
     //第三种 金额汇总*费率
     val fee3 = value1.map {
-      case (key, values) => {
+      case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
         val gsdm = fields(2) //交易席位
@@ -1392,7 +1474,7 @@ object Shgh {
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
         var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
-        val csResults = getGgcs("117")
+        val csResults = getGgcs(tzh)
         val cs1 = csResults._1
         var cs2 = csResults._2
         val cs3 = csResults._3
@@ -1456,7 +1538,6 @@ object Shgh {
 
         (key, ShghFee("3", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
           sumGhf2, sumFxj2, BigDecimal(0), BigDecimal(0)))
-      }
     }
 
     //将三种结果串联起来
@@ -1578,7 +1659,7 @@ object Shgh {
     }
     //将结果输出
     import spark.implicits._
-    Util.outputMySql(result.toDF(), "SHGH2")
+    Util.outputMySql(result.toDF(), "shgh_ws_test")
   }
 
 }
