@@ -3,6 +3,7 @@ package com.yss.scala.guzhi
 import java.net.URI
 import java.util.Properties
 
+import com.yss.scala.dto.SHFICCTriPartyRepoETLDto
 import com.yss.scala.util.{DateUtils, Util}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
@@ -15,10 +16,10 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
   *        源文件:jsmx和wdq
   *        目标文件:csv
   */
-object GuDingShouYiSFHGETL {
+object SHFICCTriPartyRepoETL {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-      .appName(GuDingShouYiSFHGETL.getClass.getSimpleName)
+      .appName(SHFICCTriPartyRepoETL.getClass.getSimpleName)
       .master("local[*]")
       .config("user", "hadoop")
       .getOrCreate()
@@ -32,12 +33,12 @@ object GuDingShouYiSFHGETL {
       "680".equals(YWLX) || "681".equals(YWLX) || "683".equals(YWLX)
     })
 
-    val jsmx013SFHGETL: RDD[SFHGETL] = jsmx013Entity(jsmx013FiltedRDD)
+    val jsmx013SFHGETL: RDD[SHFICCTriPartyRepoETLDto] = jsmx013Entity(jsmx013FiltedRDD)
 
     val jsmx2RDD: RDD[Row] = jsmxRDD.subtract(jsmx013FiltedRDD)
     val wdqRDD: RDD[Row] = readWdqFileAndFilted(spark, wdqpath)
 
-    val jsmx2SFHGETL: RDD[SFHGETL] = jsmx2Entity(jsmx2RDD, wdqRDD)
+    val jsmx2SFHGETL: RDD[SHFICCTriPartyRepoETLDto] = jsmx2Entity(jsmx2RDD, wdqRDD)
 
     val res = jsmx013SFHGETL.union(jsmx2SFHGETL)
 
@@ -57,7 +58,7 @@ object GuDingShouYiSFHGETL {
   }
 
 
-  private def saveAsCSV(spark: SparkSession, res: RDD[SFHGETL], path: String): Unit = {
+  private def saveAsCSV(spark: SparkSession, res: RDD[SHFICCTriPartyRepoETLDto], path: String): Unit = {
     import spark.implicits._
     res.coalesce(1).toDF(
       "SCDM",
@@ -119,7 +120,7 @@ object GuDingShouYiSFHGETL {
       .csv(path)
   }
 
-  private def saveMySQL(spark: SparkSession, res: RDD[SFHGETL], path: String): Unit = {
+  private def saveMySQL(spark: SparkSession, res: RDD[SHFICCTriPartyRepoETLDto], path: String): Unit = {
     import spark.implicits._
     val resDF = res.toDF(
       "SCDM",
@@ -265,7 +266,7 @@ object GuDingShouYiSFHGETL {
       //qtrq-cjrq
       var QTRQCJRQ = days.toString
 
-      val sfhgetl: SFHGETL = SFHGETL(SCDM, JLLX, JYFS, JSFS, YWLX, QSBZ, GHLX, JSBH, CJBH, SQBH, WTBH,
+      val sfhgetl: SHFICCTriPartyRepoETLDto = SHFICCTriPartyRepoETLDto(SCDM, JLLX, JYFS, JSFS, YWLX, QSBZ, GHLX, JSBH, CJBH, SQBH, WTBH,
         JYRQ, QSRQ, JSRQ, QTRQ, WTSJ, CJSJ, XWH1, XWH2, XWHY, JSHY, TGHY, ZQZH, ZQDM1,
         ZQDM2, ZQLB, LTLX, QYLB, GPNF, MMBZ, SL, CJSL, ZJZH, BZ, JG1, JG2, QSJE, YHS,
         JSF, GHF, ZGF, SXF, QTJE1, QTJE2, QTJE3, SJSF, JGDM, FJSM,
@@ -348,7 +349,7 @@ object GuDingShouYiSFHGETL {
         case _ => FJYBZ = " "
       }
 
-      SFHGETL(
+      SHFICCTriPartyRepoETLDto(
         SCDM,
         JLLX,
         JYFS,
@@ -439,7 +440,7 @@ object GuDingShouYiSFHGETL {
     })
   }
 
-  private case class SFHGETL(
+  /*private case class SHFICCTriPartyRepoETLDto(
                               SCDM: String,
                               JLLX: String,
                               JYFS: String,
@@ -495,5 +496,5 @@ object GuDingShouYiSFHGETL {
                               //qtrq-cjrq
                               QTRQCJRQ: String
                             )
-
+*/
 }
