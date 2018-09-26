@@ -66,6 +66,7 @@ public class TailFile {
     private File filePath;
 
     private String fileName;
+    private String parentDir;
 
 
     /*=================================DBF分割线=====开始=======================================*/
@@ -228,7 +229,7 @@ public class TailFile {
     /*------------------XML分割线----------结束-------------------------*/
 
 
-    public TailFile(File file, Map<String, String> headers, long inode, long pos)
+    public TailFile(File file, Map<String, String> headers, long inode, long pos, String parentDir)
             throws IOException {
         this.raf = new RandomAccessFile(file, "r");
 
@@ -250,7 +251,7 @@ public class TailFile {
         this.start = raf.getFilePointer();
         this.end = start + raf.length();
         this.filePath = file;
-
+        this.parentDir = parentDir;
         //DBF
         this.fis = new FileInputStream(file);
         if (fileName.substring(fileName.length() - 4).toLowerCase().equals(".dbf")) {
@@ -354,7 +355,7 @@ public class TailFile {
 
 
         HashMap<String, String> map = new HashMap<>();
-        String replace = filePath.getAbsolutePath().replace("/data/gz_interface/", "");
+        String replace = filePath.getAbsolutePath().replace(parentDir, "");
         if (replace.length() > 4) {
             map.put("fileName", replace.substring(0, replace.length() - 4));
         } else {

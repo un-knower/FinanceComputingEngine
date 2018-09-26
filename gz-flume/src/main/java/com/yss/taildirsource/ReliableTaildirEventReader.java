@@ -252,12 +252,12 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 TailFile tf = tailFiles.get(inode);
                 if (tf == null || !tf.getPath().equals(f.getAbsolutePath())) {
                     long startPos = skipToEnd ? f.length() : 0;
-                    tf = openFile(f, headers, inode, startPos);
+                    tf = openFile(f, headers, inode, startPos, taildir.parentDir.getAbsolutePath());
                 } else {
                     boolean updated = tf.getLastUpdated() < f.lastModified() || tf.getPos() != f.length();
                     if (updated) {
                         if (tf.getRaf() == null) {
-                            tf = openFile(f, headers, inode, tf.getPos());
+                            tf = openFile(f, headers, inode, tf.getPos(), taildir.parentDir.getAbsolutePath());
                         }
                         if (f.length() < tf.getPos()) {
                             logger.info("Pos " + tf.getPos() + " is larger than file size! "
@@ -284,10 +284,10 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         return inode;
     }
 
-    private TailFile openFile(File file, Map<String, String> headers, long inode, long pos) {
+    private TailFile openFile(File file, Map<String, String> headers, long inode, long pos, String parentDir) {
         try {
             logger.info("Opening file: " + file + ", inode: " + inode + ", pos: " + pos);
-            return new TailFile(file, headers, inode, pos);
+            return new TailFile(file, headers, inode, pos, parentDir);
         } catch (IOException e) {
             throw new FlumeException("Failed opening file: " + file, e);
         }

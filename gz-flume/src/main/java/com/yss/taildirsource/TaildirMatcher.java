@@ -73,7 +73,7 @@ public class TaildirMatcher {
     private final String filePattern;
 
     // 用于更改的目录
-    private final File parentDir;
+    protected final File parentDir;
 
 
     // 缓存实例，用于基于文件模式过滤文件
