@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.yss.hdfssink;
+package com.yss.sink.hdfs;
 
 import org.apache.flume.Context;
 import org.apache.flume.Event;

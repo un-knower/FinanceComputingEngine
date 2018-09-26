@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package com.yss.hdfssink;
+package com.yss.sink.hdfs;
 
-import java.io.IOException;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.serialization.EventSerializer;
@@ -29,13 +28,11 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
-import org.apache.hadoop.io.compress.CodecPool;
-import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.CompressionOutputStream;
-import org.apache.hadoop.io.compress.Compressor;
-import org.apache.hadoop.io.compress.DefaultCodec;
+import org.apache.hadoop.io.compress.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class HDFSCompressedDataStream extends AbstractHDFSWriter {
 

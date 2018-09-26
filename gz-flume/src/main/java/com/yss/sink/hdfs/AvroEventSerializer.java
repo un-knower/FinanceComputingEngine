@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.yss.hdfssink;
+package com.yss.sink.hdfs;
 
 import org.apache.avro.AvroRuntimeException;
 import org.apache.avro.Schema;
@@ -45,12 +45,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import static org.apache.flume.serialization.AvroEventSerializerConfigurationConstants.COMPRESSION_CODEC;
-import static org.apache.flume.serialization.AvroEventSerializerConfigurationConstants.DEFAULT_COMPRESSION_CODEC;
-import static org.apache.flume.serialization.AvroEventSerializerConfigurationConstants.DEFAULT_STATIC_SCHEMA_URL;
-import static org.apache.flume.serialization.AvroEventSerializerConfigurationConstants.DEFAULT_SYNC_INTERVAL_BYTES;
-import static org.apache.flume.serialization.AvroEventSerializerConfigurationConstants.STATIC_SCHEMA_URL;
-import static org.apache.flume.serialization.AvroEventSerializerConfigurationConstants.SYNC_INTERVAL_BYTES;
+import static org.apache.flume.serialization.AvroEventSerializerConfigurationConstants.*;
 
 /**
  * <p>

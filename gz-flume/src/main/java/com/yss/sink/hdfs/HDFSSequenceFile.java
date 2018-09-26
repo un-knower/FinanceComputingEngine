@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package com.yss.hdfssink;
+package com.yss.sink.hdfs;
 
-import java.io.IOException;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.hadoop.conf.Configuration;
@@ -31,6 +30,8 @@ import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class HDFSSequenceFile extends AbstractHDFSWriter {
 

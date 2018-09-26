@@ -16,15 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.yss.hdfssink;
+package com.yss.sink.hdfs;
 
-import org.apache.flume.FlumeException;
+public enum SequenceFileSerializerType {
+  Writable(HDFSWritableSerializer.Builder.class),
+  Text(HDFSTextSerializer.Builder.class),
+  Other(null);
 
-public class BucketClosedException extends FlumeException {
+  private final Class<? extends SequenceFileSerializer.Builder> builderClass;
 
-  private static final long serialVersionUID = -4216667125119540357L;
-
-  public BucketClosedException(String msg) {
-    super(msg);
+  SequenceFileSerializerType(Class<? extends SequenceFileSerializer.Builder> builderClass) {
+    this.builderClass = builderClass;
   }
+
+  public Class<? extends SequenceFileSerializer.Builder> getBuilderClass() {
+    return builderClass;
+  }
+
 }
+

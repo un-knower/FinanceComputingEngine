@@ -16,9 +16,7 @@
  * limitations under the License.
  */
 
-package com.yss.hdfssink;
-
-import java.io.IOException;
+package com.yss.sink.hdfs;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.flume.Context;
@@ -34,6 +32,8 @@ import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class HDFSDataStream extends AbstractHDFSWriter {
 

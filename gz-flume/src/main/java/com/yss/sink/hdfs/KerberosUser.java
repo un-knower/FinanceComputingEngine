@@ -14,7 +14,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.yss.hdfssink;
+package com.yss.sink.hdfs;
 
 /**
  * Simple Pair class used to define a unique (principal, keyTab) combination.

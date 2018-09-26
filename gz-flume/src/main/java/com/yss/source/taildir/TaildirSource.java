@@ -15,7 +15,7 @@
  * the License.
  */
 
-package com.yss.taildirsource;
+package com.yss.source.taildir;
 
 
 import com.google.common.annotations.VisibleForTesting;

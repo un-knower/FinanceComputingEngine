@@ -16,9 +16,7 @@
  * limitations under the License.
  */
 
-package com.yss.hdfssink;
-
-import java.io.IOException;
+package com.yss.sink.hdfs;
 
 import org.apache.flume.Event;
 import org.apache.flume.annotations.InterfaceAudience;
@@ -26,6 +24,8 @@ import org.apache.flume.annotations.InterfaceStability;
 import org.apache.flume.conf.Configurable;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.compress.CompressionCodec;
+
+import java.io.IOException;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving

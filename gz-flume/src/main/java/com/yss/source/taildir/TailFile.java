@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package com.yss.taildirsource;
+package com.yss.source.taildir;
 
 import com.google.common.collect.Lists;
 import com.linuxense.javadbf.DBFReader;

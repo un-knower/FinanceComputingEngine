@@ -16,31 +16,12 @@
  * limitations under the License.
  */
 
-package com.yss.hdfssink;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+package com.yss.sink.hdfs;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.flume.Channel;
-import org.apache.flume.Clock;
-import org.apache.flume.Context;
-import org.apache.flume.Event;
-import org.apache.flume.EventDeliveryException;
-import org.apache.flume.SystemClock;
-import org.apache.flume.Transaction;
+import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.flume.*;
 import org.apache.flume.auth.FlumeAuthenticationUtil;
 import org.apache.flume.auth.PrivilegedExecutor;
 import org.apache.flume.conf.Configurable;
@@ -55,8 +36,13 @@ import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class HDFSEventSink extends AbstractSink implements Configurable {
   public interface WriterCallback {
@@ -457,8 +443,8 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
 
   @VisibleForTesting
   BucketWriter initializeBucketWriter(String realPath,
-      String realName, String lookupPath, HDFSWriter hdfsWriter,
-      WriterCallback closeCallback) {
+                                      String realName, String lookupPath, HDFSWriter hdfsWriter,
+                                      WriterCallback closeCallback) {
     BucketWriter bucketWriter = new BucketWriter(rollInterval,
         rollSize, rollCount,
         batchSize, context, realPath, realName, inUsePrefix, inUseSuffix,
