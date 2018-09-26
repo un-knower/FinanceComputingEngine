@@ -20,7 +20,7 @@ hadoop fs -put /data/temp/zl/ooize/corn-create-dir /tmp/zl/apps
 
 oozie job -oozie http://bj-rack001-hadoop004:11000/oozie -config /data/temp/zl/ooize/corn-create-dir/job.properties -run
 
-oozie job -oozie http://bj-rack001-hadoop004:11000/oozie -kill 0000539-180920085852803-oozie-oozi-C
+oozie job -oozie http://bj-rack001-hadoop004:11000/oozie -kill 0000002-180926140052456-oozie-oozi-C
 
 
 

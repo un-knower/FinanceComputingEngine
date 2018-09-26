@@ -1,4 +1,4 @@
-<coordinator-app name="gz-shell-production-data" frequency="10 0 * * *" start="${start}" 
+<coordinator-app name="corn-production-data" frequency="10 0 * * *" start="${start}" 
 				end="${end}" timezone="GMT+0800"
                  xmlns="uri:oozie:coordinator:0.4">
         <action>

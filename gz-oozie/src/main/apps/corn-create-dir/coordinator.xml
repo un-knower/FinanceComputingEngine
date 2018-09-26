@@ -1,5 +1,5 @@
 
-<coordinator-app name="gz-shell-create-dir" frequency="0 0 * * *" start="${start}" 
+<coordinator-app name="corn-create-dir" frequency="0 0 * * *" start="${start}" 
 				end="${end}" timezone="GMT+0800"
                  xmlns="uri:oozie:coordinator:0.4">
         <action>
