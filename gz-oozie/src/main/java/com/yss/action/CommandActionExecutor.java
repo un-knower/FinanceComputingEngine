@@ -1,4 +1,4 @@
-package com.yss.oozie.action;
+package com.yss.action;
 
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
@@ -32,7 +32,7 @@ import java.io.InputStream;
  *      rm -fr /usr/hdp/current/oozie-server/libext/gz-oozie-1.0.0.jar
  *      scp gz-oozie-1.0.0.jar root@bj-rack001-hadoop004:/usr/hdp/current/oozie-server/libext
  *  3.更改oozie-site.xml配置文件 调整参数&重启服务
- *      oozie.service.ActionService.executor.ext.classes=com.yss.oozie.action.CommandActionExecutor
+ *      oozie.service.ActionService.executor.ext.classes=com.yss.action.CommandActionExecutor
  *      oozie.service.SchemaService.wf.ext.schemas=command-action.xsd
  *
  *  4.编写workflow文件，测试使用.......
