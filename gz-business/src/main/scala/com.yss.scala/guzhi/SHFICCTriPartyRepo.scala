@@ -1,5 +1,6 @@
 package com.yss.scala.guzhi
 
+import com.yss.scala.dto.SHFICCTriPartyRepoDto
 import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
@@ -11,7 +12,7 @@ import org.apache.spark.sql.{Row, SparkSession}
   *        源文件:jsmx和wdq清洗后的数据
   *        目标表:
   */
-object GuDingShouYiSFHG {
+object SHFICCTriPartyRepo {
 
 
   def main(args: Array[String]): Unit = {
@@ -24,8 +25,8 @@ object GuDingShouYiSFHG {
     val path = "hdfs://192.168.13.110:9000/guzhi/etl/sfgu/20180918/"
     val sfhgDataRDD = Util.readCSV(path, spark).rdd.map(row => {
       val xwh = row.getAs[String]("XWH1").trim
-      /*TODO (xwh, row)*/
-      ("259700", row)
+      (xwh, row)
+      /*("259700", row)*/
     })
 
     // 读取csqsxw,并得到<席位号,套账号>的RDD
@@ -53,8 +54,8 @@ object GuDingShouYiSFHG {
     //<证券类别|席位号|市场号,(数据,套账号,选项结果)>
     val zqlbAndXwhAndSC2RowDataAndTzhAndSelected: RDD[(String, (Row, String, Boolean))] = rowDataAndTzhAndSelected.map(item => {
       val xwh = item._1.getAs[String]("XWH1").trim
-      /*TODO ("ZQZYSFHG|" + xwh + "|G", item)*/
-      ("GP|" + "000001" + "|S", item)
+      ("ZQZYSFHG|" + xwh + "|G", item)
+      /*("GP|" + "000001" + "|S", item)*/
     })
 
     //<数据,套账号,选项结果,佣金利率>
@@ -63,7 +64,7 @@ object GuDingShouYiSFHG {
     })
 
     //开始计算
-    val resSFHGRDD: RDD[SFHG] = calculate(rowDataAndTzhAndSelectedAndYjFV)
+    val resSFHGRDD: RDD[SHFICCTriPartyRepoDto] = calculate(rowDataAndTzhAndSelectedAndYjFV)
     resSFHGRDD.collect().foreach(println(_))
 
     spark.stop()
@@ -71,50 +72,50 @@ object GuDingShouYiSFHG {
 
   }
 
-  case class SFHG(
-                   FDate: String,
-                   FInDate: String,
-                   FZqdm: String,
-                   FSzsh: String,
-                   FJyxwh: String,
-                   Fje: String,
-                   Fyj: String,
-                   Fjsf: String,
-                   FHggain: String,
-                   FSSSFJE: String,
-                   FZqbz: String,
-                   Fjybz: String,
-                   ZqDm: String,
-                   FJyFs: String,
-                   Fsh: String,
-                   Fzzr: String,
-                   Fchk: String,
-                   FHTXH: String,
-                   FSETCODE: String,
-                   FCSGHQX: String,
-                   FRZLV: String,
-                   FSJLY: String,
-                   FCSHTXH: String,
-                   FBS: String,
-                   FSL: String,
-                   Fyhs: String,
-                   Fzgf: String,
-                   Fghf: String,
-                   FFxj: String,
-                   FQtf: String,
-                   Fgzlx: String,
-                   FQsbz: String,
-                   ftzbz: String,
-                   FQsghf: String,
-                   FGddm: String,
-                   fzlh: String,
-                   ISRTGS: String,
-                   FPARTID: String,
-                   FYwbz: String,
-                   Fbz: String
-                 )
+  /*case class SHFICCTriPartyRepoDto(
+                                    FDate: String,
+                                    FInDate: String,
+                                    FZqdm: String,
+                                    FSzsh: String,
+                                    FJyxwh: String,
+                                    Fje: String,
+                                    Fyj: String,
+                                    Fjsf: String,
+                                    FHggain: String,
+                                    FSSSFJE: String,
+                                    FZqbz: String,
+                                    Fjybz: String,
+                                    ZqDm: String,
+                                    FJyFs: String,
+                                    Fsh: String,
+                                    Fzzr: String,
+                                    Fchk: String,
+                                    FHTXH: String,
+                                    FSETCODE: String,
+                                    FCSGHQX: String,
+                                    FRZLV: String,
+                                    FSJLY: String,
+                                    FCSHTXH: String,
+                                    FBS: String,
+                                    FSL: String,
+                                    Fyhs: String,
+                                    Fzgf: String,
+                                    Fghf: String,
+                                    FFxj: String,
+                                    FQtf: String,
+                                    Fgzlx: String,
+                                    FQsbz: String,
+                                    ftzbz: String,
+                                    FQsghf: String,
+                                    FGddm: String,
+                                    fzlh: String,
+                                    ISRTGS: String,
+                                    FPARTID: String,
+                                    FYwbz: String,
+                                    Fbz: String
+                                  )
 
-
+*/
   /**
     * 开始计算
     *
@@ -122,7 +123,7 @@ object GuDingShouYiSFHG {
     * @return
     *
     */
-  def calculate(rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String)]): RDD[GuDingShouYiSFHG.SFHG] = {
+  def calculate(rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String)]): RDD[SHFICCTriPartyRepoDto] = {
     rowDataAndTzhAndSelectedAndYjFV.map(item => {
       val row = item._1
       val tzh = item._2
@@ -265,14 +266,14 @@ object GuDingShouYiSFHG {
           Fje = BigDecimal(row.getAs[String]("QTJE1").trim).abs / (1 + FRZLV.setScale(4, BigDecimal.RoundingMode.HALF_UP) / 100 * FCSGHQX / 365)
           Fyj = BigDecimal(0.00).setScale(2, BigDecimal.RoundingMode.HALF_UP)
           Fjsf = BigDecimal(0.00).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-          FSSSFJE = BigDecimal(row.getAs[String]("QTJE1")).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+          FSSSFJE = BigDecimal(row.getAs[String]("QTJE1").trim).setScale(2, BigDecimal.RoundingMode.HALF_UP)
         }
 
       }
 
       val FHggain = Fje * FRZLV / (100 * FCSGHQX / 365)
 
-      SFHG(
+      SHFICCTriPartyRepoDto(
         FDate,
         FInDate,
         FZqdm,

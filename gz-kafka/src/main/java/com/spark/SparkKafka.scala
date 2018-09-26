@@ -1,4 +1,4 @@
-package sparkKafka
+package com.spark
 
 import org.apache.spark
 import org.apache.spark.{SparkConf, SparkContext}
@@ -10,7 +10,7 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 import scala.collection.mutable
 
 
-object SparkKafkaTest {
+object SparkKafka {
   val SEPARATE1 = "@"
   val SEPARATE2 = ","
   def main(args: Array[String]): Unit = {
