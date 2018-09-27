@@ -72,8 +72,8 @@ public class TailFile {
     /*=================================DBF分割线=====开始=======================================*/
     private InputStream fis;
     private DBFReader reader;
-    private long dbfRow = 0;
-    private int xmlRow = 0;
+    private long dbfRow = 1;
+    private int xmlRow = 1;
     private String startLabel = "Security";
 
     /*=================================DBF分割线======结束======================================*/
@@ -367,7 +367,7 @@ public class TailFile {
             if (xmlNext != null) {
                 JSONArray jsonArray = new JSONArray("[" + xmlNext + "]");
                 String csv = CDL.toString(jsonArray);
-                if (xmlRow == 0) {
+                if (xmlRow == 1) {
 //                    Event event = EventBuilder.withBody(csv.substring(0, csv.length() - 1), Charset.forName("utf-8"));
                     Event event = EventBuilder.withBody(csv.split("\n")[0], Charset.forName("utf-8"));
                     event.setHeaders(map);
@@ -405,8 +405,13 @@ public class TailFile {
                 Object[] rowValues = reader.nextRecord();
                 if (rowValues != null && rowValues.length > 0) {
                     for (int i = 0; i < rowValues.length; i++) {
-                        bodyBuffer.append(new String(rowValues[i].toString().getBytes(Charset.forName("8859_1")), Charset.forName("GBK")));
-                        bodyBuffer.append(",");
+                        if (rowValues[i] != null) {
+                            bodyBuffer.append(new String(rowValues[i].toString().getBytes(Charset.forName("8859_1")), Charset.forName("GBK")));
+                            bodyBuffer.append(",");
+                        } else {
+                            setLineReadPos(filePath.length());
+                            return null;
+                        }
                     }
                     bodyBuffer.delete(bodyBuffer.length() - 1, bodyBuffer.length());
                     Event event = EventBuilder.withBody(bodyBuffer.toString(), Charset.forName("utf-8"));
