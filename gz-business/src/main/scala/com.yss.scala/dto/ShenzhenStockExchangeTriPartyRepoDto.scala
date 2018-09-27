@@ -49,4 +49,4 @@ package com.yss.scala.dto
                         Fbz: String,
                         ZqDm: String
                       )
-}
+
