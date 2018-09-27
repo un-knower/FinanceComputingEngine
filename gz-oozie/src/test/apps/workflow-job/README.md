@@ -1,4 +1,8 @@
 
+
+
+# 测试 专用
+
 hadoop fs -rm -r /tmp/zl/apps/workflow-job
 hadoop fs -put /data/temp/zl/ooize/workflow-job /tmp/zl/apps 
 
