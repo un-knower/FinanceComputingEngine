@@ -12,7 +12,7 @@ import com.yss.kafka.Common._
   *          描述：将KAFKA消费的数据存入HBASE
   */
 
-object ToHbase{
+object ConsumerToHbase{
 
   def sendHbase (message : String , conn : Connection) = {
     val admin = conn.getAdmin

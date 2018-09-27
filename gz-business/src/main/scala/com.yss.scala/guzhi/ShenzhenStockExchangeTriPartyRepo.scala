@@ -1,14 +1,14 @@
 package com.yss.scala.guzhi
 
 import java.text.SimpleDateFormat
-import java.util.{Date, Locale, Properties}
+import java.util.Properties
 
+import com.yss.scala.dto.ShenzhenStockExchangeTriPartyRepoDto
 import com.yss.scala.util.Util
-import org.apache.commons.lang.time.FastDateFormat
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
 import scala.math.BigDecimal.RoundingMode
 
@@ -209,7 +209,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FRZLV = BigDecimal(0) //融资/回购利率
       }
 
-      SJSSFHGYW(
+      ShenzhenStockExchangeTriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -332,7 +332,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FJyFs = "CZ" //交易方式
       }
 
-      SJSSFHGYW(
+      ShenzhenStockExchangeTriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -537,7 +537,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FRZLV = BigDecimal(0) //融资/回购利率
       }
 
-      SJSSFHGYW(
+      ShenzhenStockExchangeTriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -660,7 +660,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FJyFs = "CZ" //交易方式
       }
 
-      SJSSFHGYW(
+      ShenzhenStockExchangeTriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -708,45 +708,45 @@ object ShenzhenStockExchangeTriPartyRepo {
 
   }
 }
-case class SJSSFHGYW(
-                      FDate: String, //日期
-                      FinDate: String, //日期
-                      FZqdm: String, //证券代码
-                      FSzsh: String, //交易市场
-                      FJyxwh: String, //交易席位号
-                      Fje: BigDecimal, //成交金额
-                      Fyj: BigDecimal, //佣金
-                      Fjsf: BigDecimal, //经手费
-                      FHggain: BigDecimal, //回购收益
-                      FSSSFJE: BigDecimal, // 实收实付金额
-                      FZqbz: String, //证券标识
-                      Fjybz: String, //交易标识
-                      Fjyfs: String, //交易方式
-                      Fsh: Int, //审核
-                      Fzzr: String, // 制作人
-                      Fchk: String, // 审核人
-                      FHTXH: String, //合同序号
-                      FSETCODE: BigDecimal, //套账号
-                      FCSGHQX: BigDecimal, //初试购回期限
-                      FRZLV: BigDecimal, //融资(回购利率)
-                      FSJLY: String, // 数据来源
-                      FCSHTXH: String, //合同序号
-                      FBS: String,
-                      FSL: BigDecimal,
-                      Fyhs: BigDecimal,
-                      Fzgf: BigDecimal,
-                      Fghf: BigDecimal,
-                      FFxj: BigDecimal,
-                      FQtf: BigDecimal,
-                      Fgzlx: BigDecimal,
-                      FQsbz: String,
-                      Ftzbz: String,
-                      FQsghf: String,
-                      FGddm: String,
-                      Fzlh: String,
-                      ISRTGS: String,
-                      FPARTID: String,
-                      FYwbz: String,
-                      Fbz: String,
-                      ZqDm: String
-                    )
+//case class ShenzhenStockExchangeTriPartyRepoDto(
+//                      FDate: String, //日期
+//                      FinDate: String, //日期
+//                      FZqdm: String, //证券代码
+//                      FSzsh: String, //交易市场
+//                      FJyxwh: String, //交易席位号
+//                      Fje: BigDecimal, //成交金额
+//                      Fyj: BigDecimal, //佣金
+//                      Fjsf: BigDecimal, //经手费
+//                      FHggain: BigDecimal, //回购收益
+//                      FSSSFJE: BigDecimal, // 实收实付金额
+//                      FZqbz: String, //证券标识
+//                      Fjybz: String, //交易标识
+//                      Fjyfs: String, //交易方式
+//                      Fsh: Int, //审核
+//                      Fzzr: String, // 制作人
+//                      Fchk: String, // 审核人
+//                      FHTXH: String, //合同序号
+//                      FSETCODE: BigDecimal, //套账号
+//                      FCSGHQX: BigDecimal, //初试购回期限
+//                      FRZLV: BigDecimal, //融资(回购利率)
+//                      FSJLY: String, // 数据来源
+//                      FCSHTXH: String, //合同序号
+//                      FBS: String,
+//                      FSL: BigDecimal,
+//                      Fyhs: BigDecimal,
+//                      Fzgf: BigDecimal,
+//                      Fghf: BigDecimal,
+//                      FFxj: BigDecimal,
+//                      FQtf: BigDecimal,
+//                      Fgzlx: BigDecimal,
+//                      FQsbz: String,
+//                      Ftzbz: String,
+//                      FQsghf: String,
+//                      FGddm: String,
+//                      Fzlh: String,
+//                      ISRTGS: String,
+//                      FPARTID: String,
+//                      FYwbz: String,
+//                      Fbz: String,
+//                      ZqDm: String
+//                    )

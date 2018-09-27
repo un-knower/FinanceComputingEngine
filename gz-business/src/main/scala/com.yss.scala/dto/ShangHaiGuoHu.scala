@@ -1,5 +1,4 @@
 package com.yss.scala.dto
-
 case class ShangHaiGuoHu(
                   FDATE: String,
                   FINDATE: String,

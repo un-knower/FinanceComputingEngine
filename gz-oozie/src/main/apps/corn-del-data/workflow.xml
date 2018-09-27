@@ -1,0 +1,20 @@
+<workflow-app xmlns="uri:oozie:workflow:0.5" name="shell-wf">
+    <start to="command01"/>
+   
+	<action name="command01">
+		<command xmlns="uri:custom:command-action:0.1">
+			<host>192.168.102.114</host>
+			<port>22</port>
+			<user>hadoop</user>
+			<password>1q2w3ehadoop</password>
+			<command>rm -fr /data/gz_interface/`date -d "15 day ago" +"%Y%m%d"` </command>
+		</command>
+		<ok to="end"/>
+		<error to="fail"/>
+	</action>
+
+    <kill name="fail">
+        <message>command action failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>

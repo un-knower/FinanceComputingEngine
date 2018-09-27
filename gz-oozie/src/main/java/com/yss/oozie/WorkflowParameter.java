@@ -2,6 +2,13 @@ package com.yss.oozie;
 
 import java.util.Objects;
 
+/**
+ * @author : 张海绥
+ * @version : 2018-8-8
+ *  describe: 用于封装jobproperties中的参数
+ *  目标文件：09000211trddata20180420.txt
+ *  目标表：QHCJMX
+ */
 public class WorkflowParameter {
     private String name;
     private  String value;

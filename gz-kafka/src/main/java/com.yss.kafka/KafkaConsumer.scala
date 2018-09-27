@@ -7,7 +7,7 @@ import kafka.utils.VerifiableProperties
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.ConnectionFactory
 import com.yss.kafka.Common._
-import com.yss.kafka.ToHbase._
+import com.yss.kafka.ConsumerToHbase._
 import kafka.consumer.ConsumerConfig
 
 /**

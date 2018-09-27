@@ -1,0 +1,55 @@
+<bundle-app name='bundle-app' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns='uri:oozie:bundle:0.1'>
+
+	 <coordinator name='orcle2hdfs1-wmz'>
+                 <app-path>${coordinator1}</app-path>
+          </coordinator>
+
+          <coordinator name='orcle2hdfs2-wmz'>
+                 <app-path>${coordinator2}</app-path>
+          </coordinator>
+
+          <coordinator name='orcle2hdfs3-wmz'>
+                 <app-path>${coordinator3}</app-path>
+          </coordinator>
+	  
+	  <coordinator name='orcle2hdfs4-wmz'>
+                 <app-path>${coordinator4}</app-path>
+          </coordinator>
+
+          <coordinator name='orcle2hdfs5-wmz'>
+                 <app-path>${coordinator5}</app-path>
+          </coordinator>
+
+          <coordinator name='orcle2hdfs6-wmz'>
+                 <app-path>${coordinator6}</app-path>
+          </coordinator>
+
+          <coordinator name='orcle2hdfs7-wmz'>
+                 <app-path>${coordinator7}</app-path>
+          </coordinator>
+
+          <coordinator name='orcle2hdfs8-wmz'>
+                 <app-path>${coordinator8}</app-path>
+          </coordinator>
+
+          <coordinator name='orcle2hdfs9-wmz'>
+                 <app-path>${coordinator9}</app-path>
+          </coordinator>
+
+	 <coordinator name='orcle2hdfs10-wmz'>
+                 <app-path>${coordinator10}</app-path>
+          </coordinator>
+
+	 <coordinator name='orcle2hdfs11-wmz'>
+                 <app-path>${coordinator11}</app-path>
+          </coordinator>
+	<coordinator name='orcle2hdfs12-wmz'>
+                 <app-path>${coordinator12}</app-path>
+          </coordinator>
+	<coordinator name='orcle2hdfs13-wmz'>
+                 <app-path>${coordinator13}</app-path>
+          </coordinator>
+	<coordinator name='orcle2hdfs14-wmz'>
+                 <app-path>${coordinator14}</app-path>
+          </coordinator>
+</bundle-app>
