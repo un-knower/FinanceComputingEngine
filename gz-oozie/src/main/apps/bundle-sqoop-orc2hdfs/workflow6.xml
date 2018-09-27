@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<workflow-app xmlns="uri:oozie:workflow:0.5" name="bundle8-wmz">
+<workflow-app xmlns="uri:oozie:workflow:0.5" name="bundle6-wmz">
 <start to="shell-node"/>
 	<action name="shell-node">
 		<shell xmlns="uri:oozie:shell-action:0.1">
@@ -7,7 +7,7 @@
 			<name-node>${nameNode}</name-node>
 			<configuration>
 				<property>
-					<name>mapred.job.queue.name</name>
+<name>mapred.job.queue.name</name>
 					<value>${queueName}</value>
 				</property>
 			</configuration>
@@ -15,21 +15,21 @@
 			<file>${nameNode}/tmp/oracle2hdfs/${shell}#${shell}</file>
 			<capture-output/>
 		</shell>
-		<ok to="sqoop-node8"/>
+		<ok to="sqoop-node6"/>
 		<error to="fail"/>
 	</action>
-	<action name="sqoop-node8">
+	<action name="sqoop-node6">
         <sqoop xmlns="uri:oozie:sqoop-action:0.2">
             <job-tracker>${jobTracker}</job-tracker>
             <name-node>${nameNode}</name-node>
-         
+          
             <configuration>
                 <property>
-                    <name>mapred.job.queue.name</name>
+<name>mapred.job.queue.name</name>
                     <value>${queueName}</value>
                 </property>
             </configuration>
-            <command>import --connect jdbc:oracle:thin:@192.168.102.68:1521:orcl --username hadoop --password hadoop --table A117CSYJLV --target-dir /yss/guzhi/basic_list/${wf:actionData('shell-node')['day']}/A117CSYJLV --delete-target-dir --m 1 </command>
+	<command>import --connect jdbc:oracle:thin:@192.168.102.68:1521:orcl --username hadoop --password hadoop --table CSJJXX --target-dir /yss/guzhi/basic_list/${wf:actionData('shell-node')['day']}/CSJJXX --delete-target-dir --m 1 </command>
         </sqoop>
         <ok to="end"/>
         <error to="fail"/>
