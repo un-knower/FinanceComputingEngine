@@ -363,59 +363,60 @@ public class TailFile {
         }
         if (fileName.substring(fileName.length() - 4).toLowerCase().equals(".xml")) {
             String xmlNext = xmlNext();
+            map.put("currentRecord", String.valueOf(xmlRow));
             if (xmlNext != null) {
                 JSONArray jsonArray = new JSONArray("[" + xmlNext + "]");
                 String csv = CDL.toString(jsonArray);
                 if (xmlRow == 0) {
-                    Event event = EventBuilder.withBody(csv.substring(0, csv.length() - 1), Charset.forName("utf-8"));
+//                    Event event = EventBuilder.withBody(csv.substring(0, csv.length() - 1), Charset.forName("utf-8"));
+                    Event event = EventBuilder.withBody(csv.split("\n")[0], Charset.forName("utf-8"));
                     event.setHeaders(map);
                     xmlRow++;
-                    setLineReadPos(raf.getFilePointer());
+                    setLineReadPos(start);
+                    raf.seek(start);
                     return event;
                 } else {
                     Event event = EventBuilder.withBody(csv.split("\n")[1], Charset.forName("utf-8"));
                     setLineReadPos(raf.getFilePointer());
                     event.setHeaders(map);
+                    xmlRow++;
                     return event;
                 }
             } else {
                 return null;
             }
         } else if (fileName.substring(fileName.length() - 4).toLowerCase().equals(".dbf")) {
-            Object[] rowValues = reader.nextRecord();
-            if (rowValues != null && rowValues.length > 0) {
-                JSONObject jsonObject = new JSONObject();
-                for (int i = 0; i < rowValues.length; i++) {
-                    if (rowValues[i] != null) {
-                        jsonObject.put(reader.getField(i).getName(), new String(rowValues[i].toString().getBytes(Charset.forName("8859_1")), Charset.forName("GBK")));
-                    } else {
-                        setLineReadPos(filePath.length());
-                    }
+            map.put("currentRecord", String.valueOf(dbfRow));
+            setLineReadPos(dbfRow);
+            if (dbfRow == 1) {
+                StringBuffer rowFirst = new StringBuffer();
+                int fieldCount = reader.getFieldCount();
+                for (int i = 0; i < fieldCount; i++) {
+                    rowFirst.append(reader.getField(i).getName());
+                    rowFirst.append(",");
                 }
-                JSONArray jsonArray = new JSONArray("[" + jsonObject.toString() + "]");
-                if (!jsonArray.isEmpty()) {
-                    String csv = CDL.toString(jsonArray);
-                    setLineReadPos(dbfRow);
-                    if (dbfRow == 0) {
-                        Event event = EventBuilder.withBody(csv.substring(0, csv.length() - 1), Charset.forName("utf-8"));
-                        event.setHeaders(map);
-                        dbfRow++;
-                        return event;
-                    } else {
-                        Event event = EventBuilder.withBody(csv.split("\n")[1], Charset.forName("utf-8"));
-                        event.setHeaders(map);
-                        dbfRow++;
-                        return event;
+                rowFirst.delete(rowFirst.length() - 1, rowFirst.length());
+                Event event = EventBuilder.withBody(rowFirst.toString(), Charset.forName("utf-8"));
+                event.setHeaders(map);
+                dbfRow++;
+                return event;
+            } else {
+                StringBuffer bodyBuffer = new StringBuffer();
+                Object[] rowValues = reader.nextRecord();
+                if (rowValues != null && rowValues.length > 0) {
+                    for (int i = 0; i < rowValues.length; i++) {
+                        bodyBuffer.append(new String(rowValues[i].toString().getBytes(Charset.forName("8859_1")), Charset.forName("GBK")));
+                        bodyBuffer.append(",");
                     }
+                    bodyBuffer.delete(bodyBuffer.length() - 1, bodyBuffer.length());
+                    Event event = EventBuilder.withBody(bodyBuffer.toString(), Charset.forName("utf-8"));
+                    event.setHeaders(map);
+                    dbfRow++;
+                    return event;
                 } else {
                     setLineReadPos(filePath.length());
                     return null;
                 }
-
-
-            } else {
-                setLineReadPos(filePath.length());
-                return null;
             }
         } else if (fileName.substring(fileName.length() - 4).toLowerCase().equals(".tsv")) {
             LineResult line = readLine();
