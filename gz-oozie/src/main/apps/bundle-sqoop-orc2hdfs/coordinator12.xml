@@ -1,0 +1,21 @@
+<coordinator-app name="oracleToHdfsBySqoop-wmz" frequency="${coord:hours(12)}" start="${start}" end="${end}" timezone="GMT+0800" xmlns="uri:oozie:coordinator:0.5">
+<action>
+<workflow>
+<app-path>${workflowAppUri12}</app-path>
+<configuration>
+<property>
+<name>jobTracker</name>
+<value>${jobTracker}</value>
+</property>
+<property>
+<name>nameNode</name>
+<value>${nameNode}</value>
+</property>
+<property>
+<name>queueName</name>
+<value>${queueName}</value>
+</property>
+</configuration>
+</workflow>
+</action>
+</coordinator-app>

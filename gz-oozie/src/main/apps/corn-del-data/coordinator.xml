@@ -1,0 +1,23 @@
+<coordinator-app name="corn-del-data" frequency="0 1 * * *" start="${start}" 
+				end="${end}" timezone="GMT+0800"
+                 xmlns="uri:oozie:coordinator:0.4">
+        <action>
+        <workflow>
+            <app-path>${workflowAppUri}</app-path>
+            <configuration>
+                <property>
+                    <name>jobTracker</name>
+                    <value>${jobTracker}</value>
+                </property>
+                <property>
+                    <name>nameNode</name>
+                    <value>${nameNode}</value>
+                </property>
+                <property>
+                    <name>queueName</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+        </workflow>
+    </action>
+</coordinator-app>

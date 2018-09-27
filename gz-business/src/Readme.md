@@ -19,3 +19,10 @@ http://192.168.102.120:50070/explorer.html#/yss/guzhi/basic_list/
 ${date}格式，例如20180917
 hdfs://hostname:9000/yss/guzhi/interface/${date}/接口名称/数据文件
 hdfs://hostname:9000/yss/guzhi/base_list/${date}/表名/数据文件
+
+
+## 估值核算原数据
+   ip:  192.168.102.68
+   sid:  orcl
+   user:hadoop
+   pass:hadoop

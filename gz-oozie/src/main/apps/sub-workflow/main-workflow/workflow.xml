@@ -1,0 +1,69 @@
+<workflow-app xmlns="uri:oozie:workflow:0.5" name="shell-wf">
+    <start to="shell-node"/>
+    <action name="shell-node">
+        <shell xmlns="uri:oozie:shell-action:0.1">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+            <exec>echo</exec>
+            <argument>xx="=======111111...======="</argument>
+            <capture-output/>
+        </shell>
+        <ok to="subworkflow-01"/>
+        <error to="fail"/>
+    </action>
+
+	<action name="subworkflow-01">
+        <sub-workflow>
+            <app-path>${nameNode}/tmp/${examplesRoot}/apps/${examplesDir}/sub-workflow01</app-path>
+            <configuration>
+                <property>
+                    <name>jobTracker</name>
+                    <value>${jobTracker}</value>
+                </property>
+                <property>
+                    <name>nameNode</name>
+                    <value>${nameNode}</value>
+                </property>
+                <property>
+                    <name>queueName</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+        </sub-workflow>
+        <ok to="subworkflow-02"/>
+        <error to="fail"/>
+    </action>
+	
+	<action name="subworkflow-02">
+        <sub-workflow>
+            <app-path>${nameNode}/tmp/${examplesRoot}/apps/${examplesDir}/sub-workflow02</app-path>
+            <configuration>
+                <property>
+                    <name>jobTracker</name>
+                    <value>${jobTracker}</value>
+                </property>
+                <property>
+                    <name>nameNode</name>
+                    <value>${nameNode}</value>
+                </property>
+                <property>
+                    <name>queueName</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+        </sub-workflow>
+        <ok to="end"/>
+        <error to="fail"/>
+    </action>
+	
+    <kill name="fail">
+        <message>Shell action failed, error message</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>
