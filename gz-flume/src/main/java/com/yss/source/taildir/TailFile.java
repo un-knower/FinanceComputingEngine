@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.yss.taildirsource.TaildirSourceConfigurationConstants.BYTE_OFFSET_HEADER_KEY;
+import static com.yss.source.taildir.TaildirSourceConfigurationConstants.BYTE_OFFSET_HEADER_KEY;
 
 
 public class TailFile {
