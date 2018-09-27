@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 
-import static com.yss.taildirsource.TaildirSourceConfigurationConstants.*;
+import static com.yss.source.taildir.TaildirSourceConfigurationConstants.*;
 
 public class TaildirSource extends AbstractSource implements
         PollableSource, Configurable {
