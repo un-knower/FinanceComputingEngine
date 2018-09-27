@@ -54,4 +54,27 @@ object ShghContants {
   val CON15_KEY = "H按成交记录计算佣金"
   val CON17_KEY = "H按成交记录计算风险金"
 
+  /** 公共参数表 */
+  val TABLE_NAME_GGCS = "LVARLIST"
+  /** 基金信息表 */
+  val TABLE_NAME_JJXX = "CSJJXX"
+  /** 权益信息表 */
+  val TABLE_NAME_QYXX = "CSQYXX"
+  /** 席位表 */
+  val TABLE_NAME_QSXW = "CSQSXW"
+  /** 特殊科目设置表 */
+  val TABLE_NAME_TSKM= "A117CSTSKM"
+  /** */
+  val TABLE_NAME_SYSJJ= "LSETCSSYSJJ"
+  /** 债券信息表 */
+  val TABLE_NAME_ZQXX = "CSZQXX"
+  /** 股东账号表 */
+  val TABLE_NAME_GDZH = "CSGDZH"
+  /** 交易利率表 */
+  val TATABLE_NAME_JYLV = "CSJYLV"
+  /** 国债利息 */
+  val TABLE_NAME_GZLX = "JJGZLX"
+  /** 节假日表 */
+  val TABLE_NAME_HOLIDAY = "CSHOLIDAY"
+
 }

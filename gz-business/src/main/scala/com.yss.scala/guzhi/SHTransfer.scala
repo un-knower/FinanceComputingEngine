@@ -20,8 +20,8 @@ import scala.math.BigDecimal.RoundingMode
 object SHTransfer {
 
   def main(args: Array[String]): Unit = {
-//        testEtl()
-    doSum()
+        testEtl()
+//    doSum()
   }
 
   /** 测试使用 */
@@ -31,12 +31,14 @@ object SHTransfer {
     spark.stop()
   }
 
+  /** 测试etl*/
   def testEtl() = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
+//    loadTables(spark,"")
     val df = doETL(spark,broadcastLvarList)
     import spark.implicits._
-    Util.outputMySql(df.toDF,"shgh_etl_ws")
+    Util.outputMySql(df.toDF,"shgh_etl_test")
     spark.stop()
   }
 
@@ -52,8 +54,8 @@ object SHTransfer {
 
   /** * 加载公共参数表lvarlist */
   def loadLvarlist(sc:SparkContext) = {
-    //公共的参数表
-    val csbPath = Util.getDailyInputFilePath("LVARLIST")
+
+    val csbPath = Util.getDailyInputFilePath(TABLE_NAME_GGCS)
     val csb = sc.textFile(csbPath)
 
     //将参数表转换成map结构
@@ -74,7 +76,7 @@ object SHTransfer {
 
     /** * 读取基金信息表csjjxx */
     def loadCsjjxx() = {
-      val csjjxxPath = Util.getDailyInputFilePath("CSJJXX")
+      val csjjxxPath = Util.getDailyInputFilePath(TABLE_NAME_JJXX)
       val csjjxx = sc.textFile(csjjxxPath)
         .filter(row => {
           val fields = row.split(SEPARATE2)
@@ -108,44 +110,44 @@ object SHTransfer {
       val csjjxx01Map = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
-        val FZQDMETF0 = fields(2)
+        val FZQDMETF0 = fields(3)
         val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE2 + FZQDMETF0, FSTARTDATE)
+        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
       }).collectAsMap()
       val csjjxx02Map = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(4)
         val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE2 + FZQDMETF0, FSTARTDATE)
+        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
       }).collectAsMap()
       val csjjxx05Map = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(16)
         val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE2 + FZQDMETF0, FSTARTDATE)
+        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
       }).collectAsMap()
       val csjjxx03Map = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(5)
         val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE2 + FZQDMETF0, FSTARTDATE)
+        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
       }).collectAsMap()
       val csjjxx04Map = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(6)
         val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE2 + FZQDMETF0, FSTARTDATE)
+        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
       }).collectAsMap()
       val csjjxx00Map = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(2)
         val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE2 + FZQDMETF0, FSTARTDATE)
+        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
       }).collectAsMap()
       // 过滤 fetftype ='0' FZQLX='HB'的情况
       val csjjxx01HPMap = csjjxx.filter(
@@ -157,43 +159,26 @@ object SHTransfer {
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(2)
         val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE2 + FZQDMETF0, FSTARTDATE)
+        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
       }).collectAsMap()
       val csjjxxMap = Map((0, csjjxx00Map), (1, csjjxx01Map), (2, csjjxx02Map), (3, csjjxx03Map), (4, csjjxx04Map), (5, csjjxx05Map), (6, csjjxx01HPMap))
       sc.broadcast(csjjxxMap)
     }
 
     /** 加载权益信息表csqyxx， */
-//    def loadCsqyxx() = {
-//      val csqyxx = Util.getDailyInputFilePath("CSQYXX")
-//      val csqyxMap = sc.textFile(csqyxx)
-//        .filter(row => {
-//          val fields = row.split(SEPARATE2)
-//          val fqylx = fields(1)
-//          val fsh = fields(7)
-//          if ("PG".equals(fqylx) && "1".equals(fsh)) true
-//          else false
-//        })
-//        .map(row => {
-//          val fields = row.split(SEPARATE2)
-//          val fzqdm = fields(2)
-//          (fzqdm, row)
-//        })
-//        .groupByKey()
-//        .collectAsMap()
-//      sc.broadcast(csqyxMap)
-//    }
     def loadCsqyxx() = {
-      val csqyxx = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\csqyxx.csv", spark)
-      val csqyxMap = csqyxx.rdd
-          .filter(row => {
-            val fqylx = String.valueOf(row.get(1))
-            val fsh = String.valueOf(row.get(7))
-            if ("PG".equals(fqylx) && "1".equals(fsh)) true
-            else false
-          })
+      val csqyxx = Util.getDailyInputFilePath(TABLE_NAME_QYXX)
+      val csqyxMap = sc.textFile(csqyxx)
+        .filter(row => {
+          val fields = row.split(SEPARATE2)
+          val fqylx = fields(1)
+          val fsh = fields(7)
+          if ("PG".equals(fqylx) && "1".equals(fsh)) true
+          else false
+        })
         .map(row => {
-          val fzqdm = row.getAs[String](2)
+          val fields = row.split(SEPARATE2)
+          val fzqdm = fields(0)
           (fzqdm, row)
         })
         .groupByKey()
@@ -203,7 +188,7 @@ object SHTransfer {
 
     /** 读取席位表CsqsXw表 */
     def loadCsqsxw() = {
-      val csqsxwPath = Util.getDailyInputFilePath("CSQSXW")
+      val csqsxwPath = Util.getDailyInputFilePath(TABLE_NAME_QSXW)
       val csqsxw = sc.textFile(csqsxwPath)
         .filter(row => {
           val fields = row.split(SEPARATE2)
@@ -229,7 +214,7 @@ object SHTransfer {
 
     /** 读取 特殊科目设置表CsTsKm */
     def loadCsTsKm() = {
-      val csTsKmPath = Util.getDailyInputFilePath("A117CSTSKM")
+      val csTsKmPath = Util.getDailyInputFilePath(TABLE_NAME_TSKM)
       val csTsKm = sc.textFile(csTsKmPath)
         .map(row => {
           val fields = row.split(SEPARATE2)
@@ -249,8 +234,7 @@ object SHTransfer {
 
     /** 获取基金类型 lsetcssysjj */
     def loadCssysjj() = {
-      //      val lsetcssysjj = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\data\\LSETCSSYSJJ_201809051145.csv", spark)
-      val lsetcssysjjPath = Util.getDailyInputFilePath("LSETCSSYSJJ")
+      val lsetcssysjjPath = Util.getDailyInputFilePath(TABLE_NAME_SYSJJ)
       val lsetcssysjj = sc.textFile(lsetcssysjjPath)
       val lsetcssysjjMap = lsetcssysjj
         .map(row => {
@@ -264,7 +248,7 @@ object SHTransfer {
     /** 债券信息表cszqxx */
     def loadCszqxx() = {
       //读取CsZqXx表
-      val cszqxxPath = Util.getDailyInputFilePath("CSZQXX")
+      val cszqxxPath = Util.getDailyInputFilePath(TABLE_NAME_ZQXX)
       val cszqxx = sc.textFile(cszqxxPath)
       //则获取CsZqXx表中fzqdm=gh文件中的zqdm字段的“FZQLX”字段值
       val cszqxxMap1 = cszqxx
@@ -310,7 +294,8 @@ object SHTransfer {
     /** 股东账号表csgdzh */
     def loadCsgdzh() = {
       //读取股东账号表，
-      val csgdzhPath = Util.getDailyInputFilePath("CSGDZH")
+      val csgdzhPath = Util.getDailyInputFilePath(TABLE_NAME_GDZH)
+      println(csgdzhPath)
       val csgdzhMap = sc.textFile(csgdzhPath)
         .map(row => {
           val fields = row.split(SEPARATE2)
@@ -323,7 +308,7 @@ object SHTransfer {
     /** 证券交易费率csjylv */
     def loadCsjylv() = {
       //证券交易费用表
-      val csjylvPath = Util.getDailyInputFilePath("CSJYLV")
+      val csjylvPath = Util.getDailyInputFilePath(TATABLE_NAME_JYLV)
       val csjylvMap = sc.textFile(csjylvPath)
         .filter(row => {
           val fields = row.split(",")
@@ -348,60 +333,33 @@ object SHTransfer {
     }
 
     /** 已计提国债利息 JJGZLX */
-//    def loadGzlx() = {
-//      val jjgzlxPath = Util.getDailyInputFilePath("JJGZLX")
-//      val jjgzlxMap = sc.textFile(jjgzlxPath)
-//        .map(str => {
-//          val fields = str.split(SEPARATE2)
-//          val fjxrq = fields(1)
-//          val fgzdm = fields(0)
-//          val fyjlx = fields(2)
-//          (fgzdm + SEPARATE1 + fjxrq, fyjlx)
-//        }).collectAsMap()
-//      sc.broadcast(jjgzlxMap)
-//    }
     def loadGzlx() = {
-      val jjgzlxPath = "C:\\Users\\wuson\\Desktop\\GuZhi\\data\\JJGZLX.csv"
-      val jjgzlxMap = Util.readCSV(jjgzlxPath,spark).rdd
+      val jjgzlxPath = Util.getDailyInputFilePath(TABLE_NAME_GZLX)
+      val jjgzlxMap = sc.textFile(jjgzlxPath)
         .map(str => {
-          val fjxrq = str.getAs[String](1)
-          val fgzdm = str.getAs[String](0)
-          val fyjlx = str.getAs[String](2)
+          val fields = str.split(SEPARATE2)
+          val fjxrq = fields(1)
+          val fgzdm = fields(0)
+          val fyjlx = fields(2)
           (fgzdm + SEPARATE1 + fjxrq, fyjlx)
         }).collectAsMap()
       sc.broadcast(jjgzlxMap)
     }
 
     /** 加载节假日表 csholiday*/
-//    def loadCsholiday() = {
-//      val csholidayPath = Util.getDailyInputFilePath("CSHOLIDAY")
-//      val csholidayList = sc.textFile(csholidayPath)
-//          .filter(str => {
-//            val fields = str.split(SEPARATE2)
-//            val fdate = fields(0)
-//            val fbz = fields(1)
-//            val fsh = fields(3)
-//            if("0".equals(fbz) && "1".equals(fsh) && fdate.compareTo(today)>=0) true
-//            else false
-//          })
-//        .map(str => {
-//          str.split(SEPARATE2)(0)
-//        }).takeOrdered(1)
-//      if(csholidayList.length == 0) throw new Exception("获取工作日信息有误!")
-//      csholidayList(0)
-//    }
     def loadCsholiday() = {
-      val csholidayPath = "C:\\Users\\wuson\\Desktop\\GuZhi\\data\\CSHOLIDAY.csv"
-      val csholidayList = Util.readCSV(csholidayPath,spark).rdd
-        .filter(str => {
-          val fdate = str.getAs[String](0)
-          val fbz = str.getAs[String](1)
-          val fsh = str.getAs[String](3)
-          if("0".equals(fbz) && "1".equals(fsh) && fdate.compareTo(today)>=0) true
-          else false
-        })
+      val csholidayPath = Util.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
+      val csholidayList = sc.textFile(csholidayPath)
+          .filter(str => {
+            val fields = str.split(SEPARATE2)
+            val fdate = fields(0)
+            val fbz = fields(1)
+            val fsh = fields(3)
+            if("0".equals(fbz) && "1".equals(fsh) && fdate.compareTo(today)>=0) true
+            else false
+          })
         .map(str => {
-          str.getAs[String](0)
+          str.split(SEPARATE2)(0)
         }).takeOrdered(1)
       if(csholidayList.length == 0) throw new Exception("获取工作日信息有误!")
       csholidayList(0)
@@ -409,7 +367,6 @@ object SHTransfer {
 
     (loadCsjjxx(), loadCsqyxx(), loadCsqsxw(),
       loadCsTsKm(), loadCssysjj(), loadCszqxx(), loadCsgdzh(), loadCsjylv(), loadGzlx(),loadCsholiday())
-    //    (larlistValue, csjjxxValue,csqyxxValue, csqsxwValue, csTsKmValue, lsetcssysjjValue, csqzxxValue, csgdzhValue)
   }
 
   /** 进行原始数据的转换包括：规则1，2，3，4，5 */
@@ -417,10 +374,9 @@ object SHTransfer {
     val sc = spark.sparkContext
 
     import com.yss.scala.dbf.dbf._
-    //    val sourcePath = Util.getInputFilePath("gh23341.dbf")
-    //原始数据
-    val sourcePath = "C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.dbf"
-    val df = spark.sqlContext.dbfFile(sourcePath)
+//    val sourcePath = "C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.dbf"
+//    val df = spark.sqlContext.dbfFile(sourcePath)
+    val df = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh_source.csv",spark)
     val today = DateUtils.getToday(DateUtils.yyyy_MM_dd)
     // (larlistValue, csjjxxValue,csqyxxValue, csqsxwValue, csTsKmValue, lsetcssysjjValue, csqzxxValue, csgdzhValue)
     val broadcaseValues = loadTables(spark,today)
@@ -493,7 +449,7 @@ object SHTransfer {
       */
     def jjxxbwh(fzqlx: String, zqdm: String, bcrq: String, flag: Int): Boolean = {
       val map = csjjxxValues.value(flag)
-      val maybeString = map.get(fzqlx + SEPARATE2 + zqdm)
+      val maybeString = map.get(fzqlx + SEPARATE1 + zqdm)
       if (maybeString.isDefined) {
         if (bcrq.compareTo(maybeString.get) >= 0) return true
       }
@@ -513,11 +469,11 @@ object SHTransfer {
       if (maybeRows.isDefined) {
         val condition1 = Array("银行间", "上交所", "深交所", "场外")
         for (row <- maybeRows.get) {
-
-          val fqydjr = String.valueOf(row.get(4))
-          val fjkjzr = String.valueOf(row.get(6))
-          val fstartdate = String.valueOf(row.get(11))
-          val fqybl = String.valueOf(row.get(2))
+          val fields = row.split(SEPARATE2)
+          val fqydjr = fields(4)
+          val fjkjzr = fields(6)
+          val fstartdate = fields(11)
+          val fqybl = fields(2)
 
           if (bcrq.compareTo(fqydjr) >= 0
             && bcrq.compareTo(fjkjzr) <= 0
@@ -577,14 +533,15 @@ object SHTransfer {
     def getZqbz(zqdm: String, cjjg: String, bcrq: String): String = {
       if (zqdm.startsWith("6")) {
         if (zqdm.startsWith("609")) return "CDRGP"
-        else return "GP"
+        return "GP"
       }
       if (zqdm.startsWith("5")) {
         if (cjjg.equals("0")) {
           if (jjxxbwh("ETF", zqdm, bcrq, 1)) return "EJDM"
           if (jjxxbwh("ETF", zqdm, bcrq, 2)) return "XJTD"
           if (jjxxbwh("ETF", zqdm, bcrq, 5)) return "XJTD_KSC"
-        } else return "JJ"
+        }
+        return "JJ"
       }
       if (zqdm.startsWith("0") || zqdm.startsWith("1")) return "ZQ"
       if (zqdm.startsWith("20")) return "HG"
@@ -790,6 +747,7 @@ object SHTransfer {
               }
             }
           }
+          return "PSZFZQ"
         }
         if (zqdm.startsWith("73")) return "SHZQ"
       }
@@ -798,7 +756,7 @@ object SHTransfer {
           if ("B".equals(bs)) return "KZZSG"
           else return "KZZFK"
         }
-        if (zqdm.startsWith("783")) return "KZZZQ"
+        if (zqdm.startsWith("783")||zqdm.startsWith("733")) return "KZZZQ"
         if (zqdm.startsWith("753") || zqdm.startsWith("762") || zqdm.startsWith("764")) return "KZZXZ"
         if (zqdm.startsWith("751")) return "QYZQXZ"
         if (zqdm.startsWith("70") && "100".equals(cjjg)) return "KZZXZ"
@@ -822,10 +780,10 @@ object SHTransfer {
               }
             }
           }
-          else return "PG"
+          return "PG"
         }
       }
-      throw new Exception("")
+      throw new Exception("无法找到对应的业务标识："+zqdm)
     }
 
     /**
@@ -918,7 +876,7 @@ object SHTransfer {
     // 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
     val etlRdd = df.rdd.map(row => {
       val gddm = row.getAs[String](0)
-      val gdxw = row.getAs[String](1)
+      val gdxm = row.getAs[String](1)
       val bcrq = row.getAs[String](2)
       val cjbh = row.getAs[String](3)
       var gsdm = row.getAs[String](4)
@@ -947,7 +905,7 @@ object SHTransfer {
         gsdm = "0" + gsdm
         length += 1
       }
-      ShghYssj(gddm, "", bcrq, cjbh, gsdm, cjsj, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, hggain,findate)
+      ShghYssj(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, hggain,findate)
     })
     etlRdd
   }
