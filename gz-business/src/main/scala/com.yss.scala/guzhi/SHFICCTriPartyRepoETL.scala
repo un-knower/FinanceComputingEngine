@@ -20,16 +20,17 @@ object SHFICCTriPartyRepoETL {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName(SHFICCTriPartyRepoETL.getClass.getSimpleName)
-      .master("local[*]")
+      //.master("local[*]")
       .config("user", "hadoop")
       .getOrCreate()
 
-    val jsmxpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/20180918/jsmx03_jsjc1.528.csv"
-    val wdqpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/20180918/wdqjsjc1.528.csv"
+    val day = DateUtils.formatDate(System.currentTimeMillis())
+    val jsmxpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/" + day + "/jsmx03_jsjc1.528.csv"
+    val wdqpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/" + day + "/wdqjsjc1.528.csv"
     val jsmxRDD: RDD[Row] = readJsmxFileAndFilted(spark, jsmxpath)
 
     val jsmx013FiltedRDD = jsmxRDD.filter(row => {
-      val YWLX = row.getAs[String]("YWLX").trim
+      val YWLX = getRowFieldAsString(row, "YWLX")
       "680".equals(YWLX) || "681".equals(YWLX) || "683".equals(YWLX)
     })
 
@@ -42,7 +43,7 @@ object SHFICCTriPartyRepoETL {
 
     val res = jsmx013SFHGETL.union(jsmx2SFHGETL)
 
-    val path = "hdfs://192.168.13.110:9000/guzhi/etl/sfgu/" + DateUtils.formatDate(System.currentTimeMillis())
+    val path = "hdfs://192.168.13.110:9000/guzhi/etl/sfgu/" + day
 
 
     val fs = FileSystem.get(new URI("hdfs://192.168.13.110:9000"), spark.sparkContext.hadoopConfiguration)
@@ -52,7 +53,7 @@ object SHFICCTriPartyRepoETL {
 
     res.collect().foreach(println(_))
     saveAsCSV(spark, res, path)
-    saveMySQL(spark, res, path)
+    //saveMySQL(spark, res, path)
 
     spark.stop()
   }
@@ -185,18 +186,18 @@ object SHFICCTriPartyRepoETL {
   private def jsmx2Entity(jsmx2RDD: RDD[Row], wdqRDD: RDD[Row]) = {
 
     val keyJSMXRDD: RDD[(String, Row)] = jsmx2RDD.map(row => {
-      val CJBH = row.getAs[String]("CJBH").trim
-      val ZQZH = row.getAs[String]("ZQZH").trim
-      val ZQDM1 = row.getAs[String]("ZQDM1").trim
-      val XWH1 = row.getAs[String]("XWH1").trim
+      val CJBH = getRowFieldAsString(row, "CJBH")
+      val ZQZH = getRowFieldAsString(row, "ZQZH")
+      val ZQDM1 = getRowFieldAsString(row, "ZQDM1")
+      val XWH1 = getRowFieldAsString(row, "XWH1")
       (CJBH + ZQZH + ZQDM1 + XWH1, row)
     })
 
     val keyWDQRDD = wdqRDD.map(row => {
-      val CJXLH = row.getAs[String]("CJXLH").trim
-      val ZQZH = row.getAs[String]("ZQZH").trim
-      val ZQDM = row.getAs[String]("ZQDM").trim
-      val XWH1 = row.getAs[String]("XWH1").trim
+      val CJXLH = getRowFieldAsString(row, "CJXLH")
+      val ZQZH = getRowFieldAsString(row, "ZQZH")
+      val ZQDM = getRowFieldAsString(row, "ZQDM")
+      val XWH1 = getRowFieldAsString(row, "XWH1")
       (CJXLH + ZQZH + ZQDM + XWH1, row)
     })
 
@@ -206,62 +207,62 @@ object SHFICCTriPartyRepoETL {
     val xzljRDD = jsmxAndWdqRDD.map(row => {
       val jsmxRow = row._2._1
       val wdqRow = row._2._2
-      val SCDM = jsmxRow.getAs[String]("SCDM").trim
-      val JLLX = jsmxRow.getAs[String]("JLLX").trim
-      val JYFS = jsmxRow.getAs[String]("JYFS").trim
-      val JSFS = jsmxRow.getAs[String]("JSFS").trim
-      val YWLX = jsmxRow.getAs[String]("YWLX").trim
-      val QSBZ = jsmxRow.getAs[String]("QSBZ").trim
-      val GHLX = jsmxRow.getAs[String]("GHLX").trim
-      val JSBH = jsmxRow.getAs[String]("JSBH").trim
-      val CJBH = jsmxRow.getAs[String]("CJBH").trim
-      val SQBH = jsmxRow.getAs[String]("SQBH").trim
-      val WTBH = jsmxRow.getAs[String]("WTBH").trim
-      val JYRQ = jsmxRow.getAs[String]("JYRQ").trim
-      val QSRQ = jsmxRow.getAs[String]("QSRQ").trim
-      val JSRQ = jsmxRow.getAs[String]("JSRQ").trim
-      val QTRQ = jsmxRow.getAs[String]("QTRQ").trim
-      val WTSJ = jsmxRow.getAs[String]("WTSJ").trim
-      val CJSJ = jsmxRow.getAs[String]("CJSJ").trim
-      val XWH1 = jsmxRow.getAs[String]("XWH1").trim
-      val XWH2 = jsmxRow.getAs[String]("XWH2").trim
-      val XWHY = jsmxRow.getAs[String]("XWHY").trim
-      val JSHY = jsmxRow.getAs[String]("JSHY").trim
-      val TGHY = jsmxRow.getAs[String]("TGHY").trim
-      val ZQZH = jsmxRow.getAs[String]("ZQZH").trim
-      val ZQDM1 = jsmxRow.getAs[String]("ZQDM1").trim
-      val ZQDM2 = jsmxRow.getAs[String]("ZQDM2").trim
-      val ZQLB = jsmxRow.getAs[String]("ZQLB").trim
-      val LTLX = jsmxRow.getAs[String]("LTLX").trim
-      val QYLB = jsmxRow.getAs[String]("QYLB").trim
-      val GPNF = jsmxRow.getAs[String]("GPNF").trim
-      val MMBZ = jsmxRow.getAs[String]("MMBZ").trim
-      val SL = jsmxRow.getAs[String]("SL").trim
-      val CJSL = jsmxRow.getAs[String]("CJSL").trim
-      val ZJZH = jsmxRow.getAs[String]("ZJZH").trim
-      val BZ = jsmxRow.getAs[String]("BZ").trim
-      val JG1 = jsmxRow.getAs[String]("JG1").trim
-      val JG2 = jsmxRow.getAs[String]("JG2").trim
-      val QSJE = jsmxRow.getAs[String]("QSJE").trim
-      val YHS = jsmxRow.getAs[String]("YHS").trim
-      val JSF = jsmxRow.getAs[String]("JSF").trim
-      val GHF = jsmxRow.getAs[String]("GHF").trim
-      val ZGF = jsmxRow.getAs[String]("ZGF").trim
-      val SXF = jsmxRow.getAs[String]("SXF").trim
-      val QTJE1 = jsmxRow.getAs[String]("QTJE1").trim
-      val QTJE2 = jsmxRow.getAs[String]("QTJE2").trim
-      val QTJE3 = jsmxRow.getAs[String]("QTJE3").trim
-      val SJSF = jsmxRow.getAs[String]("SJSF").trim
-      val JGDM = jsmxRow.getAs[String]("JGDM").trim
-      val FJSM = jsmxRow.getAs[String]("FJSM").trim
+      val SCDM = getRowFieldAsString(jsmxRow, "SCDM")
+      val JLLX = getRowFieldAsString(jsmxRow, "JLLX")
+      val JYFS = getRowFieldAsString(jsmxRow, "JYFS")
+      val JSFS = getRowFieldAsString(jsmxRow, "JSFS")
+      val YWLX = getRowFieldAsString(jsmxRow, "YWLX")
+      val QSBZ = getRowFieldAsString(jsmxRow, "QSBZ")
+      val GHLX = getRowFieldAsString(jsmxRow, "GHLX")
+      val JSBH = getRowFieldAsString(jsmxRow, "JSBH")
+      val CJBH = getRowFieldAsString(jsmxRow, "CJBH")
+      val SQBH = getRowFieldAsString(jsmxRow, "SQBH")
+      val WTBH = getRowFieldAsString(jsmxRow, "WTBH")
+      val JYRQ = getRowFieldAsString(jsmxRow, "JYRQ")
+      val QSRQ = getRowFieldAsString(jsmxRow, "QSRQ")
+      val JSRQ = getRowFieldAsString(jsmxRow, "JSRQ")
+      val QTRQ = getRowFieldAsString(jsmxRow, "QTRQ")
+      val WTSJ = getRowFieldAsString(jsmxRow, "WTSJ")
+      val CJSJ = getRowFieldAsString(jsmxRow, "CJSJ")
+      val XWH1 = getRowFieldAsString(jsmxRow, "XWH1")
+      val XWH2 = getRowFieldAsString(jsmxRow, "XWH2")
+      val XWHY = getRowFieldAsString(jsmxRow, "XWHY")
+      val JSHY = getRowFieldAsString(jsmxRow, "JSHY")
+      val TGHY = getRowFieldAsString(jsmxRow, "TGHY")
+      val ZQZH = getRowFieldAsString(jsmxRow, "ZQZH")
+      val ZQDM1 = getRowFieldAsString(jsmxRow, "ZQDM1")
+      val ZQDM2 = getRowFieldAsString(jsmxRow, "ZQDM2")
+      val ZQLB = getRowFieldAsString(jsmxRow, "ZQLB")
+      val LTLX = getRowFieldAsString(jsmxRow, "LTLX")
+      val QYLB = getRowFieldAsString(jsmxRow, "QYLB")
+      val GPNF = getRowFieldAsString(jsmxRow, "GPNF")
+      val MMBZ = getRowFieldAsString(jsmxRow, "MMBZ")
+      val SL = getRowFieldAsString(jsmxRow, "SL")
+      val CJSL = getRowFieldAsString(jsmxRow, "CJSL")
+      val ZJZH = getRowFieldAsString(jsmxRow, "ZJZH")
+      val BZ = getRowFieldAsString(jsmxRow, "BZ")
+      val JG1 = getRowFieldAsString(jsmxRow, "JG1")
+      val JG2 = getRowFieldAsString(jsmxRow, "JG2")
+      val QSJE = getRowFieldAsString(jsmxRow, "QSJE")
+      val YHS = getRowFieldAsString(jsmxRow, "YHS")
+      val JSF = getRowFieldAsString(jsmxRow, "JSF")
+      val GHF = getRowFieldAsString(jsmxRow, "GHF")
+      val ZGF = getRowFieldAsString(jsmxRow, "ZGF")
+      val SXF = getRowFieldAsString(jsmxRow, "SXF")
+      val QTJE1 = getRowFieldAsString(jsmxRow, "QTJE1")
+      val QTJE2 = getRowFieldAsString(jsmxRow, "QTJE2")
+      val QTJE3 = getRowFieldAsString(jsmxRow, "QTJE3")
+      val SJSF = getRowFieldAsString(jsmxRow, "SJSF")
+      val JGDM = getRowFieldAsString(jsmxRow, "JGDM")
+      val FJSM = getRowFieldAsString(jsmxRow, "FJSM")
 
       //证券标识
       val FZQBZ = "ZQ"
       //交易类别
       var FJYBZ = "XZLJ_SFHG"
 
-      val QTRQ2 = wdqRow.getAs[String]("QTRQ").trim
-      val CJRQ2 = wdqRow.getAs[String]("CJRQ").trim
+      val QTRQ2 = getRowFieldAsString(wdqRow, "QTRQ")
+      val CJRQ2 = getRowFieldAsString(wdqRow, "CJRQ")
       val days: Long = DateUtils.absDays(QTRQ2, CJRQ2)
       //qtrq-cjrq
       var QTRQCJRQ = days.toString
@@ -286,54 +287,54 @@ object SHFICCTriPartyRepoETL {
 
   private def jsmx013Entity(jsmx013FiltedRDD: RDD[Row]) = {
     jsmx013FiltedRDD.map(row => {
-      val SCDM = row.getAs[String]("SCDM").trim
-      val JLLX = row.getAs[String]("JLLX").trim
-      val JYFS = row.getAs[String]("JYFS").trim
-      val JSFS = row.getAs[String]("JSFS").trim
-      val YWLX = row.getAs[String]("YWLX").trim
-      val QSBZ = row.getAs[String]("QSBZ").trim
-      val GHLX = row.getAs[String]("GHLX").trim
-      val JSBH = row.getAs[String]("JSBH").trim
-      val CJBH = row.getAs[String]("CJBH").trim
-      val SQBH = row.getAs[String]("SQBH").trim
-      val WTBH = row.getAs[String]("WTBH").trim
-      val JYRQ = row.getAs[String]("JYRQ").trim
-      val QSRQ = row.getAs[String]("QSRQ").trim
-      val JSRQ = row.getAs[String]("JSRQ").trim
-      val QTRQ = row.getAs[String]("QTRQ").trim
-      val WTSJ = row.getAs[String]("WTSJ").trim
-      val CJSJ = row.getAs[String]("CJSJ").trim
-      val XWH1 = row.getAs[String]("XWH1").trim
-      val XWH2 = row.getAs[String]("XWH2").trim
-      val XWHY = row.getAs[String]("XWHY").trim
-      val JSHY = row.getAs[String]("JSHY").trim
-      val TGHY = row.getAs[String]("TGHY").trim
-      val ZQZH = row.getAs[String]("ZQZH").trim
-      val ZQDM1 = row.getAs[String]("ZQDM1").trim
-      val ZQDM2 = row.getAs[String]("ZQDM2").trim
-      val ZQLB = row.getAs[String]("ZQLB").trim
-      val LTLX = row.getAs[String]("LTLX").trim
-      val QYLB = row.getAs[String]("QYLB").trim
-      val GPNF = row.getAs[String]("GPNF").trim
-      val MMBZ = row.getAs[String]("MMBZ").trim
-      val SL = row.getAs[String]("SL").trim
-      val CJSL = row.getAs[String]("CJSL").trim
-      val ZJZH = row.getAs[String]("ZJZH").trim
-      val BZ = row.getAs[String]("BZ").trim
-      val JG1 = row.getAs[String]("JG1").trim
-      val JG2 = row.getAs[String]("JG2").trim
-      val QSJE = row.getAs[String]("QSJE").trim
-      val YHS = row.getAs[String]("YHS").trim
-      val JSF = row.getAs[String]("JSF").trim
-      val GHF = row.getAs[String]("GHF").trim
-      val ZGF = row.getAs[String]("ZGF").trim
-      val SXF = row.getAs[String]("SXF").trim
-      val QTJE1 = row.getAs[String]("QTJE1").trim
-      val QTJE2 = row.getAs[String]("QTJE2").trim
-      val QTJE3 = row.getAs[String]("QTJE3").trim
-      val SJSF = row.getAs[String]("SJSF").trim
-      val JGDM = row.getAs[String]("JGDM").trim
-      val FJSM = row.getAs[String]("FJSM").trim
+      val SCDM = getRowFieldAsString(row, "SCDM")
+      val JLLX = getRowFieldAsString(row, "JLLX")
+      val JYFS = getRowFieldAsString(row, "JYFS")
+      val JSFS = getRowFieldAsString(row, "JSFS")
+      val YWLX = getRowFieldAsString(row, "YWLX")
+      val QSBZ = getRowFieldAsString(row, "QSBZ")
+      val GHLX = getRowFieldAsString(row, "GHLX")
+      val JSBH = getRowFieldAsString(row, "JSBH")
+      val CJBH = getRowFieldAsString(row, "CJBH")
+      val SQBH = getRowFieldAsString(row, "SQBH")
+      val WTBH = getRowFieldAsString(row, "WTBH")
+      val JYRQ = getRowFieldAsString(row, "JYRQ")
+      val QSRQ = getRowFieldAsString(row, "QSRQ")
+      val JSRQ = getRowFieldAsString(row, "JSRQ")
+      val QTRQ = getRowFieldAsString(row, "QTRQ")
+      val WTSJ = getRowFieldAsString(row, "WTSJ")
+      val CJSJ = getRowFieldAsString(row, "CJSJ")
+      val XWH1 = getRowFieldAsString(row, "XWH1")
+      val XWH2 = getRowFieldAsString(row, "XWH2")
+      val XWHY = getRowFieldAsString(row, "XWHY")
+      val JSHY = getRowFieldAsString(row, "JSHY")
+      val TGHY = getRowFieldAsString(row, "TGHY")
+      val ZQZH = getRowFieldAsString(row, "ZQZH")
+      val ZQDM1 = getRowFieldAsString(row, "ZQDM1")
+      val ZQDM2 = getRowFieldAsString(row, "ZQDM2")
+      val ZQLB = getRowFieldAsString(row, "ZQLB")
+      val LTLX = getRowFieldAsString(row, "LTLX")
+      val QYLB = getRowFieldAsString(row, "QYLB")
+      val GPNF = getRowFieldAsString(row, "GPNF")
+      val MMBZ = getRowFieldAsString(row, "MMBZ")
+      val SL = getRowFieldAsString(row, "SL")
+      val CJSL = getRowFieldAsString(row, "CJSL")
+      val ZJZH = getRowFieldAsString(row, "ZJZH")
+      val BZ = getRowFieldAsString(row, "BZ")
+      val JG1 = getRowFieldAsString(row, "JG1")
+      val JG2 = getRowFieldAsString(row, "JG2")
+      val QSJE = getRowFieldAsString(row, "QSJE")
+      val YHS = getRowFieldAsString(row, "YHS")
+      val JSF = getRowFieldAsString(row, "JSF")
+      val GHF = getRowFieldAsString(row, "GHF")
+      val ZGF = getRowFieldAsString(row, "ZGF")
+      val SXF = getRowFieldAsString(row, "SXF")
+      val QTJE1 = getRowFieldAsString(row, "QTJE1")
+      val QTJE2 = getRowFieldAsString(row, "QTJE2")
+      val QTJE3 = getRowFieldAsString(row, "QTJE3")
+      val SJSF = getRowFieldAsString(row, "SJSF")
+      val JGDM = getRowFieldAsString(row, "JGDM")
+      val FJSM = getRowFieldAsString(row, "FJSM")
 
       //证券标识
       val FZQBZ = "ZQ"
@@ -419,10 +420,10 @@ object SHFICCTriPartyRepoETL {
   private def readJsmxFileAndFilted(spark: SparkSession, jsmxFilePath: String): RDD[Row] = {
     val jsmxRDD: RDD[Row] = Util.readCSV(jsmxFilePath, spark).rdd
     jsmxRDD.filter(row => {
-      val JLLX = row.getAs[String]("JLLX").trim
-      val JYFS = row.getAs[String]("JYFS").trim
-      val YWLX = row.getAs[String]("YWLX").trim
-      val JGDM = row.getAs[String]("JGDM").trim
+      val JLLX = getRowFieldAsString(row, "JLLX")
+      val JYFS = getRowFieldAsString(row, "JYFS")
+      val YWLX = getRowFieldAsString(row, "YWLX")
+      val JGDM = getRowFieldAsString(row, "JGDM")
       "003".equals(JLLX) && "106".equals(JYFS) && ("680".equals(YWLX) || "681".equals(YWLX) || "682".equals(YWLX) || "683".equals(YWLX)) && "0000".equals(JGDM)
     })
 
@@ -434,10 +435,21 @@ object SHFICCTriPartyRepoETL {
     val wdqRDD: RDD[Row] = Util.readCSV(wdqFilePath, spark).rdd
     //过滤数据,wdq（未到期）文件中：scdm=‘01’and wdqlb=‘008’的所有数据
     wdqRDD.filter(row => {
-      val SCDM = row.getAs[String]("SCDM").trim
-      val WDQLB = row.getAs[String]("WDQLB").trim
+      val SCDM = getRowFieldAsString(row, "SCDM")
+      val WDQLB = getRowFieldAsString(row, "WDQLB")
       "01".equals(SCDM) && "008".equals(WDQLB)
     })
+  }
+
+
+  private def getRowFieldAsString(row: Row, fieldName: String): String = {
+    var field = row.getAs[String](fieldName)
+    if (field == null) {
+      field = ""
+    } else {
+      field = field.trim
+    }
+    field
   }
 
   /*private case class SHFICCTriPartyRepoETLDto(

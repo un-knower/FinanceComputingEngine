@@ -64,9 +64,9 @@ object DateUtils {
     * @param dateLong :时间戳
     * @return 返回格式:格式为yyyyMMdd
     */
-  def formatDate(dateLong: Long): String = {
+  def formatDate(dateLong: Long, pattern: String = yyyyMMdd): String = {
     val date = new Date(dateLong)
-    val DATEKEY_FORMAT = new SimpleDateFormat("yyyyMMdd")
+    val DATEKEY_FORMAT = new SimpleDateFormat(pattern)
     DATEKEY_FORMAT.format(date)
   }
 
