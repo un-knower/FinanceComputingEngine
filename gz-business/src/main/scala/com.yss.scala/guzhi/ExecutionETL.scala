@@ -3,7 +3,7 @@ package com.yss.scala.guzhi
 import java.text.SimpleDateFormat
 
 import com.twitter.chill.java.IterableRegistrar
-import com.yss.scala.dto.{ExeOriginalObj, ExecutionAggrObj}
+import com.yss.scala.dto.ExeOriginalObj
 import com.yss.scala.guzhi.ShghContants.SEPARATE1
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SaveMode, SparkSession}
@@ -23,9 +23,9 @@ import scala.collection.mutable.ListBuffer
   *
   */
 
-case class Output(FZQDM: String, FXWH: String, FGDDM: String, Side: String, FZQBZ: String, Fywbz: String)
 
-object ExecutionETL {
+
+object ExecutionETL extends java.io.Serializable {
   def getFywbzAndFzqbz() {
     val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
@@ -134,6 +134,22 @@ object ExecutionETL {
       })
     }).collectAsMap()
 
+    /**
+      * 7.读取股东账号
+      *
+      */
+
+    val accountNumber=sc.textFile("hdfs://nscluster/yss/guzhi/basic_list/20180925/CSGDZH")
+
+    val setCode= accountNumber.map{
+      x=>{
+        var par=x.split(",")
+        val AccountId=par(0)
+        val fsetcode=par(5)
+        (AccountId,fsetcode)
+      }
+    }.collectAsMap()
+
 
 
     //将map进行广播
@@ -142,7 +158,7 @@ object ExecutionETL {
     val cstskmValues = sc.broadcast(cstskmValue)
     val LSETCSSYSJJValues = sc.broadcast(LSETCSSYSJJValue)
     val CSJJXXValues = sc.broadcast(CSJJXXValue)
-
+    val setCodeValues = sc.broadcast(setCode)
 
 
     //将原始数据,进行map,将key进行判断
@@ -156,6 +172,7 @@ object ExecutionETL {
           //定义一个map
           val fzqbz = mutable.Map("fzqbz" -> "0")
           val fywbz = mutable.Map("fywbz" -> "0")
+          val setCode=mutable.Map("SETCODE" -> "0")
 
           val text = func.split("\t")
           val LastPx = text(16)//成交价
@@ -166,6 +183,7 @@ object ExecutionETL {
           val appId=text(2)
           val TransactTime=TransactTime1.substring(0,8) //回报时间
           val Side = text(20) //买卖方向
+          val sqbh=text(12) //申请编号
           val AccountID=text(21)
 
         if (key.substring(0, 2) == "00" || key.substring(0, 2) == "30") {
@@ -255,6 +273,10 @@ object ExecutionETL {
             key.substring(0, 3) == "149" || key.substring(0, 3) == "133" || key.substring(0, 3) == "134") {
             fzqbz("fzqbz") = "ZQ"
             fywbz("fywbz") = "QYZQ"
+          }else{
+            fzqbz("fzqbz") = "ZQ"
+            fywbz("fywbz") = "KZZ"
+
           }
 
         } else if (key.substring(0, 2) == "12") {
@@ -293,35 +315,49 @@ object ExecutionETL {
 
           val dateLong = CSJJXXValues.value.get(key + "_" + "HB")
 
-          if(dateLong.isDefined){
-           val  jjDate = dateLong.get(0)
+          if(dateLong.isDefined) {
+            val jjDate = dateLong.get(0)
 
             if (key.substring(0, 3) == "159" && jjDate != "0" && dateTime1.toString >= jjDate.toString) {
               fzqbz("fzqbz") = "JJ"
               fywbz("fywbz") = "HBETF"
 
-            } else if (key.substring(0, 4) == "1599") {
+            }
+          }
+          if (key.substring(0, 4) == "1599") {
               fzqbz("fzqbz") = "JJ"
               fywbz("fywbz") = "ETF"
             } else {
-
               fzqbz("fzqbz") = "JJ"
               fywbz("fywbz") = "LOF"
 
             }
-          }
+
         }
+
+          val setCodeValue=setCodeValues.value.getOrElse(AccountID,"0")
+          if(setCodeValue!= "0"){
+
+            setCode("setCode")=setCodeValue
+          }
        //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
 
 
-         val Exe= ExeOriginalObj(TransactTime,appId,ReportingPBUID,key,LastPx,LastQty,Side,AccountID,fzqbz("fzqbz"),fywbz("fywbz"))
+         val Exe= ExeOriginalObj(TransactTime,appId,ReportingPBUID,key,LastPx,LastQty,Side,AccountID,fileDate,sqbh,fzqbz("fzqbz"),fywbz("fywbz"),setCode("setCode"))
           execution.append(Exe)
         }
         execution
       }
     }
 
-   import sparkSession.implicits._
+
+
+
+
+
+
+
+    import sparkSession.implicits._
     result.toDF().write.format("jdbc")
       .option("url","jdbc:mysql://192.168.102.120:3306/JJCWGZ")
       .option("user","root")
@@ -331,7 +367,7 @@ object ExecutionETL {
       .save()
 
 
-    // result.toDF().show()
+//    result.toDF().show(192)
 
 
     //  exeDF.createOrReplaceTempView("exeDF")
