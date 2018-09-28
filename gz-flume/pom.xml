@@ -83,9 +83,9 @@
             <version>1.8.0</version>
         </dependency>
         <dependency>
-            <groupId>com.linuxense</groupId>
+            <groupId>com.github.albfernandez</groupId>
             <artifactId>javadbf</artifactId>
-            <version>0.4.0</version>
+            <version>1.9.2</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
