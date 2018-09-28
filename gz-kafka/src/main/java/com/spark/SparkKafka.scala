@@ -1,29 +1,37 @@
 package com.spark
 
+import java.io.File
+
 import com.spark.Util
+import com.yss.spark.KafkaUtilsSpark
 import org.apache.spark
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.streaming.dstream.{DStream, ReceiverInputDStream}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-
+import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
+import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
+import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
+import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
+import org.apache.spark.streaming.kafka010.KafkaUtils
 
 object SparkKafka {
   val SEPARATE1 = "@"
   val SEPARATE2 = ","
 
   def main(args: Array[String]): Unit = {
-    running()
 
-  }
+    //running()
 
-  private def running(): Unit = {
+    // }
+
+    // private def running(): Unit = {
     val spark = SparkSession.builder().appName("sparkDemo").master("local[*]").getOrCreate()
-    val sc = new SparkContext()
-    val conf = new SparkConf().setAppName("sparkDemo").setMaster("local[*]")
-    val ssc = new StreamingContext(conf, Seconds(5))
+
+    val sc = spark.sparkContext
+    val ssc = new StreamingContext(sc, Seconds(5))
 
 
     /**
@@ -269,7 +277,7 @@ object SparkKafka {
     /**
       * 股东账号表csgdzh
       *
-      * */
+      **/
     val csgdzhPath = Util.getDailyInputFilePath("CSGDZH")
     val csgdzhMap = sc.textFile(csgdzhPath)
       .map(row => {
@@ -277,7 +285,7 @@ object SparkKafka {
         (fields(0), fields(5))
       }).collectAsMap()
 
-    val csgdzhValue= sc.broadcast(csgdzhMap)
+    val csgdzhValue = sc.broadcast(csgdzhMap)
 
     /**
       * 判断是否要查询CsZqXx中ZQ的业务类型
@@ -619,20 +627,47 @@ object SparkKafka {
       throw new Exception("")
     }
 
-    val stream: DStream[String] = ssc.textFileStream("hdfs://192.168.102.120:8020/yss/guzhi/Test")
-    stream.foreachRDD(rdd => {
-      rdd.map(m => {
-        val str = m.split(",")
-        val gddm =str(0)
-        val zqdm = str(7) //证券代码
-        val cjjg = str(10) //成交价格
+//    val kafkaParams = Map[String, Object](
+//      "bootstrap.servers" -> " bj-rack001-hadoop004:6667,bj-rack001-hadoop002:6667,bj-rack001-hadoop003:6667",
+//      "key.deserializer" -> classOf[StringDeserializer],
+//      "value.deserializer" -> classOf[StringDeserializer],
+//      "group.id" -> "gh",
+//      "auto.offset.reset" -> "earliest", //earliest
+//      "enable.auto.commit" -> (false: java.lang.Boolean)
+//    )
+//    val topics = Array("ws_test")
+//
+//    val stream = KafkaUtils.createDirectStream[String, String](
+//      ssc,
+//      PreferConsistent,
+//      Subscribe[String, String](topics, kafkaParams)
+//    )
+    val rdd = KafkaUtilsSpark.getStream(ssc)
+    rdd.filter(x => x.currentRecord !=1 ).filter(f=>{
+      println(f.rowValue)  //D890026748,,20180809,2116746,23341,5700,0,600271,100151,100151,26.930,153501.00,0000001149,B,00001
+      new File(f.fileName).getName=="gh23341"
+    }).foreachRDD(rdd => {
+      rdd.foreach(record => {
+        val str = record.rowValue.split(",")
+        val gddm = str(0)
+        val gdxm = str(1)
         val bcrq = str(2) //本次日期
+        val cjbh = str(3)
         val gsdm = str(4) // 公司代码
-        val bs =str(13)
-        val zqbz=getZqbz(zqdm, cjjg, bcrq)
-        val tzh =getTzh(gddm)
-        val ywbz =getYwbz(tzh,zqbz,zqdm,cjjg,bs,gsdm,bcrq)
-
+        val cjsl = str(5)
+        val bcye = str(6)
+        val zqdm = str(7) //证券代码
+        val sbsj = str(8)
+        val cjsj = str(9)
+        val cjjg = str(10) //成交价格
+        val cjje = str(11)
+        val sqbh = str(12)
+        val bs = str(13)
+        val mjbh = str(14)
+        val zqbz = getZqbz(zqdm, cjjg, bcrq)
+        val tzh = getTzh(gddm)
+        val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq)
+        SHGHTag(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz)
       })
 
     })
@@ -641,5 +676,6 @@ object SparkKafka {
     ssc.start()
     ssc.awaitTermination()
 
+    //}
   }
 }
