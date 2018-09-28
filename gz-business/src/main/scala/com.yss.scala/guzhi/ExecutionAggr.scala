@@ -1,8 +1,6 @@
 package com.yss.scala.guzhi
 
-import java.sql.DriverManager
-
-import com.yss.scala.dto.{ExecutionAggrObj}
+import com.yss.scala.dto.ExecutionAggrObj
 import com.yss.scala.guzhi.ExecutionContants._
 import com.yss.scala.guzhi.ShghContants.{DEFORT_VALUE1, DEFORT_VALUE2, DEFORT_VALUE3, NO, SALE, SEPARATE1, YES, ZCLB}
 import com.yss.scala.util.Util
@@ -11,59 +9,45 @@ import org.apache.hadoop.mapred.TextInputFormat
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.math.BigDecimal.RoundingMode
 /**
   * @author ChenYao
   * date 2018/8/8
   *
-  *原始数据表:execution_aggr_N000032F0001_1_20160825.tsv
-  *参数表:
-  *佣金表:
-  *
-  *
   *数据处理:{日期 +SecurityID +市场(S)+交易席位(ReportingPBUID)+SIDE(买卖)+股东代码(AccountID)} 相同的进行买入和卖出的计算
   *         输出到mysql数据库JJCWGZ 的表 SJSV5中
+  *
+  *
   */
 object ExecutionAggr {
   def main(args: Array[String]): Unit = {
-
-
     /**
-      * 1.读取 原始数据表、参数表、佣金利率表、费率表
+      * 1.读取 原始数据表、参数表、佣金利率表、费率表、席位表、特殊参数表
       */
     val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
     val sparkSession = SparkSession.builder().config(sparkConf).getOrCreate()
-    val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\jiaoyan\\execution_aggr_F000995F0401_1_20180808.tsv")
+  //  val exe = sc.textFile("C:\\Users\\hgd\\Desktop\\jiaoyan\\execution_aggr_F000995F0401_1_20180808.tsv")
+
+   //从数据库中读取数据
+    val exe= sparkSession.read.format("jdbc").option("url","jdbc:mysql://192.168.102.120:3306/JJCWGZ")
+       .option("user","root")
+       .option("password","root1234")
+       .option("dbtable","sjsv5_etl_cy")
+       .load()
+
+
     //参数表,编码格式的转换
     val csb = sc.hadoopFile("C:\\Users\\hgd\\Desktop\\过户\\参数.csv", classOf[TextInputFormat], classOf[LongWritable], classOf[Text])
       .map(pair => new String(pair._2.getBytes, 0, pair._2.getLength, "GBK"))
     //费率表
-    val flb = Util.readCSV("C:\\Users\\hgd\\Desktop\\过户\\交易利率.csv", sparkSession)
+     val flb = Util.readCSV("C:\\Users\\hgd\\Desktop\\过户\\交易利率.csv", sparkSession)
     //佣金表
     val yjb = Util.readCSV("C:\\Users\\hgd\\Desktop\\过户\\佣金利率.csv", sparkSession)
 
     //交易费用表（佣金的三种模式）
     val  jyfy= Util.readCSV("C:\\Users\\hgd\\Desktop\\过户\\A117csxwfy.csv", sparkSession)
-
-    //读取数据库CSQSXW表，席位表
-    val xwb=sparkSession.read.format("jdbc")
-      .option("url","jdbc:oracle://192.168.102.68:1521/employee")
-      .option("dbtable","CSQSXW")
-      .option("user","hadoop")
-      .option("password","hadoop")
-      .load()
-
-
-    xwb.createOrReplaceTempView("CSQSXW")
-    val xwValue= sparkSession.sql(" select FQSDM,FQSXW from CSQSXW where  FSZSH='S' and  FSETCODE=117") //得出117套账号的席位号ReportingPBUID
-
-
-
-
-
     /**
       * 2 .取出参数表中的 （套账号 + 中文名， 启用不启用)
       *
@@ -76,12 +60,10 @@ object ExecutionAggr {
       (key, value)
     }).collectAsMap()
 
-
     /**
       * 3.编写参数，用来和参数表进行比对，进行取值
       *
       */
-
     val cs1 = csbMap(CS1_KEY) //是否开启佣金包含经手费，证管费
     val cs4 = csbMap(CS4_KEY) //启计算佣金减去风险金
     val cs6 = csbMap(CS6_KEY) //计算佣金减去结算费
@@ -192,27 +174,27 @@ object ExecutionAggr {
 
 
       //Map.getOrElse 如果有值的话取到，没有取到值的话，赋值-1
-      var rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + JSF, DEFORT_VALUE1)  //判断包含117的这个key有没有
+      var rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1  + SEPARATE1 + JSF, DEFORT_VALUE1)  //判断包含117的这个key有没有
       if (DEFORT_VALUE1.equals(rateJSstr)) rateJSstr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + JSF, DEFORT_VALUE2) //如果还没有，将费率设置为0
       val rateJS = rateJSstr.split(SEPARATE1)(1) //取经管费利率
       val rateJszk = rateJSstr.split(SEPARATE1)(2) //取经管费折扣
 
-      var rateYHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + YHS, DEFORT_VALUE1)
+      var rateYHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + SEPARATE1 + YHS, DEFORT_VALUE1)
       if (DEFORT_VALUE1.equals(rateYHStr)) rateYHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + YHS, DEFORT_VALUE2)
       val rateYH = rateYHStr.split(SEPARATE1)(1) //印花费利率
       val rateYhzk = rateYHStr.split(SEPARATE1)(2) //印花费折扣
 
-      var rateZGStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + ZGF, DEFORT_VALUE1)
+      var rateZGStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + SEPARATE1 + ZGF, DEFORT_VALUE1)
       if (DEFORT_VALUE1.equals(rateZGStr)) rateZGStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + ZGF, DEFORT_VALUE2)
       val rateZG = rateZGStr.split(SEPARATE1)(1) //征管费利率
       val rateZgzk = rateZGStr.split(SEPARATE1)(2) //征管费折扣
 
-      var rateGHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + GHF, DEFORT_VALUE1)
+      var rateGHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1+ SEPARATE1 + GHF, DEFORT_VALUE1)
       if (DEFORT_VALUE1.equals(rateGHStr)) rateGHStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + GHF, DEFORT_VALUE2)
       val rateGH = rateGHStr.split(SEPARATE1)(1) //过户费利率
       val rateGhzk = rateGHStr.split(SEPARATE1)(2)   //过户费折扣
 
-      var rateFXJStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + ZYZCH + SEPARATE1 + FXJ, DEFORT_VALUE1)
+      var rateFXJStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + SEPARATE1 + FXJ, DEFORT_VALUE1)
       if (DEFORT_VALUE1.equals(rateFXJStr)) rateFXJStr = flbMap.getOrElse(ZCLB + SEPARATE1 + SH + SEPARATE1 + GYZCH + SEPARATE1 + FXJ, DEFORT_VALUE2)
       val rateFXJ = rateFXJStr.split(SEPARATE1)(1) //风险金利率
       val rateFxjzk = rateFXJStr.split(SEPARATE1)(2) //风险金折扣
@@ -242,17 +224,16 @@ object ExecutionAggr {
       * key:日期 +SecurityID +市场(S)+交易席位(ReportingPBUID)+SIDE(买卖)+股东代码(AccountID)
       * value: 所有
       */
-    val map1 = exe.map {
+    val map1 = exe.rdd.map {
       case (text) => {
-        val word = text.split("\t")
-        val ReportingPBUID = word(3) //回报交易单元
-        val SecurityID = word(5) //证券代码
-        val TransactTime1 = word(9)
-        val TransactTime=TransactTime1.substring(0,8) //回报时间
-        val Side = word(20) //买卖方向
+
+        val ReportingPBUID = text(2) //回报交易单元
+        val SecurityID = text(3) //证券代码
+        val TransactTime = text(8)
+        val Side = text(6) //买卖方向
         val Market="S"
-        val AccountID=word(21)
-        val key=TransactTime+SEPARATE1+SecurityID+SEPARATE1+Market+SEPARATE1+ReportingPBUID+SEPARATE1+Side+SEPARATE1+AccountID
+        val AccountID=text(7)
+        val key=TransactTime+SEPARATE1+SecurityID+ SEPARATE1+Market+SEPARATE1+ReportingPBUID+SEPARATE1+Side+SEPARATE1+AccountID
         (key,text)  //key  日期 +SecurityID +市场(S)+交易席位(ReportingPBUID)+SIDE(买卖)+股东代码(AccountID)
       }
     }.groupByKey()
@@ -349,14 +330,6 @@ object ExecutionAggr {
         val LastQty = BigDecimal(fields(17)) //成交数量
 
 
-
-
-
-
-
-
-
-
       }
     }
 
@@ -408,9 +381,9 @@ object ExecutionAggr {
 
         for (row <- values) {
 
-          val text = row.split("\t")
-          val cjje = BigDecimal(text(16))  //金额
-          val cjsl = BigDecimal(text(17)) //数量
+
+          val cjje = BigDecimal(row.getAs("LastPx").toString)  //金额
+          val cjsl = BigDecimal(row.getAs("LastQty").toString) //数量
 
           // 经手费的计算
           val jsf = cjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
@@ -565,10 +538,9 @@ object ExecutionAggr {
         if(Side=="1") {
 
           for (func <- iterable) { //将所有写到ExecutionAggr,最后将类放到可变数组中
-            val text = func.split("\t")
-            val LastPx = BigDecimal(text(16)) //成交价
-            val LastQty = BigDecimal(text(17)) //成交数量
-            val LeavesQty = text(18) //订单剩余数量
+
+            val LastPx = BigDecimal(func.getAs("LastPx").toString) //成交价
+            val LastQty = BigDecimal(func.getAs("LastQty").toString) //成交数量
             //进行计算
             Fbje += LastPx.*(LastQty)
             FBsl += LastQty
@@ -597,10 +569,8 @@ object ExecutionAggr {
         }else if(Side=="2"){
 
           for (func <- iterable) { //将所有写到ExecutionAggr,最后将类放到可变数组中
-            val text = func.split("\t")
-            val LastPx = BigDecimal(text(16)) //成交价
-            val LastQty = BigDecimal(text(17)) //成交数量
-            val LeavesQty = text(18) //订单剩余数量
+            val LastPx = BigDecimal(func.getAs("LastPx").toString) //成交价
+            val LastQty = BigDecimal(func.getAs("LastQty").toString) //成交数量
             //进行计算
             Fsje += LastPx.*(LastQty)  //卖金额
             FSsl += LastQty  //卖数量
@@ -682,9 +652,5 @@ object ExecutionAggr {
     /*import sparkSession.implicits._
       finallData.toDF().show()*/
   }
-
-
-
-
 
 }
