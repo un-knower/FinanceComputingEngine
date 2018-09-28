@@ -16,7 +16,7 @@ import scala.math.BigDecimal.RoundingMode
   *
   */
 
-object SZStockExchange {
+object SZStockExchange  extends Serializable{
 
   def main(args: Array[String]): Unit = {
 
@@ -38,7 +38,7 @@ def getResult()={
 
 
   val csb= loadLvarlist(spark.sparkContext)
-   doExec(spark,df,csb)
+   doExec(df,csb)
 }
 
   /** * 加载公共参数表lvarlist */
@@ -63,8 +63,10 @@ def getResult()={
 
 
   /** 汇总然后进行计算 */
-  def doExec( spark: SparkSession, df: DataFrame,csb:Broadcast[collection.Map[String, String]]) = {
+  def doExec( df: DataFrame,csb:Broadcast[collection.Map[String, String]]) = {
 
+    val spark=SparkSession.builder().appName("SJSV5").master("local[*]").getOrCreate()
+    @transient
     val sc = spark.sparkContext
     def getYJThreeModel(gddm:String,ReportingPBUID:String,FZqbz:String,Fywbz:String ,sumYj:BigDecimal,sumJSF:BigDecimal,sumZGF:BigDecimal)={
       //交易费用表（佣金的三种模式）
@@ -114,7 +116,7 @@ def getResult()={
 
 
     /** 加载公共费率表和佣金表*/
-    def loadFeeTables() = {
+    def loadFeeTables ()={
       //公共的费率表
       val flbPath = Util.getDailyInputFilePath("CSJYLV")
       val flb = sc.textFile(flbPath)
@@ -308,9 +310,9 @@ def getResult()={
       val cs3=csbValues.value.getOrElse(tzh + CON23_KEY,0 ) //深圳佣金计算费用保留位数
       val cs4 = csbValues.value(tzh + CS4_KEY) //是否开启计算佣金减去风险金
       val cs5 = csbValues.value(tzh + CS6_KEY) //是否开启计算佣金减去结算费
-      val cs6=csbValues.value(tzh+CON24_KEY) //深交所证管费和经手费分别计算
+  //    val cs6=csbValues.value(tzh+CON24_KEY) //深交所证管费和经手费分别计算
 
-      (cs1, cs2, cs3, cs4, cs5,cs6)
+      (cs1, cs2, cs3, cs4, cs5)
     }
 
     /**
@@ -401,13 +403,13 @@ def getResult()={
             yhs = cjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
           }
           //如果 套账号+CON24_KEY在LVARLIST中value为1,就单独计算经手费和证管费
-          if(loadFeeTables()._1.value.getOrElse(tzh+CON24_KEY,"-1") ==1 ){
+        /*  if(yjbValues.value.getOrElse(tzh+CON24_KEY,"-1") ==1 ){*/
             //征管费的计算
             zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
             //风险金的计算
              fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP)
 
-          }else{}
+
           var jsf= cjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
           //过户费的计算
           var ghf =  cjje.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
@@ -445,8 +447,6 @@ def getResult()={
         sumYj = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
         if (NO.equals(cs1)) { //经手费,证管费
           sumYj = sumYj.-(sumJsf).-(sumZgf)
-        }else if(YES.equals(cs1)){
-          getYJThreeModel(gddm,gsdm,zqbz,ywbz,sumYj,sumJsf,sumZgf)
         }
         if (YES.equals(cs4)) {
           sumYj = sumYj.-(sumFxj)
@@ -501,8 +501,8 @@ def getResult()={
         val cs5 = csResults._5
 
         for (row <- values) {
-          val cjje = BigDecimal(row.getAs[String]("CJJE"))
-          val cjsl = BigDecimal(row.getAs[String]("CJSL"))
+          val cjje = BigDecimal(row.getAs[String]("LastPx"))
+          val cjsl = BigDecimal(row.getAs[String]("LastQty"))
           sumCjje = sumCjje.+(cjje)
           sumCjsl = sumCjsl.+(cjsl)
         }
@@ -522,8 +522,6 @@ def getResult()={
         var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
         if (NO.equals(cs1)) {
           sumYj2 = sumYj2 - sumJsf2 - sumZgf2
-        }else if(YES.equals(cs1)){
-          getYJThreeModel(gddm,gsdm,zqbz,ywbz,sumYj2,sumJsf2,sumZgf2)
         }
         if (YES.equals(cs4)) {
           sumYj2 = sumYj2 - sumFxj2
@@ -605,8 +603,8 @@ def getResult()={
         val cs5 = csResults._5
 
         for (row <- values) {
-          val cjje = BigDecimal(row.getAs[String]("CJJE"))
-          val cjsl = BigDecimal(row.getAs[String]("CJSL"))
+          val cjje = BigDecimal(row.getAs[String]("LastPx"))
+          val cjsl = BigDecimal(row.getAs[String]("LastQty"))
           sumCjje = sumCjje.+(cjje)
           sumCjsl = sumCjsl.+(cjsl)
         }
@@ -626,8 +624,6 @@ def getResult()={
         var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
         if (NO.equals(cs1)) {
           sumYj2 = sumYj2 - sumJsf2 - sumZgf2
-        }else if(YES.equals(cs1)){
-          getYJThreeModel(gddm,gsdm,zqbz,ywbz,sumYj2,sumJsf2,sumZgf2)
         }
         if (YES.equals(cs4)) {
           sumYj2 = sumYj2 - sumFxj2
@@ -766,7 +762,7 @@ def getResult()={
     //将结果输出
     import spark.implicits._
   /*  Util.outputMySql(result.toDF(), "SZ_Stock_Exchange")*/
-//    result.toDF.show()
+    result.toDF.show()
   }
 
 
