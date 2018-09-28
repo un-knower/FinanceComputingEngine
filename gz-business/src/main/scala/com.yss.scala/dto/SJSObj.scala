@@ -7,5 +7,5 @@ package com.yss.scala.dto
   * 取值3：金额汇总*费率
   *费率参数
   */
-class SJSObj (ctype: String, sumCjje: BigDecimal, sumCjsl: BigDecimal, sumYj: BigDecimal, sumJsf: BigDecimal, sumYhs: BigDecimal, sumZgf: BigDecimal,
+case class SJSObj (ctype: String, sumCjje: BigDecimal, sumCjsl: BigDecimal, sumYj: BigDecimal, sumJsf: BigDecimal, sumYhs: BigDecimal, sumZgf: BigDecimal,
               sumGhf: BigDecimal, sumFxj: BigDecimal)
