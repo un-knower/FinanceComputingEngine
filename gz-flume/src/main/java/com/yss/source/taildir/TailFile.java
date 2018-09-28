@@ -355,6 +355,7 @@ public class TailFile {
 
 
         HashMap<String, String> map = new HashMap<>();
+        map.put("currentRecord", String.valueOf(0));
         String replace = filePath.getAbsolutePath().replace(parentDir, "");
         if (replace.length() > 4) {
             map.put("fileName", replace.substring(0, replace.length() - 4));
