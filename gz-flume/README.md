@@ -88,11 +88,11 @@ a1.sinks.k2.channel = c2
 	
 5.开发中对集群Flume下添加的jar文件
 
-		<dependency>
-            <groupId>com.linuxense</groupId>
-            <artifactId>javadbf</artifactId>
-            <version>0.4.0</version>
-		</dependency>
+		 <dependency>
+            <groupId>com.github.albfernandez</groupId>
+             <artifactId>javadbf</artifactId>
+            <version>1.9.2</version>
+         </dependency>
 		
         <dependency>
             <groupId>org.json</groupId>
