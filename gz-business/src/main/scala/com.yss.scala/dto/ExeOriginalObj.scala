@@ -1,6 +1,6 @@
 package com.yss.scala.dto
 
-case class ExeOriginalObj(
+case class ExeOriginalObj (
 
                          date:String,
                          ApplID:String,
@@ -10,6 +10,10 @@ case class ExeOriginalObj(
                          LastQty:String,
                          Side:String,
                          AccountID:String,
+                         strDate:String,
+                         SQBH:String,
                          FZQBZ:String,
-                         FYWBZ:String
+                         FYWBZ:String,
+                         SETCODE:String
+
                          )
