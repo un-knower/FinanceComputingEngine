@@ -20,25 +20,28 @@ import scala.math.BigDecimal.RoundingMode
 object SHTransfer {
 
   def main(args: Array[String]): Unit = {
-        testEtl()
-//    doSum()
+    //        testEtl()
+    doSum()
+    //    testXX()
   }
 
   /** 测试使用 */
   def testXX() = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     //TODO  ①把所有的基础表都广播出去 ②把一部分业务复杂的表广播出去其他的用join 3 都用join
+    val df = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.csv", spark)
+    df.filter(row => row.getAs[String]("CJBH").contains("E")).show()
     spark.stop()
   }
 
-  /** 测试etl*/
+  /** 测试etl */
   def testEtl() = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
-//    loadTables(spark,"")
-    val df = doETL(spark,broadcastLvarList)
+    //    loadTables(spark,"")
+    val df = doETL(spark, broadcastLvarList)
     import spark.implicits._
-    Util.outputMySql(df.toDF,"shgh_etl_test")
+    Util.outputMySql(df.toDF, "shgh_etl_test")
     spark.stop()
   }
 
@@ -46,14 +49,14 @@ object SHTransfer {
   def doSum() = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
-    val df = doETL(spark,broadcastLvarList)
+    val df = doETL(spark, broadcastLvarList)
     import spark.implicits._
-    doExec(spark,df.toDF(),broadcastLvarList)
+    doExec(spark, df.toDF(), broadcastLvarList)
     spark.stop()
   }
 
   /** * 加载公共参数表lvarlist */
-  def loadLvarlist(sc:SparkContext) = {
+  def loadLvarlist(sc: SparkContext) = {
 
     val csbPath = Util.getDailyInputFilePath(TABLE_NAME_GGCS)
     val csb = sc.textFile(csbPath)
@@ -70,7 +73,7 @@ object SHTransfer {
   }
 
   /** 加载各种基础信息表，并广播 */
-  def loadTables(spark: SparkSession,today:String) = {
+  def loadTables(spark: SparkSession, today: String) = {
 
     val sc = spark.sparkContext
 
@@ -288,6 +291,7 @@ object SHTransfer {
           })(0)
         })
         .collectAsMap()
+      println(cszqxxMap2)
       (sc.broadcast(cszqxxMap1), sc.broadcast(cszqxxMap2))
     }
 
@@ -295,7 +299,6 @@ object SHTransfer {
     def loadCsgdzh() = {
       //读取股东账号表，
       val csgdzhPath = Util.getDailyInputFilePath(TABLE_NAME_GDZH)
-      println(csgdzhPath)
       val csgdzhMap = sc.textFile(csgdzhPath)
         .map(row => {
           val fields = row.split(SEPARATE2)
@@ -346,40 +349,40 @@ object SHTransfer {
       sc.broadcast(jjgzlxMap)
     }
 
-    /** 加载节假日表 csholiday*/
+    /** 加载节假日表 csholiday */
     def loadCsholiday() = {
       val csholidayPath = Util.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
       val csholidayList = sc.textFile(csholidayPath)
-          .filter(str => {
-            val fields = str.split(SEPARATE2)
-            val fdate = fields(0)
-            val fbz = fields(1)
-            val fsh = fields(3)
-            if("0".equals(fbz) && "1".equals(fsh) && fdate.compareTo(today)>=0) true
-            else false
-          })
+        .filter(str => {
+          val fields = str.split(SEPARATE2)
+          val fdate = fields(0)
+          val fbz = fields(1)
+          val fsh = fields(3)
+          if ("0".equals(fbz) && "1".equals(fsh) && fdate.compareTo(today) >= 0) true
+          else false
+        })
         .map(str => {
           str.split(SEPARATE2)(0)
         }).takeOrdered(1)
-      if(csholidayList.length == 0) throw new Exception("获取工作日信息有误!")
+      if (csholidayList.length == 0) throw new Exception("获取工作日信息有误!")
       csholidayList(0)
     }
 
     (loadCsjjxx(), loadCsqyxx(), loadCsqsxw(),
-      loadCsTsKm(), loadCssysjj(), loadCszqxx(), loadCsgdzh(), loadCsjylv(), loadGzlx(),loadCsholiday())
+      loadCsTsKm(), loadCssysjj(), loadCszqxx(), loadCsgdzh(), loadCsjylv(), loadGzlx(), loadCsholiday())
   }
 
   /** 进行原始数据的转换包括：规则1，2，3，4，5 */
-  def doETL(spark: SparkSession,csb:Broadcast[collection.Map[String, String]]) = {
+  def doETL(spark: SparkSession, csb: Broadcast[collection.Map[String, String]]) = {
     val sc = spark.sparkContext
 
     import com.yss.scala.dbf.dbf._
-//    val sourcePath = "C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.dbf"
-//    val df = spark.sqlContext.dbfFile(sourcePath)
-    val df = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh_source.csv",spark)
+    val sourcePath = "C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.dbf"
+    val df = spark.sqlContext.dbfFile(sourcePath)
+    //    val df = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh_source.csv",spark)
     val today = DateUtils.getToday(DateUtils.yyyy_MM_dd)
     // (larlistValue, csjjxxValue,csqyxxValue, csqsxwValue, csTsKmValue, lsetcssysjjValue, csqzxxValue, csgdzhValue)
-    val broadcaseValues = loadTables(spark,today)
+    val broadcaseValues = loadTables(spark, today)
     val csbValues = csb
     val csjjxxValues = broadcaseValues._1
     val csqyxValues = broadcaseValues._2
@@ -578,7 +581,6 @@ object SHTransfer {
       */
     def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String): String = {
       if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
-
         val condition = csbValues.value.get(tzh + "指数、指标股票按特殊科目设置页面处理")
         if (condition.isDefined && "1".equals(condition.get)) {
           //gh文件中的gsdm字段在CsQsXw表中有数据
@@ -650,10 +652,10 @@ object SHTransfer {
         }
         if (jjxxbwh("ETF", zqdm, bcrq, 0)) {
           return "ETF"
-        } else return "FBS"
+        }
+        return "FBS"
       }
       if ("ZQ".equals(zqbz)) {
-
         if (zqlx(tzh, bcrq, zqdm)) {
           val condition = cszqxxValues._1.value.get(zqdm)
           if (condition.isDefined) {
@@ -683,15 +685,15 @@ object SHTransfer {
           val regex = "123[0-4][0-9]{2}".r
           if (regex.findFirstMatchIn(zqdm).isDefined) return "CJZQ"
           if (zqdm.startsWith("137")) return "KJHSMZQ"
-          if (zqbz.startsWith("130") || zqdm.startsWith("140") || zqdm.startsWith("147")) return "DFZQ"
+          if (zqdm.startsWith("130") || zqdm.startsWith("140") || zqdm.startsWith("147")) return "DFZQ"
           if (zqdm.startsWith("132") && "0".equals(cjjg)) return "KJHGSZQ"
           if ("0".equals(cjjg)) return "KZZGP"
           if (zqdm.startsWith("132")) return "KJHGSZQ"
-          var res = cszqxxValues._2.value.get(zqdm + tzh)
+          var res = cszqxxValues._2.value.get(zqdm + SEPARATE1 + tzh)
           if (res.isDefined && bcrq.compareTo(res.get) >= 0) {
             return "FLKZZ"
           } else {
-            res = cszqxxValues._2.value.get(zqdm + "")
+            res = cszqxxValues._2.value.get(zqdm + SEPARATE1 + " ")
             if (res.isDefined && bcrq.compareTo(res.get) >= 0) return "FLKZZ"
           }
           return "QYZQ"
@@ -756,7 +758,7 @@ object SHTransfer {
           if ("B".equals(bs)) return "KZZSG"
           else return "KZZFK"
         }
-        if (zqdm.startsWith("783")||zqdm.startsWith("733")) return "KZZZQ"
+        if (zqdm.startsWith("783") || zqdm.startsWith("733")) return "KZZZQ"
         if (zqdm.startsWith("753") || zqdm.startsWith("762") || zqdm.startsWith("764")) return "KZZXZ"
         if (zqdm.startsWith("751")) return "QYZQXZ"
         if (zqdm.startsWith("70") && "100".equals(cjjg)) return "KZZXZ"
@@ -783,7 +785,7 @@ object SHTransfer {
           return "PG"
         }
       }
-      throw new Exception("无法找到对应的业务标识："+zqdm)
+      throw new Exception("无法找到对应的业务标识：" + zqdm)
     }
 
     /**
@@ -862,14 +864,15 @@ object SHTransfer {
     }
 
     /**
-      *   勾选了“上交所是否启用企债净价交易”则获取工作日
+      * 勾选了“上交所是否启用企债净价交易”则获取工作日
+      *
       * @param bcrq 源文件日期
-      * @param tzh 套账号
+      * @param tzh  套账号
       * @return
       */
-    def getFindate(bcrq:String,tzh:String) = {
-      val value= csbValues.value.get(tzh+"上交所是否启用企债净价交易")
-      if(value.isDefined && "1".equals(value.get)) csholiday
+    def getFindate(bcrq: String, tzh: String) = {
+      val value = csbValues.value.get(tzh + "上交所是否启用企债净价交易")
+      if (value.isDefined && "1".equals(value.get)) csholiday
       else bcrq
     }
 
@@ -894,7 +897,7 @@ object SHTransfer {
       val tzh = getTzh(gddm)
       val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq)
       val gzlv = gzlx(zqbz, zqdm, bcrq, cjsl)
-      val findate = getFindate(bcrq,tzh)
+      val findate = getFindate(bcrq, tzh)
       zqdm = getZqdm(zqdm, cjjg)
       cjsl = getCjsl(zqdm, cjjg, cjsl)
       cjje = getCjje(tzh, zqdm, zqbz, ywbz, cjje, cjsl, cjjg, gzlv)
@@ -905,17 +908,17 @@ object SHTransfer {
         gsdm = "0" + gsdm
         length += 1
       }
-      ShghYssj(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, hggain,findate)
+      ShghYssj(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, hggain, findate)
     })
     etlRdd
   }
 
   /** 汇总然后进行计算 */
-  def doExec(spark: SparkSession, df: DataFrame,csb:Broadcast[collection.Map[String, String]]) = {
+  def doExec(spark: SparkSession, df: DataFrame, csb: Broadcast[collection.Map[String, String]]) = {
 
     val sc = spark.sparkContext
 
-    /** 加载公共费率表和佣金表*/
+    /** 加载公共费率表和佣金表 */
     def loadFeeTables() = {
       //公共的费率表
       val flbPath = Util.getDailyInputFilePath("CSJYLV")
@@ -1143,10 +1146,10 @@ object SHTransfer {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-        val gsdm = fields(2) //交易席位
-        val bcrq = fields(0) //本次日期
-        val zqdm = fields(1) //证券代码
-        val gddm = fields(4)
+      val gsdm = fields(2) //交易席位
+      val bcrq = fields(0) //本次日期
+      val zqdm = fields(1) //证券代码
+      val gddm = fields(4)
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
@@ -1168,15 +1171,15 @@ object SHTransfer {
 
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //总金额
-        var sumCjsl = BigDecimal(0) //总数量
-        var sumYj = BigDecimal(0) //总的佣金
-        var sumJsf = BigDecimal(0) //总的经手费
-        var sumYhs = BigDecimal(0) //总的印花税
-        var sumZgf = BigDecimal(0) //总的征管费
-        var sumGhf = BigDecimal(0) //总的过户费
-        var sumFxj = BigDecimal(0) //总的风险金
-        var sumGzlx = BigDecimal(0) //总的国债利息
-        var sumHgsy = BigDecimal(0) //总的回购收益
+      var sumCjsl = BigDecimal(0) //总数量
+      var sumYj = BigDecimal(0) //总的佣金
+      var sumJsf = BigDecimal(0) //总的经手费
+      var sumYhs = BigDecimal(0) //总的印花税
+      var sumZgf = BigDecimal(0) //总的征管费
+      var sumGhf = BigDecimal(0) //总的过户费
+      var sumFxj = BigDecimal(0) //总的风险金
+      var sumGzlx = BigDecimal(0) //总的国债利息
+      var sumHgsy = BigDecimal(0) //总的回购收益
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -1280,10 +1283,10 @@ object SHTransfer {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-        val gsdm = fields(2) //交易席位
-        val bcrq = fields(0) //本次日期
-        val zqdm = fields(1) //证券代码
-        val gddm = fields(4)
+      val gsdm = fields(2) //交易席位
+      val bcrq = fields(0) //本次日期
+      val zqdm = fields(1) //证券代码
+      val gddm = fields(4)
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
@@ -1305,7 +1308,7 @@ object SHTransfer {
         val minYj: String = getRateResult._13
 
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
-        var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -1328,9 +1331,9 @@ object SHTransfer {
           sumYhs2 = sumCjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
         }
         var sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
-        var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
-        //同一个申请编号总的过户费
-        var sumGhf2 = BigDecimal(0)
+      var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
+      //同一个申请编号总的过户费
+      var sumGhf2 = BigDecimal(0)
 
         if (!(NO.equals(cs2) || (YES).equals(cs2))) {
           //如果时日期格式的话要比较日期 TODO日期格式的比较
@@ -1397,7 +1400,7 @@ object SHTransfer {
             totalFxj2 += fee.sumFxj
           }
           (key, ShghFee("2", totalCjje, totalCjsl, totalYj2, totalJsf2, totalYhs2, totalZgf2,
-            totalGhf2, totalFxj2,BigDecimal(0),BigDecimal(0)))
+            totalGhf2, totalFxj2, BigDecimal(0), BigDecimal(0)))
       }
 
     //第三种 金额汇总*费率
@@ -1405,10 +1408,10 @@ object SHTransfer {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-        val gsdm = fields(2) //交易席位
-        val bcrq = fields(0) //本次日期
-        val zqdm = fields(1) //证券代码
-        val gddm = fields(4)
+      val gsdm = fields(2) //交易席位
+      val bcrq = fields(0) //本次日期
+      val zqdm = fields(1) //证券代码
+      val gddm = fields(4)
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
@@ -1430,7 +1433,7 @@ object SHTransfer {
 
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
-        var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -1453,9 +1456,9 @@ object SHTransfer {
           sumYhs2 = sumCjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
         }
         val sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
-        val sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
-        //同一个申请编号总的过户费
-        var sumGhf2 = BigDecimal(0)
+      val sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
+      //同一个申请编号总的过户费
+      var sumGhf2 = BigDecimal(0)
         if (!(NO.equals(cs2) || (YES).equals(cs2))) {
           //如果时日期格式的话要比较日期 TODO日期格式的比较
           if (bcrq.compareTo(cs2) > 0) {
@@ -1506,10 +1509,10 @@ object SHTransfer {
       case (key, ((fee1, fee2), fee3)) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-        val gsdm = fields(2) //交易席位
-        val bcrq = fields(0) //本次日期
-        val zqdm = fields(1) //证券代码
-        val gddm = fields(4)
+      val gsdm = fields(2) //交易席位
+      val bcrq = fields(0) //本次日期
+      val zqdm = fields(1) //证券代码
+      val gddm = fields(4)
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
@@ -1597,7 +1600,7 @@ object SHTransfer {
           //          FSssje -= FByj
         }
         Hzjkqs(bcrq,
-          bcrq,zqdm,SH,gsdm, bs,
+          bcrq, zqdm, SH, gsdm, bs,
           totalCjje.formatted("%.2f"),
           totalCjsl.formatted("%.2f"),
           realYj.formatted("%.2f"),
@@ -1610,7 +1613,7 @@ object SHTransfer {
           fgzlx.formatted("%.2f"),
           fhggain.formatted("%.2f"),
           fsfje.formatted("%.2f"),
-          zqbz,ywbz,
+          zqbz, ywbz,
           "", "N", zqdm, "PT", "1", "", "", "0", "", "0",
           gddm, "", "", "", "", "", "", "shgh", "", "", "", "", ""
         )
