@@ -12,7 +12,7 @@ import scala.math.BigDecimal.RoundingMode
 
 /**
   * @author ws
-  * @version 2018-08-08
+  * @version 2018-08-30
   *          描述：上海过户动态获取参数
   *          源文件：gdh.dbf
   *          结果表：SHDZGH
@@ -21,7 +21,7 @@ object SHTransfer {
 
   def main(args: Array[String]): Unit = {
     //        testEtl()
-    doSum()
+    doExec()
     //    testXX()
   }
 
@@ -46,12 +46,12 @@ object SHTransfer {
   }
 
 
-  def doSum() = {
+  def doExec() = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     val df = doETL(spark, broadcastLvarList)
     import spark.implicits._
-    doExec(spark, df.toDF(), broadcastLvarList)
+    doSum(spark, df.toDF(), broadcastLvarList)
     spark.stop()
   }
 
@@ -876,11 +876,24 @@ object SHTransfer {
       else bcrq
     }
 
+    /**
+      * 进行日期的格式化，基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd
+      * @param bcrq
+      * @return yyyy-MM-dd
+      */
+    def convertDate(bcrq:String) = {
+      val yyyy = bcrq.substring(0,4)
+      val mm = bcrq.substring(4,6)
+      val dd = bcrq.substring(6)
+      yyyy.concat("-").concat(mm).concat("-").concat(dd)
+    }
+
     // 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
     val etlRdd = df.rdd.map(row => {
       val gddm = row.getAs[String](0)
       val gdxm = row.getAs[String](1)
-      val bcrq = row.getAs[String](2)
+      var bcrq = row.getAs[String](2)
+      bcrq = convertDate(bcrq)
       val cjbh = row.getAs[String](3)
       var gsdm = row.getAs[String](4)
       var cjsl = row.getAs[String](5)
@@ -914,7 +927,7 @@ object SHTransfer {
   }
 
   /** 汇总然后进行计算 */
-  def doExec(spark: SparkSession, df: DataFrame, csb: Broadcast[collection.Map[String, String]]) = {
+  def doSum(spark: SparkSession, df: DataFrame, csb: Broadcast[collection.Map[String, String]]) = {
 
     val sc = spark.sparkContext
 
@@ -987,8 +1000,9 @@ object SHTransfer {
       val tzh = row.getAs[String]("TZH") //套账号
       val zqbz = row.getAs[String]("FZQBZ") //证券标志
       val ywbz = row.getAs[String]("FYWBZ") //业务标志
+      val findate = row.getAs[String]("FINDATE") //读入日期
       val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs + SEPARATE1 +
-        gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz + SEPARATE1 + sqbh
+        gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz + SEPARATE1 + findate + SEPARATE1 + sqbh
       (key, row)
     }).groupByKey()
 
@@ -1006,8 +1020,9 @@ object SHTransfer {
       val tzh = row.getAs[String]("TZH") //套账号
       val zqbz = row.getAs[String]("FZQBZ") //证券标志
       val ywbz = row.getAs[String]("FYWBZ") //业务标志
+      val findate = row.getAs[String]("FINDATE") //读入日期
       val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs + SEPARATE1 +
-        gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz
+        gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz + SEPARATE1 + findate
       (key, row)
     }).groupByKey()
 
@@ -1112,6 +1127,7 @@ object SHTransfer {
       val cs3 = csbValues.value(tzh + CS3_KEY) //是否按千分之一费率计算过户费
       val cs4 = csbValues.value(tzh + CS4_KEY) //是否开启计算佣金减去风险金
       val cs5 = csbValues.value(tzh + CS6_KEY) //是否开启计算佣金减去结算费
+      //TODO 计算佣金的费率承担模式
       (cs1, cs2, cs3, cs4, cs5)
     }
 
@@ -1146,10 +1162,10 @@ object SHTransfer {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-      val gsdm = fields(2) //交易席位
-      val bcrq = fields(0) //本次日期
-      val zqdm = fields(1) //证券代码
-      val gddm = fields(4)
+        val gsdm = fields(2) //交易席位
+        val bcrq = fields(0) //本次日期
+        val zqdm = fields(1) //证券代码
+        val gddm = fields(4)
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
@@ -1171,15 +1187,15 @@ object SHTransfer {
 
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //总金额
-      var sumCjsl = BigDecimal(0) //总数量
-      var sumYj = BigDecimal(0) //总的佣金
-      var sumJsf = BigDecimal(0) //总的经手费
-      var sumYhs = BigDecimal(0) //总的印花税
-      var sumZgf = BigDecimal(0) //总的征管费
-      var sumGhf = BigDecimal(0) //总的过户费
-      var sumFxj = BigDecimal(0) //总的风险金
-      var sumGzlx = BigDecimal(0) //总的国债利息
-      var sumHgsy = BigDecimal(0) //总的回购收益
+        var sumCjsl = BigDecimal(0) //总数量
+        var sumYj = BigDecimal(0) //总的佣金
+        var sumJsf = BigDecimal(0) //总的经手费
+        var sumYhs = BigDecimal(0) //总的印花税
+        var sumZgf = BigDecimal(0) //总的征管费
+        var sumGhf = BigDecimal(0) //总的过户费
+        var sumFxj = BigDecimal(0) //总的风险金
+        var sumGzlx = BigDecimal(0) //总的国债利息
+        var sumHgsy = BigDecimal(0) //总的回购收益
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -1283,13 +1299,14 @@ object SHTransfer {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-      val gsdm = fields(2) //交易席位
-      val bcrq = fields(0) //本次日期
-      val zqdm = fields(1) //证券代码
-      val gddm = fields(4)
+        val gsdm = fields(2) //交易席位
+        val bcrq = fields(0) //本次日期
+        val zqdm = fields(1) //证券代码
+        val gddm = fields(4)
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
+        val findate = fields(8)
         val otherFee = BigDecimal(0)
 
         val getRateResult = getRate(gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
@@ -1308,7 +1325,7 @@ object SHTransfer {
         val minYj: String = getRateResult._13
 
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
-      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+        var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -1331,9 +1348,9 @@ object SHTransfer {
           sumYhs2 = sumCjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
         }
         var sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
-      var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
-      //同一个申请编号总的过户费
-      var sumGhf2 = BigDecimal(0)
+        var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
+        //同一个申请编号总的过户费
+        var sumGhf2 = BigDecimal(0)
 
         if (!(NO.equals(cs2) || (YES).equals(cs2))) {
           //如果时日期格式的话要比较日期 TODO日期格式的比较
@@ -1374,7 +1391,7 @@ object SHTransfer {
         }
 
         (bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs + SEPARATE1 +
-          gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz,
+          gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz + SEPARATE1 + findate,
           ShghFee("2", sumCjje, sumCjsl, sumYj2, sumJsf2, sumYhs2, sumZgf2,
             sumGhf2, sumFxj2, BigDecimal(0), BigDecimal(0)))
     }
@@ -1408,10 +1425,10 @@ object SHTransfer {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-      val gsdm = fields(2) //交易席位
-      val bcrq = fields(0) //本次日期
-      val zqdm = fields(1) //证券代码
-      val gddm = fields(4)
+        val gsdm = fields(2) //交易席位
+        val bcrq = fields(0) //本次日期
+        val zqdm = fields(1) //证券代码
+        val gddm = fields(4)
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
@@ -1433,7 +1450,7 @@ object SHTransfer {
 
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
-      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+        var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -1456,9 +1473,9 @@ object SHTransfer {
           sumYhs2 = sumCjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
         }
         val sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
-      val sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
-      //同一个申请编号总的过户费
-      var sumGhf2 = BigDecimal(0)
+        val sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
+        //同一个申请编号总的过户费
+        var sumGhf2 = BigDecimal(0)
         if (!(NO.equals(cs2) || (YES).equals(cs2))) {
           //如果时日期格式的话要比较日期 TODO日期格式的比较
           if (bcrq.compareTo(cs2) > 0) {
@@ -1509,13 +1526,14 @@ object SHTransfer {
       case (key, ((fee1, fee2), fee3)) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-      val gsdm = fields(2) //交易席位
-      val bcrq = fields(0) //本次日期
-      val zqdm = fields(1) //证券代码
-      val gddm = fields(4)
+        val gsdm = fields(2) //交易席位
+        val bcrq = fields(0) //本次日期
+        val zqdm = fields(1) //证券代码
+        val gddm = fields(4)
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
+        val findate = fields(8)
 
         val totalCjje = fee1.sumCjje
         val totalCjsl = fee1.sumCjsl
@@ -1600,7 +1618,7 @@ object SHTransfer {
           //          FSssje -= FByj
         }
         Hzjkqs(bcrq,
-          bcrq, zqdm, SH, gsdm, bs,
+          findate, zqdm, SH, gsdm, bs,
           totalCjje.formatted("%.2f"),
           totalCjsl.formatted("%.2f"),
           realYj.formatted("%.2f"),
