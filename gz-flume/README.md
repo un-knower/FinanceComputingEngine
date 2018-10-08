@@ -20,7 +20,7 @@
 
 3.Flume运行脚本
 		
-    见gz-flume/resources/目录下的脚本文件
+    见gz-flume/resources/目录下的脚本文件 
 
 
 4.Flume后台运行指令
