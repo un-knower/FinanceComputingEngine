@@ -20,52 +20,7 @@
 
 3.Flume运行脚本
 		
-# 指定Agent的组件名称
-a1.sources = r1
-a1.sinks = k1
-a1.channels = c1
- 
-# 指定Flume source(要监听的路径)
-a1.sources.r1.type = com.yss.taildirsource.TaildirSource
-a1.sources.r1.positionFile = /data/test/ws/taildir_position.json
-a1.sources.r1.filegroups = f1
-a1.sources.r1.filegroups.f1 = /data/gz_interface/^((?!\.xls[x|d]$).)*$
-a1.sources.r1.filegroups.f1.headerKey1 = value1
-#指定Xml文件的节点key值,不指定默认Security
-a1.sources.r1.xmlNode = Security
-#指定csv文件的分隔符,不指定默认逗号分隔
-a1.sources.r1.csvSeparator = ,
-#指定是否需要文件的相对路径,默认ture
-a1.sources.r1.fileHeader = true
-#指定获取文件相对路径的key值,默认值fileName
-a1.sources.r1.fileHeaderKey = fileName
-#指定当前行的行号的key值,默认值是currentRecord
-a1.sources.r1.currentLine = currentRecord
- 
-# 指定Flume sink
-a1.sinks.k1.type = com.yss.hdfssink.HDFSEventSink
-a1.sinks.k1.hdfs.path = /yss/guzhi/interface/
-a1.sinks.k1.hdfs.filePrefix = %{fileName}
-a1.sinks.k1.hdfs.fileSuffix = .csv
-a1.sinks.k1.hdfs.rollCount = 0
-a1.sinks.k1.hdfs.fileType  = DataStream
-a1.sinks.k1.hdfs.writeFormat  = Text
-a1.sinks.k1.hdfs.rollSize = 0
-a1.sinks.k1.hdfs.idleTimeout  = 5
-a1.sinks.k1.hdfs.round = true
-a1.sinks.k1.hdfs.rollInterval = 0
-a1.sinks.k1.hdfs.useLocalTimeStamp = true
- 
-# 指定Flume channel
-a1.channels.c1.type = memory
-a1.channels.c1.capacity = 1000
-a1.channels.c1.transactionCapacity = 100
-a1.channels.c1.byteCapacityBufferPercentage = 20
-a1.channels.c1.byteCapacity = 800000
- 
-# 绑定source和sink到channel上
-a1.sources.r1.channels = c1
-a1.sinks.k1.channel = c1
+    见gz-flume/resources/目录下的脚本文件
 
 
 4.Flume后台运行指令
