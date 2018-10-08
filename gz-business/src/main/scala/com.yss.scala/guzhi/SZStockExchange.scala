@@ -11,9 +11,11 @@ import scala.math.BigDecimal.RoundingMode
 
 /**
   * 问题总结：
-  * 风险金利率太小，最后乘完是0.00
+  * 原数据的金额太小，就算总金额也特别小，导致风险金等。。都是0.00
   * 佣金根据股东代码+证券标志/业务标志取不到  默认是0吗
   * 三种佣金的计算方式 都是金额汇总后再算吗
+  * 资产代码的取值规则
+  * 第一种： 不带申请编号的单独计算  第二种： 相同申请编号的汇总后计算   第三种 ： 不带申请编号的汇总后计算
   */
 
 object SZStockExchange extends Serializable {
@@ -139,15 +141,16 @@ object SZStockExchange extends Serializable {
           val key = gddm1 + SEPARATE1 + zqlb + SEPARATE1 + ffylb
           val value = ffyfs
           (key, value)
-        }}.collectAsMap()
+        }
+      }.collectAsMap()
 
-      (sc.broadcast(yjbMap), sc.broadcast(flbMap),sc.broadcast(jyfyMap))
+      (sc.broadcast(yjbMap), sc.broadcast(flbMap), sc.broadcast(jyfyMap))
     }
 
     val broadcaseFee = loadFeeTables()
     val yjbValues = broadcaseFee._1 //佣金
     val flbValues = broadcaseFee._2 //费率
-    val jyfyValues=broadcaseFee._3 //交易费率
+    val jyfyValues = broadcaseFee._3 //交易费率
     val csbValues = csb
 
 
@@ -246,17 +249,18 @@ object SZStockExchange extends Serializable {
         */
       def getYjFee() = {
         var rateYJStr = DEFORT_VALUE3
-        var maybeRateYJStr = yjMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
-        if (maybeRateYJStr.isEmpty) {
-          val maybeRateYJStr = yjMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gddm)
-          if (maybeRateYJStr.isEmpty) {
-            val maybeRateYJStr = yjMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
-            if (maybeRateYJStr.isEmpty) {
-              val maybeRateYJStr = yjMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gddm)
+        var maybeRateYJStr= DEFORT_VALUE3
+        maybeRateYJStr = yjMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gsdm,"-1")
+        if (maybeRateYJStr.equals("-1")) {
+           maybeRateYJStr = yjMap.getOrElse(ywbz + SEPARATE1 + SH + SEPARATE1 + gddm,"-1")
+          if (maybeRateYJStr.equals("-1")) {
+             maybeRateYJStr = yjMap.getOrElse(zqbz + SEPARATE1 + SH + SEPARATE1 + gsdm,"-1")
+            if (maybeRateYJStr.equals("-1")) {
+              maybeRateYJStr = yjMap.getOrElse(zqbz + SEPARATE1 + SH + SEPARATE1 + gddm,"-1")
             }
           }
         }
-        if (maybeRateYJStr.isDefined) rateYJStr = maybeRateYJStr.get
+        if (maybeRateYJStr!="-1") rateYJStr = maybeRateYJStr
         val rateYJ = rateYJStr.split(SEPARATE1)(1) //利率
         val rateYjzk = rateYJStr.split(SEPARATE1)(2) //折扣
         val minYj = rateYJStr.split(SEPARATE1)(3) //最低佣金
@@ -322,7 +326,7 @@ object SZStockExchange extends Serializable {
       (cs6, con1, con2, con3, con4, con5, con6, con7, con8, con9, con10, con11, con12)
     }
 
-    //第一种  每一笔交易单独计算，最后相加
+    //第一种   不带申请编号   每一笔交易单独计算，最后相加
     val fee1 = value1.map {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
@@ -365,15 +369,17 @@ object SZStockExchange extends Serializable {
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
         var cs2 = csResults._2 //深圳佣金计算费用保留位数
-      val cs3 = csResults._3
+        val cs3 = csResults._3
         val cs4 = csResults._4
         val cs5 = csResults._5
         val cs6 = csResults._6 //深交所证管费和经手费分别计算
 
 
         for (row <- values) {
-          val cjje = BigDecimal(row.getAs[String]("LastPx"))
+          val cjje1 = BigDecimal(row.getAs[String]("LastPx"))
           val cjsl = BigDecimal(row.getAs[String]("LastQty"))
+          val cjje=cjje1.*(cjsl)
+
           //  val gzlx = BigDecimal(row.getAs[String]("FGZLX"))
           // val hgsy = BigDecimal(row.getAs[String]("FHGGAIN"))
 
@@ -384,15 +390,15 @@ object SZStockExchange extends Serializable {
             //印花税的计算
             yhs = cjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
           }
+
           //征管费的计算
+          var zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
+          //经手费的计算
           if (cs6.equals("-1") || cs6.equals("0")) { // 不启用 经手费 =成交金额*(经手费率*折扣率+征管费*折扣率)
-            jsf = cjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk) + BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
+            jsf = cjje.*(BigDecimal(rateJS).*(BigDecimal(rateJszk) )+ BigDecimal(rateZG).*(BigDecimal(rateZgzk))).setScale(2, RoundingMode.HALF_UP)
           } else {
             jsf = cjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
           }
-
-          var zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
-
           //风险金的计算
           var fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP)
 
@@ -431,7 +437,7 @@ object SZStockExchange extends Serializable {
         //佣金的计算
 
         if (cs2.equals("-1") || cs2.equals("0")) {
-          sumYj = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(0)
+          sumYj = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(0,RoundingMode.DOWN)
 
         } else {
           sumYj = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(cs2.toInt, RoundingMode.HALF_UP)
@@ -439,7 +445,7 @@ object SZStockExchange extends Serializable {
 
         if (NO.equals(cs1)) { //经手费,证管费
           sumYj = sumYj.-(sumJsf).-(sumZgf)
-        }else if(YES.equals(cs1)){
+        } else if (YES.equals(cs1)) {
           var JSF = jyfyValues.value.getOrElse(gddm + SEPARATE1 + zqbz + SEPARATE1 + "JSF", "-1") //如果这个key的话，取得这个值，没有取-1
           var ZGF = jyfyValues.value.getOrElse(gddm + SEPARATE1 + zqbz + SEPARATE1 + "ZGF", "-1")
           var JSF1 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + zqbz + SEPARATE1 + "JSF", "-1")
@@ -460,7 +466,7 @@ object SZStockExchange extends Serializable {
               sumYj = sumYj - sumJsf
             }
           } else if (ZGF == 0 || ZGF1 == 0 || ZGF2 == 0) { //没有经手费 ，有证管费
-            sumYj= sumYj - sumZgf
+            sumYj = sumYj - sumZgf
           }
           sumYj
         }
@@ -508,7 +514,7 @@ object SZStockExchange extends Serializable {
         val minYj: String = getRateResult._13
 
         var sumCjje = BigDecimal(0) //同一个申请编号总金额
-      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+        var sumCjsl = BigDecimal(0) //同一个申请编号总数量
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -522,26 +528,27 @@ object SZStockExchange extends Serializable {
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("LastPx"))
           val cjsl = BigDecimal(row.getAs[String]("LastQty"))
-          sumCjje = sumCjje.+(cjje)
+          sumCjje = sumCjje.+((cjje).*(cjsl))
           sumCjsl = sumCjsl.+(cjsl)
         }
         var sumJsf2 = BigDecimal(0)
+
+        //同一个申请编号总的征管费
+        var sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
+
         //同一个申请编号总的经手费
         if (cs6.equals("-1") || cs6.equals("0")) { // 不启用 经手费 =成交金额*(经手费率*折扣率+征管费*折扣率)
-          sumJsf2 = sumCjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk) + BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
+          sumJsf2 = sumCjje.*(BigDecimal(rateJS).*(BigDecimal(rateJszk) )+BigDecimal(rateZG).*(BigDecimal(rateZgzk))).setScale(2, RoundingMode.HALF_UP)
         } else {
           sumJsf2 = sumCjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
         }
-
-        var sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
-
-
-        var sumYhs2 = BigDecimal(0) //同一个申请编号总的印花税
+        //同一个申请编号总的印花税
+        var sumYhs2 = BigDecimal(0)
         if (SALE.equals(bs)) {
           sumYhs2 = sumCjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
         }
-
-        var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
+        //同一个申请编号总的风险金
+        var sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP)
 
 
         //同一个申请编号总的过户费
@@ -552,7 +559,7 @@ object SZStockExchange extends Serializable {
 
         //同一个申请编号总的佣金 （按申请编号汇总）
         if (cs2.equals("-1") || cs2.equals("0")) {
-          var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(0)
+          var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(0,RoundingMode.DOWN)
 
         } else {
           var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(cs2.toInt, RoundingMode.HALF_UP)
@@ -561,31 +568,31 @@ object SZStockExchange extends Serializable {
         if (NO.equals(cs1)) {
           sumYj2 = sumYj2 - sumJsf2 - sumZgf2
 
-        } else if(YES.equals(cs1)){
-      var JSF = jyfyValues.value.getOrElse(gddm + SEPARATE1 + zqbz + SEPARATE1 + "JSF", "-1") //如果这个key的话，取得这个值，没有取-1
-      var ZGF = jyfyValues.value.getOrElse(gddm + SEPARATE1 + zqbz + SEPARATE1 + "ZGF", "-1")
-      var JSF1 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + zqbz + SEPARATE1 + "JSF", "-1")
-      var ZGF1 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + zqbz + SEPARATE1 + "ZGF", "-1")
-      var JSF2 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + ywbz + SEPARATE1 + "JSF", "-1")
-      var ZGF2 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + ywbz + SEPARATE1 + "ZGF", "-1")
+        } else if (YES.equals(cs1)) {
+          var JSF = jyfyValues.value.getOrElse(gddm + SEPARATE1 + zqbz + SEPARATE1 + "JSF", "-1") //如果这个key的话，取得这个值，没有取-1
+          var ZGF = jyfyValues.value.getOrElse(gddm + SEPARATE1 + zqbz + SEPARATE1 + "ZGF", "-1")
+          var JSF1 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + zqbz + SEPARATE1 + "JSF", "-1")
+          var ZGF1 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + zqbz + SEPARATE1 + "ZGF", "-1")
+          var JSF2 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + ywbz + SEPARATE1 + "JSF", "-1")
+          var ZGF2 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + ywbz + SEPARATE1 + "ZGF", "-1")
 
-      if (JSF == 0 || JSF1 == 0 || JSF == 0) { //有经手费，有证管费
+          if (JSF == 0 || JSF1 == 0 || JSF == 0) { //有经手费，有证管费
 
-        if (ZGF == 0 || ZGF1 == 0 || ZGF2 == 0) {
-          //有经手费，有证管费
+            if (ZGF == 0 || ZGF1 == 0 || ZGF2 == 0) {
+              //有经手费，有证管费
 
-          //佣金-征管费-经手费
-          sumYj2 = sumYj2 - sumJsf2 - sumZgf2
-        } else {
-          //有经手费，没证管费
-          //佣金-经手费
-          sumYj2 = sumYj2 - sumJsf2
+              //佣金-征管费-经手费
+              sumYj2 = sumYj2 - sumJsf2 - sumZgf2
+            } else {
+              //有经手费，没证管费
+              //佣金-经手费
+              sumYj2 = sumYj2 - sumJsf2
+            }
+          } else if (ZGF == 0 || ZGF1 == 0 || ZGF2 == 0) { //没有经手费 ，有证管费
+            sumYj2 = sumYj2 - sumZgf2
+          }
+          sumYj2
         }
-      } else if (ZGF == 0 || ZGF1 == 0 || ZGF2 == 0) { //没有经手费 ，有证管费
-        sumYj2 = sumYj2 - sumZgf2
-      }
-      sumYj2
-    }
 
         if (YES.equals(cs4)) {
           sumYj2 = sumYj2 - sumFxj2
@@ -627,7 +634,8 @@ object SZStockExchange extends Serializable {
             totalGhf2, totalFxj2, BigDecimal(0), BigDecimal(0)))
       }
 
-    //第三种 金额汇总*费率
+
+    //第三种 金额汇总*费率  key不加申请编号
     val fee3 = value1.map {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
@@ -656,8 +664,8 @@ object SZStockExchange extends Serializable {
         val minYj: String = getRateResult._13
 
         val otherFee = BigDecimal(0)
-        var sumCjje = BigDecimal(0) //同一个申请编号总金额
-      var sumCjsl = BigDecimal(0) //同一个申请编号总数量
+        var sumCjje = BigDecimal(0) //总金额
+      var sumCjsl = BigDecimal(0) //总数量
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -671,29 +679,33 @@ object SZStockExchange extends Serializable {
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("LastPx"))
           val cjsl = BigDecimal(row.getAs[String]("LastQty"))
-          sumCjje = sumCjje.+(cjje)
+          sumCjje = sumCjje.+((cjje).*(cjsl))
           sumCjsl = sumCjsl.+(cjsl)
         }
         var sumJsf2 = BigDecimal(0)
-        //同一个申请编号总的经手费
-        if (cs6.equals("-1") || cs6.equals("0")) { // 不启用 经手费 =成交金额*(经手费率*折扣率+征管费*折扣率)
-          sumJsf2 = sumCjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk) + BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
-        } else {
-          sumJsf2 = sumCjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
-        }
-        //同一个申请编号总的经手费
-        var sumYhs2 = BigDecimal(0) //同一个申请编号总的印花税
+
+        //总印花税
+        var sumYhs2 = BigDecimal(0)
         if (SALE.equals(bs)) {
           sumYhs2 = sumCjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(2, RoundingMode.HALF_UP)
         }
-        val sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的征管费
-      val sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP) //同一个申请编号总的风险金
+        //总证管费
+        val sumZgf2 = sumCjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(2, RoundingMode.HALF_UP)
+        //经手费
+        if (cs6.equals("-1") || cs6.equals("0")) { // 不启用 经手费 =成交金额*(经手费率*折扣率+征管费*折扣率)
+          sumJsf2 = sumCjje.*((BigDecimal(rateJS)).*(BigDecimal(rateJszk) )+BigDecimal(rateZG).*(BigDecimal(rateZgzk))).setScale(2, RoundingMode.HALF_UP)
+        } else {
+          sumJsf2 = sumCjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(2, RoundingMode.HALF_UP)
+        }
+
+        //总风险金
+        val sumFxj2 = sumCjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(2, RoundingMode.HALF_UP)
       //同一个申请编号总的过户费
       var sumGhf2 = sumCjje.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
 
         var sumYj2 = BigDecimal(0)
         if (cs2.equals("-1") || cs2.equals("0")) {
-          var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(0)
+          var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(0,RoundingMode.DOWN)
 
         } else {
           var sumYj2 = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(cs2.toInt, RoundingMode.HALF_UP)
@@ -701,7 +713,7 @@ object SZStockExchange extends Serializable {
 
         if (NO.equals(cs1)) {
           sumYj2 = sumYj2 - sumJsf2 - sumZgf2
-        } else if(YES.equals(cs1)){
+        } else if (YES.equals(cs1)) {
           var JSF = jyfyValues.value.getOrElse(gddm + SEPARATE1 + zqbz + SEPARATE1 + "JSF", "-1") //如果这个key的话，取得这个值，没有取-1
           var ZGF = jyfyValues.value.getOrElse(gddm + SEPARATE1 + zqbz + SEPARATE1 + "ZGF", "-1")
           var JSF1 = jyfyValues.value.getOrElse(gsdm + SEPARATE1 + zqbz + SEPARATE1 + "JSF", "-1")
@@ -850,19 +862,17 @@ object SZStockExchange extends Serializable {
           realGhf.formatted("%.2f"),
           realFxj.formatted("%.2f"),
           "0",
-          //  fgzlx.formatted("%.2f"),
-          "0", "0",
           //  fhggain.formatted("%.2f"),
           fsfje.formatted("%.2f"),
           zqbz, ywbz,
-          "", "N", zqdm, "PT", "1", "", "", "0", "", "0",
-          gddm, "", "", "", "", "", "", "shgh", "", "", "", "", ""
+          "N", "0", zqdm, "PT", "1", "", "", "0", "", "0",
+          gddm, "", "", "", "", "", "", "", "", "", "", "", "", ""
         )
     }
     //将结果输出
     import spark.implicits._
-    /*  Util.outputMySql(result.toDF(), "SZ_Stock_Exchange")*/
-    result.toDF.show()
+      Util.outputMySql(result.toDF(), "sz_stock")
+       result.toDF.show(40)
   }
 
 
