@@ -73,7 +73,7 @@ public class TaildirMatcher {
     private final String filePattern;
 
     // 用于更改的目录
-    protected final File parentDir;
+    private final File parentDir;
 
 
     // 缓存实例，用于基于文件模式过滤文件
@@ -96,6 +96,10 @@ public class TaildirMatcher {
     private long currentParentDirMTime = -1;
     //正则匹配
     private Pattern fileNamePattern;
+
+    public String getParentDir() {
+        return parentDir.getAbsolutePath();
+    }
 
     /**
      * Package accessible constructor. From configuration context it represents a single
@@ -209,9 +213,6 @@ public class TaildirMatcher {
 
         currentParentDirMTime = parentDir.lastModified();
         getFilesSize(parentDir);
-
-        List<File> result;
-
         // calculate matched files if
         // - we don't want to use cache (recalculate every time) OR
         // - directory was clearly updated after the last check OR
