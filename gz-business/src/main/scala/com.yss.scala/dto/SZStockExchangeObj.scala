@@ -15,14 +15,12 @@ case class SZStockExchangeObj (
                                 FZGF: String, //征管费
                                 FGHF: String, //过户费
                                 FFXJ: String, //风险金
-                                FQTF: String, //其他费用
                                 FGZLX: String, //国债利息
-                                FHGGAIN: String, //回购收益
-                                FSFJE: String, //实付金额
+                                FSSSFJE: String, //实付金额
                                 FZQBZ: String, //证券标志
                                 FYWBZ: String, //业务标志
-                                FJYBZ: String, //交易标志
                                 FQSBZ: String, //清算标志
+                                FQTF: String, //其他费用
                                 ZQDM: String, //证券代码
                                 FJYFS: String, //交易方式
                                 FSH: String, //审核
@@ -32,6 +30,7 @@ case class SZStockExchangeObj (
                                 FTZBZ: String, //投资标志
                                 FQSGHF: String, //券商过户费
                                 FGDDM: String, //股东代码
+                                FJYBZ: String, //交易标志
                                 ISRTGS: String, //结算方式
                                 FPARTID: String, //结算会员
                                 FHTXH: String, //合同序号
