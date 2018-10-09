@@ -20,65 +20,7 @@
 
 3.Flume运行脚本
 		
-# 指定Agent的组件名称
-a1.sources = r1
-a1.sinks = k1 k2
-a1.channels = c1 c2
- 
-# 指定Flume source(要监听的路径)
-a1.sources.r1.type = com.yss.source.taildir.TaildirSource
-a1.sources.r1.positionFile = /data/temp/ws/taildir_position.json
-a1.sources.r1.filegroups = f1
-a1.sources.r1.filegroups.f1 = /data/gz_interface/^((?!\.xls[x|d]$).)*$
-a1.sources.r1.filegroups.f1.headerKey1 = value1
-a1.sources.r1.recursiveDirectorySearch = true
- 
-# 指定Flume hdfs sink
-a1.sinks.k1.type = com.yss.sink.hdfs.HDFSEventSink
-a1.sinks.k1.hdfs.path = /yss/guzhi/interface/
-a1.sinks.k1.hdfs.filePrefix = %{fileName}
-a1.sinks.k1.hdfs.fileSuffix = .csv
-a1.sinks.k1.hdfs.rollCount = 0
-a1.sinks.k1.hdfs.fileType  = DataStream
-a1.sinks.k1.hdfs.writeFormat  = Text
-a1.sinks.k1.hdfs.rollSize = 0
-a1.sinks.k1.hdfs.idleTimeout  = 5
-a1.sinks.k1.hdfs.round = true
-a1.sinks.k1.hdfs.rollInterval = 0
-a1.sinks.k1.hdfs.useLocalTimeStamp = true
-
-# 指定Flume kafka sink
-a1.sinks.k2.type = org.apache.flume.sink.kafka.KafkaSink
-a1.sinks.k2.kafka.topic = ws_test
-a1.sinks.k2.kafka.bootstrap.servers = bj-rack001-hadoop004:6667,bj-rack001-hadoop002:6667,bj-rack001-hadoop003:6667
-a1.sinks.k2.kafka.flumeBatchSize = 20
-a1.sinks.k2.useFlumeEventFormat = true
-
-
- 
-# 指定Flume hdfs channel
-a1.channels.c1.type = memory
-a1.channels.c1.capacity = 1000
-a1.channels.c1.transactionCapacity = 100
-a1.channels.c1.byteCapacityBufferPercentage = 20
-a1.channels.c1.byteCapacity = 800000
-
-
-# 指定Flume kafka channel
-a1.channels.c2.type = memory
-a1.channels.c2.capacity = 1000
-a1.channels.c2.transactionCapacity = 100
-a1.channels.c2.byteCapacityBufferPercentage = 20
-a1.channels.c2.byteCapacity = 800000
-
-
- 
-# 绑定source和sink到channel上
-a1.sources.r1.channels = c1 c2
-a1.sinks.k1.channel = c1
-a1.sinks.k2.channel = c2
-
-
+    见gz-flume/resources/目录下的脚本文件 
 
 
 4.Flume后台运行指令
@@ -88,11 +30,11 @@ a1.sinks.k2.channel = c2
 	
 5.开发中对集群Flume下添加的jar文件
 
-		 <dependency>
-            <groupId>com.github.albfernandez</groupId>
-             <artifactId>javadbf</artifactId>
-            <version>1.9.2</version>
-         </dependency>
+		<dependency>
+           <groupId>com.github.albfernandez</groupId>
+            <artifactId>javadbf</artifactId>
+           <version>1.9.2</version>
+        </dependency>
 		
         <dependency>
             <groupId>org.json</groupId>
@@ -101,12 +43,21 @@ a1.sinks.k2.channel = c2
         </dependency>
 
 6.自定义的FlumeSource
-       com.yss.flume.taildir.TaildirSource
+
+     6.1 spooldir 
+     
+       com.yss.source.spooldir.SpoolDirectorySource
+       
+     6.2 taildir
+     
+       com.yss.source.taildir.TaildirSource
       
 7.自定义的FlumeSink
-       com.yss.flume.hdfssink.HDFSEventSink
+
+       com.yss.sink.hdfs.HDFSEventSink
       
 8.需求
+
     1、自定义source和sink
     2、在source端解析dbf和xml以及tsv后缀的文件转换成csv中间分割符为逗号
     3、sink保留原文件名字后缀名为.csv

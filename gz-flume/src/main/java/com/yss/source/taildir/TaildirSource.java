@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 
-import static com.yss.source.taildir.TaildirSourceConfigurationConstants.*;
+import static com.yss.source.spooldir.SpoolDirectorySourceConfigurationConstants.*;
 
 public class TaildirSource extends AbstractSource implements
         PollableSource, Configurable {
@@ -76,7 +76,10 @@ public class TaildirSource extends AbstractSource implements
     private boolean fileHeader;
     private String fileHeaderKey;
 
-    private boolean recursiveDirectorySearch;
+
+    private String xmlNode;
+    private String currentRecord;
+    private String csvSeparator;
 
     @Override
     public synchronized void start() {
@@ -91,7 +94,9 @@ public class TaildirSource extends AbstractSource implements
                     .cachePatternMatching(cachePatternMatching)
                     .annotateFileName(fileHeader)
                     .fileNameHeader(fileHeaderKey)
-                    .recursiveDirectorySearch(recursiveDirectorySearch)
+                    .xmlNode(xmlNode)
+                    .currentRecord(currentRecord)
+                    .csvSeparator(csvSeparator)
                     .build();
         } catch (IOException e) {
             throw new FlumeException("Error instantiating ReliableTaildirEventReader", e);
@@ -143,41 +148,48 @@ public class TaildirSource extends AbstractSource implements
 
     @Override
     public synchronized void configure(Context context) {
-        String fileGroups = context.getString(FILE_GROUPS);
-        Preconditions.checkState(fileGroups != null, "Missing param: " + FILE_GROUPS);
+        String fileGroups = context.getString(TaildirSourceConfigurationConstants.FILE_GROUPS);
+        Preconditions.checkState(fileGroups != null, "Missing param: " + TaildirSourceConfigurationConstants.FILE_GROUPS);
 
-        filePaths = selectByKeys(context.getSubProperties(FILE_GROUPS_PREFIX),
+        filePaths = selectByKeys(context.getSubProperties(TaildirSourceConfigurationConstants.FILE_GROUPS_PREFIX),
                 fileGroups.split("\\s+"));
         Preconditions.checkState(!filePaths.isEmpty(),
-                "Mapping for tailing files is empty or invalid: '" + FILE_GROUPS_PREFIX + "'");
+                "Mapping for tailing files is empty or invalid: '" + TaildirSourceConfigurationConstants.FILE_GROUPS_PREFIX + "'");
 
         String homePath = System.getProperty("user.home").replace('\\', '/');
-        positionFilePath = context.getString(POSITION_FILE, homePath + DEFAULT_POSITION_FILE);
+        positionFilePath = context.getString(TaildirSourceConfigurationConstants.POSITION_FILE, homePath + TaildirSourceConfigurationConstants.DEFAULT_POSITION_FILE);
         Path positionFile = Paths.get(positionFilePath);
         try {
             Files.createDirectories(positionFile.getParent());
         } catch (IOException e) {
             throw new FlumeException("Error creating positionFile parent directories", e);
         }
-        headerTable = getTable(context, HEADERS_PREFIX);
-        batchSize = context.getInteger(BATCH_SIZE, DEFAULT_BATCH_SIZE);
-        skipToEnd = context.getBoolean(SKIP_TO_END, DEFAULT_SKIP_TO_END);
-        byteOffsetHeader = context.getBoolean(BYTE_OFFSET_HEADER, DEFAULT_BYTE_OFFSET_HEADER);
-        idleTimeout = context.getInteger(IDLE_TIMEOUT, DEFAULT_IDLE_TIMEOUT);
-        writePosInterval = context.getInteger(WRITE_POS_INTERVAL, DEFAULT_WRITE_POS_INTERVAL);
-        cachePatternMatching = context.getBoolean(CACHE_PATTERN_MATCHING,
-                DEFAULT_CACHE_PATTERN_MATCHING);
+        headerTable = getTable(context, TaildirSourceConfigurationConstants.HEADERS_PREFIX);
+        batchSize = context.getInteger(TaildirSourceConfigurationConstants.BATCH_SIZE, TaildirSourceConfigurationConstants.DEFAULT_BATCH_SIZE);
+        skipToEnd = context.getBoolean(TaildirSourceConfigurationConstants.SKIP_TO_END, TaildirSourceConfigurationConstants.DEFAULT_SKIP_TO_END);
+        byteOffsetHeader = context.getBoolean(TaildirSourceConfigurationConstants.BYTE_OFFSET_HEADER, TaildirSourceConfigurationConstants.DEFAULT_BYTE_OFFSET_HEADER);
+        idleTimeout = context.getInteger(TaildirSourceConfigurationConstants.IDLE_TIMEOUT, TaildirSourceConfigurationConstants.DEFAULT_IDLE_TIMEOUT);
+        writePosInterval = context.getInteger(TaildirSourceConfigurationConstants.WRITE_POS_INTERVAL, TaildirSourceConfigurationConstants.DEFAULT_WRITE_POS_INTERVAL);
+        cachePatternMatching = context.getBoolean(TaildirSourceConfigurationConstants.CACHE_PATTERN_MATCHING,
+                TaildirSourceConfigurationConstants.DEFAULT_CACHE_PATTERN_MATCHING);
 
         backoffSleepIncrement = context.getLong(PollableSourceConstants.BACKOFF_SLEEP_INCREMENT,
                 PollableSourceConstants.DEFAULT_BACKOFF_SLEEP_INCREMENT);
         maxBackOffSleepInterval = context.getLong(PollableSourceConstants.MAX_BACKOFF_SLEEP,
                 PollableSourceConstants.DEFAULT_MAX_BACKOFF_SLEEP);
-        fileHeader = context.getBoolean(FILENAME_HEADER,
-                DEFAULT_FILE_HEADER);
-        fileHeaderKey = context.getString(FILENAME_HEADER_KEY,
-                DEFAULT_FILENAME_HEADER_KEY);
-        recursiveDirectorySearch = context.getBoolean(TaildirSourceConfigurationConstants.RECURSIVE_DIRECTORY_SEARCH,
-                TaildirSourceConfigurationConstants.DEFAULT_RECURSIVE_DIRECTORY_SEARCH);
+        fileHeader = context.getBoolean(TaildirSourceConfigurationConstants.FILENAME_HEADER,
+                TaildirSourceConfigurationConstants.DEFAULT_FILE_HEADER);
+        fileHeaderKey = context.getString(TaildirSourceConfigurationConstants.FILENAME_HEADER_KEY,
+                TaildirSourceConfigurationConstants.DEFAULT_FILENAME_HEADER_KEY);
+
+
+
+        xmlNode = context.getString(XML_NODE, DEFAULT_XML_NODE);
+        currentRecord = context.getString(CURRENT_RECORD, DEFAULT_CURRENT_RECORD);
+        csvSeparator = context.getString(SEPARATOR, DEFAULT_SEPARATOR);
+
+
+
         if (sourceCounter == null) {
             sourceCounter = new SourceCounter(getName());
         }

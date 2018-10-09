@@ -77,20 +77,33 @@ public class TaildirSourceConfigurationConstants {
      * Header in which to put absolute path filename.
      */
     public static final String FILENAME_HEADER_KEY = "fileHeaderKey";
-    public static final String DEFAULT_FILENAME_HEADER_KEY = "file";
+    public static final String DEFAULT_FILENAME_HEADER_KEY = "fileName";
 
     /**
      * Whether to include absolute path filename in a header.
      */
     public static final String FILENAME_HEADER = "fileHeader";
-    public static final boolean DEFAULT_FILE_HEADER = false;
+    public static final boolean DEFAULT_FILE_HEADER = true;
 
 
     /**
-     * Flag to indicate if we should recursively checking for new files.  The default is false, so a
-     * configuration file entry would be needed to enable this setting
+     * 读取Xml文件设置key值
      */
-    public static final String RECURSIVE_DIRECTORY_SEARCH = "recursiveDirectorySearch";
-    public static final boolean DEFAULT_RECURSIVE_DIRECTORY_SEARCH = false;
+    public static final String XML_NODE = "xmlNode";
+    public static final String DEFAULT_XML_NODE = "Security";
+
+    /**
+     * 在Event的Headers头中每行记录对应的key值
+     */
+    public static final String CURRENT_RECORD = "currentLine";
+    public static final String DEFAULT_CURRENT_RECORD = "currentRecord";
+
+    /**
+     * 在Event的Headers头中每行记录对应的key值
+     */
+    public static final String SEPARATOR = "csvSeparator";
+    public static final String DEFAULT_SEPARATOR = ",";
+
+
 
 }

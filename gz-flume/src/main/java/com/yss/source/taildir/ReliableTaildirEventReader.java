@@ -59,8 +59,9 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private boolean committed = true;
     private final boolean annotateFileName;
     private final String fileNameHeader;
-
-    private final boolean recursiveDirectorySearch;
+    private final String xmlNode;
+    private final String currentRecord;
+    private final String csvSeparator;
 
     /**
      * Create a ReliableTaildirEventReader to watch the given directory.
@@ -68,8 +69,8 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private ReliableTaildirEventReader(Map<String, String> filePaths,
                                        Table<String, String, String> headerTable, String positionFilePath,
                                        boolean skipToEnd, boolean addByteOffset, boolean cachePatternMatching,
-                                       boolean annotateFileName, String fileNameHeader,
-                                       boolean recursiveDirectorySearch) throws IOException {
+                                       boolean annotateFileName, String fileNameHeader, String xmlNode,
+                                       String currentRecord, String csvSeparator) throws IOException {
         // Sanity checks
         Preconditions.checkNotNull(filePaths);
         Preconditions.checkNotNull(positionFilePath);
@@ -92,7 +93,9 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         this.cachePatternMatching = cachePatternMatching;
         this.annotateFileName = annotateFileName;
         this.fileNameHeader = fileNameHeader;
-        this.recursiveDirectorySearch = recursiveDirectorySearch;
+        this.xmlNode = xmlNode;
+        this.currentRecord = currentRecord;
+        this.csvSeparator = csvSeparator;
         updateTailFiles(skipToEnd);
 
         logger.info("Updating position from position file: " + positionFilePath);
@@ -207,8 +210,13 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 if (headers != null && !headers.isEmpty()) {
                     event.getHeaders().putAll(headers);
                 }
+                //添加文件的相对路径信息
+                String filename = currentFile.getPath().replace(currentFile.getParentDir(), "");
+                if (filename.length() > 4) {
+                    filename = filename.substring(0, filename.length() - 4);
+                }
                 if (annotateFileName) {
-                    event.getHeaders().put(fileNameHeader, currentFile.getPath());
+                    event.getHeaders().put(fileNameHeader, filename);
                 }
             }
         }
@@ -243,21 +251,23 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     public List<Long> updateTailFiles(boolean skipToEnd) throws IOException {
         updateTime = System.currentTimeMillis();
         List<Long> updatedInodes = Lists.newArrayList();
-
+        //遍历多个组
         for (TaildirMatcher taildir : taildirCache) {
             Map<String, String> headers = headerTable.row(taildir.getFileGroup());
-
+            //返回符合过滤的条件
             for (File f : taildir.getMatchingFiles()) {
                 long inode = getInode(f);
                 TailFile tf = tailFiles.get(inode);
                 if (tf == null || !tf.getPath().equals(f.getAbsolutePath())) {
                     long startPos = skipToEnd ? f.length() : 0;
-                    tf = openFile(f, headers, inode, startPos, taildir.parentDir.getAbsolutePath());
+
+                    tf = openFile(f, headers, inode, startPos, taildir.getParentDir());
                 } else {
+                    //当文件修改时进行读取
                     boolean updated = tf.getLastUpdated() < f.lastModified() || tf.getPos() != f.length();
                     if (updated) {
                         if (tf.getRaf() == null) {
-                            tf = openFile(f, headers, inode, tf.getPos(), taildir.parentDir.getAbsolutePath());
+                            tf = openFile(f, headers, inode, tf.getPos(), taildir.getParentDir());
                         }
                         if (f.length() < tf.getPos()) {
                             logger.info("Pos " + tf.getPos() + " is larger than file size! "
@@ -286,8 +296,8 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
 
     private TailFile openFile(File file, Map<String, String> headers, long inode, long pos, String parentDir) {
         try {
-            logger.info("Opening file: " + file + ", inode: " + inode + ", pos: " + pos);
-            return new TailFile(file, headers, inode, pos, parentDir);
+            logger.info("Opening file: " + file + ", inode: " + inode + ", pos: " + pos + ", parentDir: " + parentDir);
+            return new TailFile(file, headers, inode, pos, parentDir, xmlNode, currentRecord, csvSeparator);
         } catch (IOException e) {
             throw new FlumeException("Failed opening file: " + file, e);
         }
@@ -307,11 +317,25 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 TaildirSourceConfigurationConstants.DEFAULT_FILE_HEADER;
         private String fileNameHeader =
                 TaildirSourceConfigurationConstants.DEFAULT_FILENAME_HEADER_KEY;
-        private boolean recursiveDirectorySearch =
-                TaildirSourceConfigurationConstants.DEFAULT_RECURSIVE_DIRECTORY_SEARCH;
+        private String setXmlNode =
+                TaildirSourceConfigurationConstants.DEFAULT_XML_NODE;
+        private String setCurrentRecord =
+                TaildirSourceConfigurationConstants.DEFAULT_CURRENT_RECORD;
+        private String setCsvSeparator =
+                TaildirSourceConfigurationConstants.DEFAULT_SEPARATOR;
 
-        public Builder recursiveDirectorySearch(boolean recursiveDirectorySearch) {
-            this.recursiveDirectorySearch = recursiveDirectorySearch;
+        public Builder xmlNode(String xmlNode) {
+            this.setXmlNode = xmlNode;
+            return this;
+        }
+
+        public Builder currentRecord(String currentRecord) {
+            this.setCurrentRecord = currentRecord;
+            return this;
+        }
+
+        public Builder csvSeparator(String csvSeparator) {
+            this.setCsvSeparator = csvSeparator;
             return this;
         }
 
@@ -359,7 +383,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         public ReliableTaildirEventReader build() throws IOException {
             return new ReliableTaildirEventReader(filePaths, headerTable, positionFilePath, skipToEnd,
                     addByteOffset, cachePatternMatching,
-                    annotateFileName, fileNameHeader, recursiveDirectorySearch);
+                    annotateFileName, fileNameHeader, setXmlNode, setCurrentRecord, setCsvSeparator);
         }
     }
 
