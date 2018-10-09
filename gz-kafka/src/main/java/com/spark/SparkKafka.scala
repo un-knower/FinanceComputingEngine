@@ -33,7 +33,6 @@ object SparkKafka {
     val sc = spark.sparkContext
     val ssc = new StreamingContext(sc, Seconds(5))
 
-
     /**
       * 读取基金信息表
       */
@@ -128,7 +127,7 @@ object SparkKafka {
     /**
       * 读取 特殊科目设置表CsTsKm
       */
-    val csTsKmPath = Util.getDailyInputFilePath("A117CSTSKM")
+    val csTsKmPath = Util.getDailyInputFilePath("A001CSTSKM")
     val csTsKm = sc.textFile(csTsKmPath)
       .map(row => {
         val fields = row.split(SEPARATE2)
@@ -413,7 +412,7 @@ object SparkKafka {
     }
 
     /**
-      * 二、获取业务标识
+      * 二、获取业务标志
       *
       * @param zqbz 证券标识
       * @param zqdm 证券代码
@@ -624,7 +623,7 @@ object SparkKafka {
           else return "PG"
         }
       }
-      throw new Exception("")
+      throw new Exception("未知异常")
     }
 
 //    val kafkaParams = Map[String, Object](
@@ -645,6 +644,7 @@ object SparkKafka {
     val rdd = KafkaUtilsSpark.getStream(ssc)
     rdd.filter(x => x.currentRecord !=1 ).filter(f=>{
       println(f.rowValue)  //D890026748,,20180809,2116746,23341,5700,0,600271,100151,100151,26.930,153501.00,0000001149,B,00001
+
       new File(f.fileName).getName=="gh23341"
     }).foreachRDD(rdd => {
       rdd.foreach(record => {
