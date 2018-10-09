@@ -81,50 +81,6 @@ object SHFICCTriPartyRepo {
 
   }
 
-  /*case class SHFICCTriPartyRepoDto(
-                                    FDate: String,
-                                    FInDate: String,
-                                    FZqdm: String,
-                                    FSzsh: String,
-                                    FJyxwh: String,
-                                    Fje: String,
-                                    Fyj: String,
-                                    Fjsf: String,
-                                    FHggain: String,
-                                    FSSSFJE: String,
-                                    FZqbz: String,
-                                    Fjybz: String,
-                                    ZqDm: String,
-                                    FJyFs: String,
-                                    Fsh: String,
-                                    Fzzr: String,
-                                    Fchk: String,
-                                    FHTXH: String,
-                                    FSETCODE: String,
-                                    FCSGHQX: String,
-                                    FRZLV: String,
-                                    FSJLY: String,
-                                    FCSHTXH: String,
-                                    FBS: String,
-                                    FSL: String,
-                                    Fyhs: String,
-                                    Fzgf: String,
-                                    Fghf: String,
-                                    FFxj: String,
-                                    FQtf: String,
-                                    Fgzlx: String,
-                                    FQsbz: String,
-                                    ftzbz: String,
-                                    FQsghf: String,
-                                    FGddm: String,
-                                    fzlh: String,
-                                    ISRTGS: String,
-                                    FPARTID: String,
-                                    FYwbz: String,
-                                    Fbz: String
-                                  )
-
-*/
   /**
     * 开始计算
     *
