@@ -237,8 +237,8 @@ object SparkKafka {
       .map(row => {
         val fields = row.split(SEPARATE2)
         val zqdm = fields(0)
-        val fzqlx = fields(11)
-        (zqdm, fzqlx)
+        val fzqlb = fields(11)
+        (zqdm, fzqlb)
       }).collectAsMap()
     val cszqxxValue1 = sc.broadcast(cszqxxMap1)
 
@@ -382,7 +382,7 @@ object SparkKafka {
     def getZqbz(zqdm: String, cjjg: String, bcrq: String): String = {
       if (zqdm.startsWith("6")) {
         if (zqdm.startsWith("609")) return "CDRGP"
-        else "GP"
+        else return "GP"
       }
       if (zqdm.startsWith("5")) {
         if (cjjg.equals("0")) {
@@ -408,20 +408,22 @@ object SparkKafka {
         if (sfspggp(zqdm, bcrq)) return "QY"
         return "XG"
       }
-      throw new Exception("无法找到对应的证券标识：" + zqdm)
+      throw new Exception("无法找到对应的证券标志：" + zqdm)
     }
 
     /**
       * 二、获取业务标志
-      *
-      * @param zqbz 证券标识
+      * @param tzh 套账号
+      * @param zqbz 证券标志
       * @param zqdm 证券代码
-      * @param cjjg 成交金额
-      * @param bs   买卖
+      * @param cjjg 成交价格
+      * @param bs  买卖
+      * @param gsdm 公司代码
+      * @param bcrq  本次日期
       * @return
       */
     def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String): String = {
-      if ("CP".equals(zqbz) || "CDRGP".equals(zqbz)) {
+      if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
         val condition = csTsKmValue.value.get(tzh + "指数、指标股票按特殊科目设置页面处理")
         if (condition.isDefined && "1".equals(condition.get)) {
           //gh文件中的gsdm字段在CsQsXw表中有数据
@@ -623,29 +625,15 @@ object SparkKafka {
           else return "PG"
         }
       }
-      throw new Exception("未知异常")
+
+      throw new Exception("")
     }
 
-//    val kafkaParams = Map[String, Object](
-//      "bootstrap.servers" -> " bj-rack001-hadoop004:6667,bj-rack001-hadoop002:6667,bj-rack001-hadoop003:6667",
-//      "key.deserializer" -> classOf[StringDeserializer],
-//      "value.deserializer" -> classOf[StringDeserializer],
-//      "group.id" -> "gh",
-//      "auto.offset.reset" -> "earliest", //earliest
-//      "enable.auto.commit" -> (false: java.lang.Boolean)
-//    )
-//    val topics = Array("ws_test")
-//
-//    val stream = KafkaUtils.createDirectStream[String, String](
-//      ssc,
-//      PreferConsistent,
-//      Subscribe[String, String](topics, kafkaParams)
-//    )
     val rdd = KafkaUtilsSpark.getStream(ssc)
-    rdd.filter(x => x.currentRecord !=1 ).filter(f=>{
-      println(f.rowValue)  //D890026748,,20180809,2116746,23341,5700,0,600271,100151,100151,26.930,153501.00,0000001149,B,00001
 
-      new File(f.fileName).getName=="gh23341"
+    rdd.filter(x => x.currentRecord != 1).filter(f => { //过滤表头
+      //      println(f.rowValue) //D890026748,,20180809,2116746,23341,5700,0,600271,100151,100151,26.930,153501.00,0000001149,B,00001
+      new File(f.fileName).getName.equalsIgnoreCase("shghtest")
     }).foreachRDD(rdd => {
       rdd.foreach(record => {
         val str = record.rowValue.split(",")
@@ -667,10 +655,11 @@ object SparkKafka {
         val zqbz = getZqbz(zqdm, cjjg, bcrq)
         val tzh = getTzh(gddm)
         val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq)
-        SHGHTag(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz)
+        println(SHGHTag(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz))
       })
 
     })
+
 
 
     ssc.start()
