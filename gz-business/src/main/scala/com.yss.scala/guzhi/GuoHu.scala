@@ -13,7 +13,7 @@ import scala.math.BigDecimal.RoundingMode
   *          源文件：gh.dbf
   *          结果表：HZJKQS
   */
-object GuoHu_DBF {
+object GuoHu {
 
   case class HZJKQS(
                      FDATE: String,
