@@ -15,6 +15,7 @@ import scala.math.BigDecimal.RoundingMode
   */
 object GuoHu {
 
+
   case class HZJKQS(
                      FDATE: String,
                      FINDATE: String,
