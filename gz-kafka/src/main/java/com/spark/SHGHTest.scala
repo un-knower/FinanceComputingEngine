@@ -17,7 +17,12 @@ import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
 import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
 import org.apache.spark.streaming.kafka010.KafkaUtils
 
-object SparkKafka {
+/**
+  *   created by zhangkai
+  *   测试上海过户
+  */
+
+object SHGHTest {
   val SEPARATE1 = "@"
   val SEPARATE2 = ","
 
