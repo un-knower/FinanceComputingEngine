@@ -24,7 +24,7 @@ object SHTransfer {
   }
 
   def doExec() = {
-    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
+    val spark = SparkSession.builder().appName("SHTransfer").master("local[*]").getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     val df = doETL(spark, broadcastLvarList)
     import spark.implicits._
@@ -1624,11 +1624,19 @@ object SHTransfer {
           realFxj = fee1.sumFxj
         }
 
-        var fsfje = totalCjje.+(realJsf).+(realZgf).+(realGhf)
-        //        var FSssje = FSje.-(FSjsf).-(FSzgf).-(FSghf).-(FSyhs)
+
+        var fsfje = BigDecimal(0)
+        if(SALE.equals(bs)){
+          fsfje = totalCjje.-(realJsf).-(realZgf).-(realGhf).-(realYhs)
+        }else{
+          fsfje = totalCjje.+(realJsf).+(realZgf).+(realGhf)
+        }
         if (YES.equals(con8)) {
-          fsfje += realYj
-          //          FSssje -= FByj
+          if(SALE.equals(bs)){
+            fsfje -= realYj
+          }else{
+            fsfje += realYj
+          }
         }
         Hzjkqs(bcrq,
           findate, zqdm, SH, gsdm, bs,
