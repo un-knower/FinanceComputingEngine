@@ -20,31 +20,8 @@ import scala.math.BigDecimal.RoundingMode
 object SHTransfer {
 
   def main(args: Array[String]): Unit = {
-//            testEtl()
     doExec()
-    //    testXX()
   }
-
-  /** 测试使用 */
-  def testXX() = {
-    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
-    //TODO  ①把所有的基础表都广播出去 ②把一部分业务复杂的表广播出去其他的用join 3 都用join
-    val df = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.csv", spark)
-    df.filter(row => row.getAs[String]("CJBH").contains("E")).show()
-    spark.stop()
-  }
-
-  /** 测试etl */
-  def testEtl() = {
-    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
-    val broadcastLvarList = loadLvarlist(spark.sparkContext)
-    //    loadTables(spark,"")
-    val df = doETL(spark, broadcastLvarList)
-    import spark.implicits._
-    Util.outputMySql(df.toDF, "shgh_etl_test")
-    spark.stop()
-  }
-
 
   def doExec() = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
