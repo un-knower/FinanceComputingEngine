@@ -1,5 +1,6 @@
 package com.yss.scala.guzhi
 
+import java.io.File
 import java.util.Properties
 
 import com.yss.scala.dto.SHFICCTriPartyRepoDto
@@ -16,6 +17,32 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
   */
 object SHFICCTriPartyRepo {
 
+  //存储结果数据的数据库链接
+  private val MYSQL_JDBC_URL="jdbc:mysql://192.168.13.110:3306/yss"
+  //存储结果数据的表名
+  private val MYSQL_RESULT_TABLE_NAME="sfhg"
+  //jdbc驱动累
+  private val DRIVER_CLASS="com.mysql.jdbc.Driver"
+
+  private val MYSQL_USER="root"
+  private val MYSQL_PASSWD="root"
+
+  //etl后的数据路径
+  val ETL_DATA_PATH="hdfs://192.168.13.110:9000/guzhi/etl/sfgu/"
+
+  //佣金利率表
+  private val YJLL_TABLE="A117CSYJLV"
+
+  //参数列表表，比如某个参数是否选中 如 交易所回购计算佣金选项是否选中，选中为1，其他为0
+  private val PARAMS_LIST_TABLE="LVARLIST"
+
+  //席位号表
+  private val XHW_TABLE = "CSQSXW"
+
+  //要使用的表在hdfs中的路径
+  private val TABLE_HDFS_PATH="hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
+
+
 
   def main(args: Array[String]): Unit = {
 
@@ -24,7 +51,7 @@ object SHFICCTriPartyRepo {
       .getOrCreate()
 
     // 读取etl后的csv文件并转化成RDD
-    val path = "hdfs://192.168.13.110:9000/guzhi/etl/sfgu/20180918/"
+    val path = ETL_DATA_PATH+DateUtils.formatDate(System.currentTimeMillis())
     val sfhgDataRDD = Util.readCSV(path, spark).rdd.map(row => {
       val xwh = getRowFieldAsString(row, "XWH1")
       (xwh, row)
@@ -71,60 +98,16 @@ object SHFICCTriPartyRepo {
     import spark.implicits._
 
     val properties = new Properties()
-    properties.put("user", "root")
-    properties.put("password", "root")
-    properties.setProperty("driver", "com.mysql.jdbc.Driver")
-    resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.13.110:3306/yss", "sfhg", properties)
+    properties.put("user", MYSQL_USER)
+    properties.put("password", MYSQL_PASSWD)
+    properties.setProperty("driver", DRIVER_CLASS)
+    resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(MYSQL_JDBC_URL, MYSQL_RESULT_TABLE_NAME, properties)
 
     spark.stop()
 
 
   }
 
-  /*case class SHFICCTriPartyRepoDto(
-                                    FDate: String,
-                                    FInDate: String,
-                                    FZqdm: String,
-                                    FSzsh: String,
-                                    FJyxwh: String,
-                                    Fje: String,
-                                    Fyj: String,
-                                    Fjsf: String,
-                                    FHggain: String,
-                                    FSSSFJE: String,
-                                    FZqbz: String,
-                                    Fjybz: String,
-                                    ZqDm: String,
-                                    FJyFs: String,
-                                    Fsh: String,
-                                    Fzzr: String,
-                                    Fchk: String,
-                                    FHTXH: String,
-                                    FSETCODE: String,
-                                    FCSGHQX: String,
-                                    FRZLV: String,
-                                    FSJLY: String,
-                                    FCSHTXH: String,
-                                    FBS: String,
-                                    FSL: String,
-                                    Fyhs: String,
-                                    Fzgf: String,
-                                    Fghf: String,
-                                    FFxj: String,
-                                    FQtf: String,
-                                    Fgzlx: String,
-                                    FQsbz: String,
-                                    ftzbz: String,
-                                    FQsghf: String,
-                                    FGddm: String,
-                                    fzlh: String,
-                                    ISRTGS: String,
-                                    FPARTID: String,
-                                    FYwbz: String,
-                                    Fbz: String
-                                  )
-
-*/
   /**
     * 开始计算
     *
@@ -335,7 +318,7 @@ object SHFICCTriPartyRepo {
     * @return <证券类别|席位号|市场号,佣金>
     */
   def readA117CSYJLV(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath("A117CSYJLV"), spark, header = false).toDF(
+    Util.readCSV(getTableDataPath(YJLL_TABLE), spark, header = false).toDF(
       "FID",
       "FZQLB",
       "FSZSH",
@@ -370,7 +353,7 @@ object SHFICCTriPartyRepo {
     * @return <选项名称,是否选中(true/false)>
     */
   def readLVARLIST(spark: SparkSession): RDD[(String, Boolean)] = {
-    Util.readCSV(getTableDataPath("LVARLIST"), spark, header = false).toDF(
+    Util.readCSV(getTableDataPath(PARAMS_LIST_TABLE), spark, header = false).toDF(
       "FVARNAME",
       "FVARVALUE",
       "FSH",
@@ -395,7 +378,7 @@ object SHFICCTriPartyRepo {
     * @return 返回<席位号,套账号>
     */
   def readCSQSXW(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath("CSQSXW"), spark, header = false).toDF(
+    Util.readCSV(getTableDataPath(XHW_TABLE), spark, header = false).toDF(
       "FQSDM",
       "FQSMC",
       "FSZSH",
@@ -428,7 +411,7 @@ object SHFICCTriPartyRepo {
     */
   def getTableDataPath(tName: String): String = {
     val date = DateUtils.formatDate(System.currentTimeMillis())
-    "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/" + date + "/" + tName
+    TABLE_HDFS_PATH + date + File.separator + tName
   }
 
   private def getRowFieldAsString(row: Row, fieldName: String): String = {

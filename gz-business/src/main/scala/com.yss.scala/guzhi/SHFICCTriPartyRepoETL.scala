@@ -1,5 +1,6 @@
 package com.yss.scala.guzhi
 
+import java.io.File
 import java.net.URI
 import java.util.Properties
 
@@ -17,16 +18,30 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
   *        目标文件:csv
   */
 object SHFICCTriPartyRepoETL {
+
+  //源数据文件所在的hdfs路径
+  private val DATA_FILE_PATH="hdfs://192.168.102.120:8020/yss/guzhi/interface/"
+
+  //明细文件文件名的前缀
+  private val JSMXFILENAME_PRE = "jsmx03_jsjc1"
+  //未到期文件前缀
+  private val WDQFILENAME_PRE = "wdqjsjc1"
+
+  private val ETL_HDFS_NAMENODE = "hdfs://192.168.21.110:9000"
+  private val ETL_HDFS_PATH = "hdfs://192.168.21.110:9000/guzhi/etl/sfgu/"
+
+
+
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName(SHFICCTriPartyRepoETL.getClass.getSimpleName)
-      //.master("local[*]")
-      .config("user", "hadoop")
+      .master("local[*]")
+      //.config("user", "hadoop")
       .getOrCreate()
 
     val day = DateUtils.formatDate(System.currentTimeMillis())
-    val jsmxpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/" + day + "/jsmx03_jsjc1.528.csv"
-    val wdqpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/" + day + "/wdqjsjc1.528.csv"
+    val jsmxpath = DATA_FILE_PATH + day + File.separator+JSMXFILENAME_PRE+"*"
+    val wdqpath = DATA_FILE_PATH + day + File.separator + WDQFILENAME_PRE+"*"
     val jsmxRDD: RDD[Row] = readJsmxFileAndFilted(spark, jsmxpath)
 
     val jsmx013FiltedRDD = jsmxRDD.filter(row => {
@@ -43,17 +58,17 @@ object SHFICCTriPartyRepoETL {
 
     val res = jsmx013SFHGETL.union(jsmx2SFHGETL)
 
-    val path = "hdfs://192.168.13.110:9000/guzhi/etl/sfgu/" + day
+    val path = ETL_HDFS_PATH + day
 
 
-    val fs = FileSystem.get(new URI("hdfs://192.168.13.110:9000"), spark.sparkContext.hadoopConfiguration)
+    val fs = FileSystem.get(new URI(ETL_HDFS_NAMENODE), spark.sparkContext.hadoopConfiguration)
     if (fs.exists(new Path(path))) {
       fs.delete(new Path(path), true)
     }
 
     res.collect().foreach(println(_))
     saveAsCSV(spark, res, path)
-    //saveMySQL(spark, res, path)
+    saveMySQL(spark, res, path)
 
     spark.stop()
   }
@@ -452,61 +467,4 @@ object SHFICCTriPartyRepoETL {
     field
   }
 
-  /*private case class SHFICCTriPartyRepoETLDto(
-                              SCDM: String,
-                              JLLX: String,
-                              JYFS: String,
-                              JSFS: String,
-                              YWLX: String,
-                              QSBZ: String,
-                              GHLX: String,
-                              JSBH: String,
-                              CJBH: String,
-                              SQBH: String,
-                              WTBH: String,
-                              JYRQ: String,
-                              QSRQ: String,
-                              JSRQ: String,
-                              QTRQ: String,
-                              WTSJ: String,
-                              CJSJ: String,
-                              XWH1: String,
-                              XWH2: String,
-                              XWHY: String,
-                              JSHY: String,
-                              TGHY: String,
-                              ZQZH: String,
-                              ZQDM1: String,
-                              ZQDM2: String,
-                              ZQLB: String,
-                              LTLX: String,
-                              QYLB: String,
-                              GPNF: String,
-                              MMBZ: String,
-                              SL: String,
-                              CJSL: String,
-                              ZJZH: String,
-                              BZ: String,
-                              JG1: String,
-                              JG2: String,
-                              QSJE: String,
-                              YHS: String,
-                              JSF: String,
-                              GHF: String,
-                              ZGF: String,
-                              SXF: String,
-                              QTJE1: String,
-                              QTJE2: String,
-                              QTJE3: String,
-                              SJSF: String,
-                              JGDM: String,
-                              FJSM: String,
-                              //证券标识
-                              FZQBZ: String,
-                              //交易类别
-                              FJYBZ: String,
-                              //qtrq-cjrq
-                              QTRQCJRQ: String
-                            )
-*/
 }
