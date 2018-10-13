@@ -20,7 +20,7 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 object SHFICCTriPartyRepoETL {
 
   //源数据文件所在的hdfs路径
-  private val DATA_FILE_PATH="hdfs://192.168.102.120:8020/yss/guzhi/interface/"
+  private val DATA_FILE_PATH = "hdfs://192.168.102.120:8020/yss/guzhi/interface/"
 
   //明细文件文件名的前缀
   private val JSMXFILENAME_PRE = "jsmx03_jsjc1"
@@ -31,7 +31,6 @@ object SHFICCTriPartyRepoETL {
   private val ETL_HDFS_PATH = "hdfs://192.168.21.110:9000/guzhi/etl/sfgu/"
 
 
-
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName(SHFICCTriPartyRepoETL.getClass.getSimpleName)
@@ -40,8 +39,8 @@ object SHFICCTriPartyRepoETL {
       .getOrCreate()
 
     val day = DateUtils.formatDate(System.currentTimeMillis())
-    val jsmxpath = DATA_FILE_PATH + day + File.separator+JSMXFILENAME_PRE+"*"
-    val wdqpath = DATA_FILE_PATH + day + File.separator + WDQFILENAME_PRE+"*"
+    val jsmxpath = DATA_FILE_PATH + day + File.separator + JSMXFILENAME_PRE + "*"
+    val wdqpath = DATA_FILE_PATH + day + File.separator + WDQFILENAME_PRE + "*"
     val jsmxRDD: RDD[Row] = readJsmxFileAndFilted(spark, jsmxpath)
 
     val jsmx013FiltedRDD = jsmxRDD.filter(row => {
@@ -66,8 +65,8 @@ object SHFICCTriPartyRepoETL {
       fs.delete(new Path(path), true)
     }
 
-    res.collect().foreach(println(_))
-    saveAsCSV(spark, res, path)
+    //res.collect().foreach(println(_))
+    //saveAsCSV(spark, res, path)
     saveMySQL(spark, res, path)
 
     spark.stop()
@@ -457,10 +456,10 @@ object SHFICCTriPartyRepoETL {
   }
 
 
-  private def getRowFieldAsString(row: Row, fieldName: String): String = {
+  private def getRowFieldAsString(row: Row, fieldName: String, defaultValue: String = ""): String = {
     var field = row.getAs[String](fieldName)
     if (field == null) {
-      field = ""
+      field = defaultValue
     } else {
       field = field.trim
     }

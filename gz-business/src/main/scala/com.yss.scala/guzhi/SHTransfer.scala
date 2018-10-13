@@ -20,34 +20,11 @@ import scala.math.BigDecimal.RoundingMode
 object SHTransfer {
 
   def main(args: Array[String]): Unit = {
-    //        testEtl()
     doExec()
-    //    testXX()
   }
-
-  /** 测试使用 */
-  def testXX() = {
-    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
-    //TODO  ①把所有的基础表都广播出去 ②把一部分业务复杂的表广播出去其他的用join 3 都用join
-    val df = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.csv", spark)
-    df.filter(row => row.getAs[String]("CJBH").contains("E")).show()
-    spark.stop()
-  }
-
-  /** 测试etl */
-  def testEtl() = {
-    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
-    val broadcastLvarList = loadLvarlist(spark.sparkContext)
-    //    loadTables(spark,"")
-    val df = doETL(spark, broadcastLvarList)
-    import spark.implicits._
-    Util.outputMySql(df.toDF, "shgh_etl_test")
-    spark.stop()
-  }
-
 
   def doExec() = {
-    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
+    val spark = SparkSession.builder().appName("SHTransfer").master("local[*]").getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     val df = doETL(spark, broadcastLvarList)
     import spark.implicits._
@@ -377,7 +354,7 @@ object SHTransfer {
     val sc = spark.sparkContext
 
     import com.yss.scala.dbf.dbf._
-    val sourcePath = "C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh.dbf"
+    val sourcePath = "C:\\Users\\wuson\\Desktop\\GuZhi\\test\\gh.dbf"
     val df = spark.sqlContext.dbfFile(sourcePath)
     //    val df = Util.readCSV("C:\\Users\\wuson\\Desktop\\GuZhi\\shuju\\gh_source.csv",spark)
     val today = DateUtils.getToday(DateUtils.yyyy_MM_dd)
@@ -878,6 +855,7 @@ object SHTransfer {
 
     /**
       * 进行日期的格式化，基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd
+      * 这里将原始数据转换成yyyy-MM-dd的格式
       * @param bcrq
       * @return yyyy-MM-dd
       */
@@ -885,7 +863,7 @@ object SHTransfer {
       val yyyy = bcrq.substring(0,4)
       val mm = bcrq.substring(4,6)
       val dd = bcrq.substring(6)
-      yyyy.concat("-").concat(mm).concat("-").concat(dd)
+      yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
     }
 
     // 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
@@ -934,11 +912,15 @@ object SHTransfer {
     /** 加载公共费率表和佣金表 */
     def loadFeeTables() = {
       //公共的费率表
-      val flbPath = Util.getDailyInputFilePath("CSJYLV")
+      val flbPath = Util.getDailyInputFilePath(TATABLE_NAME_JYLV)
       val flb = sc.textFile(flbPath)
       //117的佣金利率表
-      val yjPath = Util.getDailyInputFilePath("A117CSYJLV")
+      val yjPath = Util.getDailyInputFilePath(TABLE_NAME_A117CSJYLV)
       val yjb = sc.textFile(yjPath)
+
+      /** * 读取基金信息表csjjxx */
+      val csjjxxPath = Util.getDailyInputFilePath(TABLE_NAME_JJXX)
+      val jjxxb = sc.textFile(csjjxxPath)
 
       //将佣金表转换成map结构
       val yjbMap = yjb.map(row => {
@@ -979,16 +961,35 @@ object SHTransfer {
         .groupByKey()
         .collectAsMap()
 
-      (sc.broadcast(yjbMap), sc.broadcast(flbMap))
+      //过滤基金信息表
+      val jjxxAarry = jjxxb
+        .filter(row => {
+            val fields = row.split(SEPARATE2)
+            val fzqlx = fields(9)
+            val ftzdx = fields(15)
+            val fszsh = fields(8)
+          if("ETF".equals(fzqlx) && "H".equals(fszsh) && "ZQ".equals(ftzdx))  true
+          else  false
+          })
+        .map(row => {
+          val fields = row.split(SEPARATE2)
+         fields(1)
+      })
+        .collect()
+
+      println(jjxxAarry)
+      (sc.broadcast(yjbMap), sc.broadcast(flbMap),sc.broadcast(jjxxAarry))
     }
 
     val broadcaseFee = loadFeeTables()
     val yjbValues = broadcaseFee._1
     val flbValues = broadcaseFee._2
+    val jjxxValues = broadcaseFee._3
     val csbValues = csb
+
     /**
       * 原始数据转换1
-      * key = 本次日期+证券代码+公司代码/交易席位+买卖+股东代码+套账号+证券标志+业务标志+申请编号
+      * key = 本次日期+证券代码+公司代码/交易席位+买卖+股东代码+套账号+证券标志+业务标志+读入日期+申请编号
       */
     val value = df.rdd.map(row => {
       val bcrq = row.getAs[String]("BCRQ") //本次日期
@@ -1008,7 +1009,7 @@ object SHTransfer {
 
     /**
       * 原始数据转换1
-      * key = 本次日期+证券代码+公司代码/交易席位+买卖+股东代码+套账号+证券标志+业务标志
+      * key = 本次日期+证券代码+公司代码/交易席位+买卖+股东代码+套账号+证券标志+业务标志+读入日期
       */
     val value1 = df.rdd.map(row => {
       val bcrq = row.getAs[String]("BCRQ") //本次日期
@@ -1031,26 +1032,32 @@ object SHTransfer {
       *
       * @param gsdm  交易席位/公司代码
       * @param bcrq  处理日期
-      * @param ywbz  业务标识
-      * @param zqbz  证券标识
+      * @param ywbz1  业务标识
+      * @param zqbz1  证券标识
       * @param zyzch 专用资产号
       * @param gyzch 公用资产号
       * @return
       */
-    def getRate(gsdm: String, gddm: String, bcrq: String, ywbz: String, zqbz: String, zyzch: String, gyzch: String) = {
+    def getRate( zqdm:String,gsdm: String, gddm: String, bcrq: String, ywbz1: String, zqbz1: String, zyzch: String, gyzch: String) = {
       //为了获取启动日期小于等于处理日期的参数
       val flbMap = flbValues.value.mapValues(items => {
         val arr = items.toArray.filter(str => (bcrq.compareTo(str.split(SEPARATE1)(0)) >= 0)).sortWith((str1, str2) => (str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0))
-        //TODO arr's size is 0
         if (arr.size == 0) throw new Exception("未找到适合的公共费率")
         arr(0)
       })
       val yjMap = yjbValues.value.mapValues(items => {
         val arr = items.toArray.filter(str => (bcrq.compareTo(str.split(SEPARATE1)(0)) >= 0)).sortWith((str1, str2) => (str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0))
-        //TODO arr's size is 0
         if (arr.size == 0) throw new Exception("未找到合适的佣金费率")
         arr(0)
       })
+
+      var ywbz = ywbz1
+      var zqbz = zqbz1
+      /** ETF类的要做特殊处理 */
+      if(jjxxValues.value.contains(zqdm)) {
+          ywbz = "ZQETFJY"
+          zqbz = "ZQETFJY"
+      }
 
       /**
         * 获取公共的费率
@@ -1085,18 +1092,20 @@ object SHTransfer {
         var rateYJStr = DEFORT_VALUE3
         var maybeRateYJStr = yjMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
         if (maybeRateYJStr.isEmpty) {
-          val maybeRateYJStr = yjMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gddm)
+           maybeRateYJStr = yjMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gddm)
           if (maybeRateYJStr.isEmpty) {
-            val maybeRateYJStr = yjMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
+             maybeRateYJStr = yjMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
             if (maybeRateYJStr.isEmpty) {
-              val maybeRateYJStr = yjMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gddm)
+               maybeRateYJStr = yjMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gddm)
             }
           }
         }
+
         if (maybeRateYJStr.isDefined) rateYJStr = maybeRateYJStr.get
         val rateYJ = rateYJStr.split(SEPARATE1)(1)
         val rateYjzk = rateYJStr.split(SEPARATE1)(2)
         val minYj = rateYJStr.split(SEPARATE1)(3)
+
         (rateYJ, rateYjzk, minYj)
       }
 
@@ -1122,11 +1131,11 @@ object SHTransfer {
       **/
     def getGgcs(tzh: String) = {
       //获取是否的参数
-      val cs1 = csbValues.value(tzh + CS1_KEY) //是否开启佣金包含经手费，证管费
-      var cs2 = csbValues.value.getOrElse(tzh + CS2_KEY, NO) //是否开启上交所A股过户费按成交金额计算
-      val cs3 = csbValues.value(tzh + CS3_KEY) //是否按千分之一费率计算过户费
-      val cs4 = csbValues.value(tzh + CS4_KEY) //是否开启计算佣金减去风险金
-      val cs5 = csbValues.value(tzh + CS6_KEY) //是否开启计算佣金减去结算费
+      val cs1 = csbValues.value.getOrElse(tzh + CS1_KEY,NO) //是否开启佣金包含经手费，证管费
+      var cs2 = csbValues.value.getOrElse(CS2_KEY, NO) //是否开启上交所A股过户费按成交金额计算
+      val cs3 = csbValues.value.getOrElse(tzh + CS3_KEY,NO) //是否按千分之一费率计算过户费
+      val cs4 = csbValues.value.getOrElse(tzh + CS4_KEY,NO) //是否开启计算佣金减去风险金
+      val cs5 = csbValues.value.getOrElse(tzh + CS6_KEY,NO) //是否开启计算佣金减去结算费
       //TODO 计算佣金的费率承担模式
       (cs1, cs2, cs3, cs4, cs5)
     }
@@ -1170,7 +1179,7 @@ object SHTransfer {
         val zqbz = fields(6)
         val ywbz = fields(7)
 
-        val getRateResult = getRate(gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
+        val getRateResult = getRate(zqdm,gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
         val rateJS: String = getRateResult._1
         val rateJszk: String = getRateResult._2
         val rateYH: String = getRateResult._3
@@ -1184,7 +1193,6 @@ object SHTransfer {
         val rateYJ: String = getRateResult._11
         val rateYjzk: String = getRateResult._12
         val minYj: String = getRateResult._13
-
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //总金额
         var sumCjsl = BigDecimal(0) //总数量
@@ -1206,6 +1214,7 @@ object SHTransfer {
 
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
+          val cjjg = BigDecimal(row.getAs[String]("CJJG"))
           val cjsl = BigDecimal(row.getAs[String]("CJSL"))
           val gzlx = BigDecimal(row.getAs[String]("FGZLX"))
           val hgsy = BigDecimal(row.getAs[String]("FHGGAIN"))
@@ -1234,9 +1243,9 @@ object SHTransfer {
           }
           if (YES.equals(cs2)) {
             if (YES.equals(cs3)) {
-              ghf = cjje.*(cjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
+              ghf = cjjg.*(cjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
             } else {
-              ghf = cjje.*(cjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
+              ghf = cjjg.*(cjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
             }
           } else {
             if (YES.equals(cs3)) {
@@ -1309,7 +1318,7 @@ object SHTransfer {
         val findate = fields(8)
         val otherFee = BigDecimal(0)
 
-        val getRateResult = getRate(gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
+        val getRateResult = getRate(zqdm,gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
         val rateJS: String = getRateResult._1
         val rateJszk: String = getRateResult._2
         val rateYH: String = getRateResult._3
@@ -1334,9 +1343,11 @@ object SHTransfer {
         val cs4 = csResults._4
         val cs5 = csResults._5
 
+        var cjjg = BigDecimal(0)
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
           val cjsl = BigDecimal(row.getAs[String]("CJSL"))
+           cjjg = BigDecimal(row.getAs[String]("CJJG"))
           sumCjje = sumCjje.+(cjje)
           sumCjsl = sumCjsl.+(cjsl)
         }
@@ -1362,9 +1373,9 @@ object SHTransfer {
         }
         if (YES.equals(cs2)) {
           if (YES.equals(cs3)) {
-            sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
+            sumGhf2 = cjjg.*(sumCjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
           } else {
-            sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
+            sumGhf2 = cjjg.*(sumCjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
           }
         } else {
           if (YES.equals(cs3)) {
@@ -1433,7 +1444,7 @@ object SHTransfer {
         val zqbz = fields(6)
         val ywbz = fields(7)
 
-        val getRateResult = getRate(gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
+        val getRateResult = getRate(zqdm,gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
         val rateJS: String = getRateResult._1
         val rateJszk: String = getRateResult._2
         val rateYH: String = getRateResult._3
@@ -1459,9 +1470,11 @@ object SHTransfer {
         val cs4 = csResults._4
         val cs5 = csResults._5
 
+        var cjjg = BigDecimal(0)
         for (row <- values) {
           val cjje = BigDecimal(row.getAs[String]("CJJE"))
           val cjsl = BigDecimal(row.getAs[String]("CJSL"))
+          cjjg = BigDecimal(row.getAs[String]("CJJG"))
           sumCjje = sumCjje.+(cjje)
           sumCjsl = sumCjsl.+(cjsl)
         }
@@ -1486,9 +1499,9 @@ object SHTransfer {
         }
         if (YES.equals(cs2)) {
           if (YES.equals(cs3)) {
-            sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
+            sumGhf2 = cjjg.*(sumCjsl).*(BigDecimal(0.001)).setScale(2, RoundingMode.HALF_UP)
           } else {
-            sumGhf2 = sumCjje.*(sumCjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
+            sumGhf2 = cjjg.*(sumCjsl).*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(2, RoundingMode.HALF_UP)
           }
         } else {
           if (YES.equals(cs3)) {
@@ -1596,7 +1609,7 @@ object SHTransfer {
         }
 
         if (YES.equals(con5)) {
-          realYj = fee2.sumYj
+          realYj = fee1.sumYj
         } else if (YES.equals(con15)) {
           realYj = fee1.sumYj
         } else {
@@ -1611,11 +1624,19 @@ object SHTransfer {
           realFxj = fee1.sumFxj
         }
 
-        var fsfje = totalCjje.+(realJsf).+(realZgf).+(realGhf)
-        //        var FSssje = FSje.-(FSjsf).-(FSzgf).-(FSghf).-(FSyhs)
+
+        var fsfje = BigDecimal(0)
+        if(SALE.equals(bs)){
+          fsfje = totalCjje.-(realJsf).-(realZgf).-(realGhf).-(realYhs)
+        }else{
+          fsfje = totalCjje.+(realJsf).+(realZgf).+(realGhf)
+        }
         if (YES.equals(con8)) {
-          fsfje += realYj
-          //          FSssje -= FByj
+          if(SALE.equals(bs)){
+            fsfje -= realYj
+          }else{
+            fsfje += realYj
+          }
         }
         Hzjkqs(bcrq,
           findate, zqdm, SH, gsdm, bs,

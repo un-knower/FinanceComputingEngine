@@ -8,6 +8,7 @@ object ShghContants {
   //定义分隔符
   val SEPARATE1 = "@"
   val SEPARATE2 = ","
+  val SEPARATE3 = "-"
 
   /** 资产类型 */
   val ZCLB = "GP"
@@ -62,9 +63,9 @@ object ShghContants {
   val TABLE_NAME_QYXX = "CSQYXX"
   /** 席位表 */
   val TABLE_NAME_QSXW = "CSQSXW"
-  /** 特殊科目设置表 */
-  val TABLE_NAME_TSKM= "A117CSTSKM"
-  /** */
+  /** 001套账的特殊科目设置表 */
+   val TABLE_NAME_TSKM= "A001CSTSKM"
+  /** 资产信息*/
   val TABLE_NAME_SYSJJ= "LSETCSSYSJJ"
   /** 债券信息表 */
   val TABLE_NAME_ZQXX = "CSZQXX"
@@ -76,5 +77,7 @@ object ShghContants {
   val TABLE_NAME_GZLX = "JJGZLX"
   /** 节假日表 */
   val TABLE_NAME_HOLIDAY = "CSHOLIDAY"
+  /** 001套账的佣金利率 */
+  val TABLE_NAME_A117CSJYLV = "A001CSYJLV"
 
 }
