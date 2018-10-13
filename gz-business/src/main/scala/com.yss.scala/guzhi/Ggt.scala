@@ -1,6 +1,8 @@
 package com.yss.scala.guzhi
 
+import java.io.File
 import java.text.{DecimalFormat, SimpleDateFormat}
+import java.util
 import java.util.{Date, Properties}
 
 import com.yss.scala.dto._
@@ -10,6 +12,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.math.BigDecimal.RoundingMode
 
 /**
@@ -28,8 +31,10 @@ object Ggt {
     //获取配置参数
     val (commonUrl, currentDate,jsmxPath) = loadInitParam(arr)
 
+    val listFiles = getDirFileNames(new File("C:\\Users\\yelin\\Desktop\\dbf\\shuju\\ght"))
+
     //过滤不需要的数据
-    val jsmxdbfDF = filterYWLX(spark, jsmxPath)
+    val jsmxdbfDF = filterYWLX(spark, jsmxPath,listFiles)
     //获取业务日期
 //    var qsrq = jsmxdbfDF.head().getAs[String]("QSRQ")
     var qsrq = currentDate
@@ -139,7 +144,7 @@ object Ggt {
 
     //测试输出
     resultOutputDS.createOrReplaceTempView("bbbbbb_t")
-    spark.sql("select * from bbbbbb_t order by Fdate,FinDate,FZqdm,Fjyxwh,FZqbz,Fywbz,Zqdm").show(100, false)
+    spark.sql("select * from bbbbbb_t order by Fdate,FinDate,FZqdm,Fjyxwh,FZqbz,Fywbz,Zqdm").show(10000, false)
 
     //输出mysql
 //    val properties = new Properties()
@@ -686,7 +691,7 @@ object Ggt {
     val zqdm1 = item.getAs[String]("zqdm1").trim
     val xwh = item.getAs[String]("xwh1").trim
 
-    val fjjxb = gddmfjjlxlbMap.getOrElse(ggdm, "")
+    val fjjxb = gddmfjjlxlbMap.getOrElse(ggdm, "-1_-1")
     val fjjlx = fjjxb.split("_")(0)
     val fjjlb = fjjxb.split("_")(1)
 
@@ -991,8 +996,8 @@ object Ggt {
 
       val fjjlxlv = fjjlxFjjlb match {
         //没有获取到fjjlxlv时，统一处理成 “_”，避免后面splits 取值报下标问题
-        case None => "_"
-        case Some(v) => if(strIsNull(v)) "_" else v
+        case None => "-1_-1"
+        case Some(v) => if(strIsNull(v)) "-1_-1" else v
       }
       (gddm, fjjlxlv)
     }
@@ -1473,10 +1478,21 @@ object Ggt {
     result
   }
 
-  def filterYWLX(spark: SparkSession, jsmxPath:String) = {
+  def filterYWLX(spark: SparkSession, jsmxPath:String, listFiles:ListBuffer[String]) = {
     import com.yss.scala.dbf.dbf._
+    val listDf = new mutable.ListBuffer[DataFrame]
+//    val jsmxdbfDF = spark.sqlContext.dbfFile(jsmxPath)
+    for (filename <- listFiles) {
+      listDf += spark.sqlContext.dbfFile(filename)
+    }
+    var jsmxdbfDF = listDf(0)
 
-    val jsmxdbfDF = spark.sqlContext.dbfFile(jsmxPath)
+    for (i <- 1 to listDf.length-1) {
+      jsmxdbfDF = jsmxdbfDF.union(listDf(i))
+    }
+
+    jsmxdbfDF.show(100, false)
+
     jsmxdbfDF.createOrReplaceTempView("hk_jsmx_table")
 
     spark.sql("select * from hk_jsmx_table where YWLX in ('H01','H02','H54','H55','H60','H63','H64','H65','H67')")
@@ -1685,4 +1701,21 @@ object Ggt {
     args(2) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\hk_jsmxjs614.812.dbf"
     args(3) = "20181011"
   }
+
+  def getDirFileNames(filepath:File):ListBuffer[String] = {
+
+    val list = new mutable.ListBuffer[String]
+    val listFiles = filepath.listFiles()
+    for (listFile <- listFiles) {
+      if(listFile.isDirectory) {
+        list ++= getDirFileNames(new File(listFile.getPath))
+      }
+      if(listFile.isFile && listFile.getName.contains("jsmx")) {
+        list += listFile.getPath
+      }
+    }
+
+    return list
+  }
+
 }
