@@ -18,41 +18,41 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 object SHFICCTriPartyRepo {
 
   //存储结果数据的数据库链接
-  private val MYSQL_JDBC_URL="jdbc:mysql://192.168.13.110:3306/yss"
+  private val MYSQL_JDBC_URL = "jdbc:mysql://192.168.21.110:3306/yss"
   //存储结果数据的表名
-  private val MYSQL_RESULT_TABLE_NAME="sfhg"
+  private val MYSQL_RESULT_TABLE_NAME = "sfhg"
   //jdbc驱动累
-  private val DRIVER_CLASS="com.mysql.jdbc.Driver"
+  private val DRIVER_CLASS = "com.mysql.jdbc.Driver"
 
-  private val MYSQL_USER="root"
-  private val MYSQL_PASSWD="root"
+  private val MYSQL_USER = "root"
+  private val MYSQL_PASSWD = "root"
 
   //etl后的数据路径
-  val ETL_DATA_PATH="hdfs://192.168.13.110:9000/guzhi/etl/sfgu/"
+  val ETL_DATA_PATH = "hdfs://192.168.21.110:9000/guzhi/etl/sfgu/"
 
   //佣金利率表
-  private val YJLL_TABLE="A117CSYJLV"
+  private val YJLL_TABLE = "A001CSYJLV"
 
   //参数列表表，比如某个参数是否选中 如 交易所回购计算佣金选项是否选中，选中为1，其他为0
-  private val PARAMS_LIST_TABLE="LVARLIST"
+  private val PARAMS_LIST_TABLE = "LVARLIST"
 
   //席位号表
   private val XHW_TABLE = "CSQSXW"
 
   //要使用的表在hdfs中的路径
-  private val TABLE_HDFS_PATH="hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
-
+  private val TABLE_HDFS_PATH = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
 
 
   def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder().appName(getClass.getSimpleName)
-      //.master("local[*]")
+      .master("local[*]")
       .getOrCreate()
 
+    //readETLDataFromJDBC(spark)
     // 读取etl后的csv文件并转化成RDD
-    val path = ETL_DATA_PATH+DateUtils.formatDate(System.currentTimeMillis())
-    val sfhgDataRDD = Util.readCSV(path, spark).rdd.map(row => {
+    val path = ETL_DATA_PATH + DateUtils.formatDate(System.currentTimeMillis())
+    val sfhgDataRDD = /*Util.readCSV(path, spark)*/readETLDataFromJDBC(spark).rdd.map(row => {
       val xwh = getRowFieldAsString(row, "XWH1")
       (xwh, row)
       /*("259700", row)*/
@@ -106,6 +106,19 @@ object SHFICCTriPartyRepo {
     spark.stop()
 
 
+  }
+
+
+  /**
+    * 读取清洗后的数据
+    */
+  def readETLDataFromJDBC(spark: SparkSession) = {
+    val properties = new Properties()
+    properties.put("user", "root")
+    properties.put("password", "root1234")
+    properties.put("driver", DRIVER_CLASS)
+    spark.sqlContext.read.jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "JSMX03_WDQ_ETL", properties)
+      /*.toDF().show()*/
   }
 
   /**
@@ -340,7 +353,7 @@ object SHFICCTriPartyRepo {
       val FZQLB = getRowFieldAsString(row, "FZQLB")
       val FSZSH = getRowFieldAsString(row, "FSZSH")
       val FSTR1 = getRowFieldAsString(row, "FSTR1")
-      val FLV = getRowFieldAsString(row, "FLV")
+      val FLV = getRowFieldAsString(row, "FLV", "0")
       (FZQLB + "|" + FSTR1 + "|" + FSZSH, FLV)
     })
   }
@@ -414,10 +427,10 @@ object SHFICCTriPartyRepo {
     TABLE_HDFS_PATH + date + File.separator + tName
   }
 
-  private def getRowFieldAsString(row: Row, fieldName: String): String = {
+  private def getRowFieldAsString(row: Row, fieldName: String, defalutValue: String = ""): String = {
     var field = row.getAs[String](fieldName)
     if (field == null) {
-      field = ""
+      field = defalutValue
     } else {
       field = field.trim
     }
