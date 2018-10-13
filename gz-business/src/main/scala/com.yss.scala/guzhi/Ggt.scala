@@ -1,7 +1,7 @@
 package com.yss.scala.guzhi
 
 import java.text.{DecimalFormat, SimpleDateFormat}
-import java.util.Date
+import java.util.{Date, Properties}
 
 import com.yss.scala.dto._
 import org.apache.spark.SparkConf
@@ -137,22 +137,16 @@ object Ggt {
 
     val resultOutputDS = cjBhMxSqBhMx00RDD.union(cjBhMx1RDD).union(sqBhMx1RDD).union(cjBhMxSqBhMx11RDD)
 
-
-//    Util.outputMySql(resultOutputDS.toDF(), "")
-
+    //测试输出
     resultOutputDS.createOrReplaceTempView("bbbbbb_t")
-
     spark.sql("select * from bbbbbb_t order by Fdate,FinDate,FZqdm,Fjyxwh,FZqbz,Fywbz,Zqdm").show(100, false)
-    //输出结果
-    //    Class.forName("com.mysql.jdbc.Driver").newInstance()
-    //    resultOutputDF.write
-    //      .format("jdbc")
-    //      .mode(SaveMode.Append)
-    //      .option("url", "jdbc:mysql://192.168.102.120:3306/JJCWGZ")
-    //      .option("dbtable", "ght_table")
-    //      .option("user", "root")
-    //      .option("password", "root1234")
-    //      .save()
+
+    //输出mysql
+//    val properties = new Properties()
+//    properties.setProperty("user", "root")
+//    properties.setProperty("password", "root1234")
+//    properties.setProperty("driver", "com.mysql.jdbc.Driver")
+//    resultOutputDS.write.jdbc("jdbc:mysql://192.168.102.120/JJCWGZ?useUnicode=true&characterEncoding=utf8", "tablename", properties)
   }
 
   /**
@@ -996,7 +990,7 @@ object Ggt {
     val gddmLXLBRDD = gddmFsetCodeRDD.map(i => (i._2, i._1)).leftOuterJoin(lsetcssysjjRDD).map { case (fsetCode, (gddm, fjjlxFjjlb)) =>
 
       val fjjlxlv = fjjlxFjjlb match {
-        //没有统一处理成 “_”，避免后面splits 取值报下标问题
+        //没有获取到fjjlxlv时，统一处理成 “_”，避免后面splits 取值报下标问题
         case None => "_"
         case Some(v) => if(strIsNull(v)) "_" else v
       }
