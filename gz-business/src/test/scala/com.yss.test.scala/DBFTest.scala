@@ -1,5 +1,6 @@
 package com.yss.test.scala
 
+import com.yss.scala.util.Util
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -11,7 +12,9 @@ object DBFTest {
     //注意引入隐式转换
     import com.yss.scala.dbf.dbf._
     val spark = SparkSession.builder().appName("mytest").master("local[*]").getOrCreate()
-    spark.sqlContext.dbfFile("C:\\Users\\YZM\\Desktop\\test2.dbf").show()
+    val df = spark.sqlContext.dbfFile("C:\\Users\\wuson\\Desktop\\GuZhi\\createdbf4.dbf")
+    df.rdd.saveAsTextFile("C:\\Users\\wuson\\Desktop\\GuZhi\\tt")
+
     spark.stop()
 
     //    sess.sparkContext.hadoopFile("C:\\Users\\wuson\\Desktop\\new\\reff040704.txt", classOf[TextInputFormat], classOf[LongWritable], classOf[Text])

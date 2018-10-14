@@ -1,5 +1,6 @@
 package com.yss.scala.guzhi
 
+import java.io.File
 import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util.{Date, Properties}
 
@@ -10,6 +11,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.math.BigDecimal.RoundingMode
 
 /**
@@ -28,39 +30,41 @@ object Ggt {
     //获取配置参数
     val (commonUrl, currentDate,jsmxPath) = loadInitParam(arr)
 
+    val listFiles = getDirFileNames(new File("C:\\Users\\yelin\\Desktop\\dbf\\shuju\\ght"))
+
     //过滤不需要的数据
-    val jsmxdbfDF = filterYWLX(spark, jsmxPath)
+    val jsmxdbfDF = filterYWLX(spark, jsmxPath,listFiles).cache()
     //获取业务日期
 //    var qsrq = jsmxdbfDF.head().getAs[String]("QSRQ")
     var qsrq = currentDate
     val qsrqformat = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(qsrq))
 
     //获取原始数据的GDDM数据
-    val gddmPairRDD = jsmxdbfDF.select("ZQZH").distinct().rdd.map(item => (item.getAs[String]("ZQZH").trim, 1))
+    val gddmPairRDD = jsmxdbfDF.select("ZQZH").distinct().rdd.map(item => (item.getAs[String]("ZQZH").trim, 1)).cache()
 
     //获取原始数据的XWH数据
-    val xwhPairRDD = jsmxdbfDF.select("XWH1").distinct().rdd.map(item => (item.getAs[String]("XWH1").trim, 1))
+    val xwhPairRDD = jsmxdbfDF.select("XWH1").distinct().rdd.map(item => (item.getAs[String]("XWH1").trim, 1)).cache()
 
     //获取原始数据的zqdm1数据
-    val zqdm1PairRDD = jsmxdbfDF.select("ZQDM1").distinct().rdd.map(item => (item.getAs[String]("ZQDM1").trim, 1))
+    val zqdm1PairRDD = jsmxdbfDF.select("ZQDM1").distinct().rdd.map(item => (item.getAs[String]("ZQDM1").trim, 1)).cache()
 
     //获取原始数据的(XWH,gddm)数据
-    val xwhGddmPairRDD = jsmxdbfDF.select("XWH1", "ZQZH").distinct().rdd.map(item => (item.getAs[String]("XWH1").trim, item.getAs[String]("ZQZH").trim))
+    val xwhGddmPairRDD = jsmxdbfDF.select("XWH1", "ZQZH").distinct().rdd.map(item => (item.getAs[String]("XWH1").trim, item.getAs[String]("ZQZH").trim)).cache()
 
     //gddm和套账号fsetcode的对应关系
-    val gddmFsetCodeRDD = buildGddmFsetCode(gddmPairRDD, spark, commonUrl, currentDate)
+    val gddmFsetCodeRDD = buildGddmFsetCode(gddmPairRDD, spark, commonUrl, currentDate).cache()
 
     //xwh和fsetcode的关系
-    val xwhFsetcodeRDD = xwhGddmPairRDD.map(item => (item._2, item._1)).join(gddmFsetCodeRDD).map(item => (item._2._1, item._2._2))
+    val xwhFsetcodeRDD = xwhGddmPairRDD.map(item => (item._2, item._1)).join(gddmFsetCodeRDD).map(item => (item._2._1, item._2._2)).cache()
 
     //gddm为key相关参数信息
-    val gddmParamRDD = builGddmKeyParamRDD(gddmFsetCodeRDD, spark, commonUrl, currentDate)
+    val gddmParamRDD = builGddmKeyParamRDD(gddmFsetCodeRDD, spark, commonUrl, currentDate).cache()
 
     //构建gddm为key的参数信息的map结构 [gddm, params], 并broadcast
     val broadcastGddmParamMap = spark.sparkContext.broadcast(gddmParamRDD.collectAsMap())
 
     //根据原始字段zqdm1计算证券代码
-    val zqdm1ValueRDD = buildZqdm1ValueRDD(zqdm1PairRDD, spark, commonUrl, currentDate, qsrq)
+    val zqdm1ValueRDD = buildZqdm1ValueRDD(zqdm1PairRDD, spark, commonUrl, currentDate, qsrq).cache()
     val zqdm1ValueMap = buildZqdm1ValueMap(zqdm1ValueRDD)
     val broadcastZqdm1ValueMap = spark.sparkContext.broadcast(zqdm1ValueMap)
 
@@ -87,7 +91,7 @@ object Ggt {
     //抽取计算的数据
     import spark.implicits._
     val calculationDF = buildCalculationDF(jsmxdbfDF, spark, gddmParamRDD)
-    val basicsRDD = calculationDF.as[HkJsmxModel].rdd
+    val basicsRDD = calculationDF.as[HkJsmxModel].rdd.cache()
 
     //blnFyCjBhMx==0&&blnFySqBhMx==0
     val basics00RDD = basicsRDD.filter { item =>
@@ -139,7 +143,7 @@ object Ggt {
 
     //测试输出
     resultOutputDS.createOrReplaceTempView("bbbbbb_t")
-    spark.sql("select * from bbbbbb_t order by Fdate,FinDate,FZqdm,Fjyxwh,FZqbz,Fywbz,Zqdm").show(100, false)
+    spark.sql("select * from bbbbbb_t order by Fdate,FinDate,FZqdm,Fjyxwh,FZqbz,Fywbz,Zqdm").show(10000, false)
 
     //输出mysql
 //    val properties = new Properties()
@@ -686,7 +690,7 @@ object Ggt {
     val zqdm1 = item.getAs[String]("zqdm1").trim
     val xwh = item.getAs[String]("xwh1").trim
 
-    val fjjxb = gddmfjjlxlbMap.getOrElse(ggdm, "")
+    val fjjxb = gddmfjjlxlbMap.getOrElse(ggdm, "-1_-1")
     val fjjlx = fjjxb.split("_")(0)
     val fjjlb = fjjxb.split("_")(1)
 
@@ -991,8 +995,8 @@ object Ggt {
 
       val fjjlxlv = fjjlxFjjlb match {
         //没有获取到fjjlxlv时，统一处理成 “_”，避免后面splits 取值报下标问题
-        case None => "_"
-        case Some(v) => if(strIsNull(v)) "_" else v
+        case None => "-1_-1"
+        case Some(v) => if(strIsNull(v)) "-1_-1" else v
       }
       (gddm, fjjlxlv)
     }
@@ -1473,10 +1477,20 @@ object Ggt {
     result
   }
 
-  def filterYWLX(spark: SparkSession, jsmxPath:String) = {
+  def filterYWLX(spark: SparkSession, jsmxPath:String, listFiles:ListBuffer[String]) = {
     import com.yss.scala.dbf.dbf._
+    val listDf = new mutable.ListBuffer[DataFrame]
+//    val jsmxdbfDF = spark.sqlContext.dbfFile(jsmxPath)
+    for (filename <- listFiles) {
+      listDf += spark.sqlContext.dbfFile(filename)
+    }
+    var jsmxdbfDF = listDf(0)
 
-    val jsmxdbfDF = spark.sqlContext.dbfFile(jsmxPath)
+    for (i <- 1 to listDf.length-1) {
+      jsmxdbfDF = jsmxdbfDF.union(listDf(i))
+    }
+
+    println(jsmxdbfDF.count())
     jsmxdbfDF.createOrReplaceTempView("hk_jsmx_table")
 
     spark.sql("select * from hk_jsmx_table where YWLX in ('H01','H02','H54','H55','H60','H63','H64','H65','H67')")
@@ -1685,4 +1699,21 @@ object Ggt {
     args(2) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\hk_jsmxjs614.812.dbf"
     args(3) = "20181011"
   }
+
+  def getDirFileNames(filepath:File):ListBuffer[String] = {
+
+    val list = new mutable.ListBuffer[String]
+    val listFiles = filepath.listFiles()
+    for (listFile <- listFiles) {
+      if(listFile.isDirectory) {
+        list ++= getDirFileNames(new File(listFile.getPath))
+      }
+      if(listFile.isFile && listFile.getName.contains("jsmx")) {
+        list += listFile.getPath
+      }
+    }
+
+    return list
+  }
+
 }
