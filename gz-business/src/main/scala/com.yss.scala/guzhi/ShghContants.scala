@@ -89,6 +89,8 @@ object ShghContants {
   val QSGHF = "QSGHF"
   val FFYFS = "0"
 
+  val PREFIX = "/yss/guzhi/interface/"
+
 
   /** 上海过户的可能没有用到 */
   val CON1_KEY = "按申请编号汇总计算经手费"
