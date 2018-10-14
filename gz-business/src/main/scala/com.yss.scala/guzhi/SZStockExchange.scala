@@ -832,7 +832,7 @@ object SZStockExchange extends Serializable {
 
 
           //计算回购收益
-          sxf=((cjje1.*(BigDecimal(HGDate)))./(365)).setScale(0, RoundingMode.HALF_UP).*(cjsl).setScale(0, RoundingMode.HALF_UP)
+          sxf=((cjje1.*(BigDecimal(HGDate)))./(365)).setScale(2, RoundingMode.HALF_UP).*(cjsl).setScale(2, RoundingMode.HALF_UP)
 
           if (cs3.equals("-1") || cs3.equals("0")) {
             // 买不计算印花税
