@@ -52,7 +52,7 @@ object SHFICCTriPartyRepo {
     //readETLDataFromJDBC(spark)
     // 读取etl后的csv文件并转化成RDD
     val path = ETL_DATA_PATH + DateUtils.formatDate(System.currentTimeMillis())
-    val sfhgDataRDD = /*Util.readCSV(path, spark)*/readETLDataFromJDBC(spark).rdd.map(row => {
+    val sfhgDataRDD = /*Util.readCSV(path, spark)*/ readETLDataFromJDBC(spark).rdd.map(row => {
       val xwh = getRowFieldAsString(row, "XWH1")
       (xwh, row)
       /*("259700", row)*/
@@ -61,20 +61,21 @@ object SHFICCTriPartyRepo {
     // 读取csqsxw,并得到<席位号,套账号>的RDD
     val xwhAndTzhRDD: RDD[(String, String)] = readCSQSXW(spark)
 
-    //得到<席位号,<dataRow,套账号>>
-    val xwh2DataAndTZH: RDD[(String, (Row, String))] = sfhgDataRDD.join(xwhAndTzhRDD)
+    //得到<席位号,<dataRow,Option(套账号)>>
+    val xwh2DataAndTZH: RDD[(String, (Row, Option[String]))] = sfhgDataRDD.leftOuterJoin(xwhAndTzhRDD)
 
     //将xwh2DataAndTZH 转化成 (套账号+"交易所回购计算佣金",(dataRow,套账号))
     val tzh_selectItemName2DataRowAndTzh: RDD[(String, (Row, String))] = xwh2DataAndTZH.map(item => {
-      (item._2._2 + "交易所回购计算佣金", item._2)
+      val tzh = item._2._2.getOrElse("")
+      (tzh + "交易所回购计算佣金", (item._2._1, tzh))
     })
 
     //读取参数表
     val tzh_selectItemName2SelectResult: RDD[(String, Boolean)] = readLVARLIST(spark)
 
     // <数据,套账号,选项结果>
-    val rowDataAndTzhAndSelected: RDD[(Row, String, Boolean)] = tzh_selectItemName2DataRowAndTzh.join(tzh_selectItemName2SelectResult).map(item => {
-      (item._2._1._1, item._2._1._2, item._2._2)
+    val rowDataAndTzhAndSelected: RDD[(Row, String, Boolean)] = tzh_selectItemName2DataRowAndTzh.leftOuterJoin(tzh_selectItemName2SelectResult).map(item => {
+      (item._2._1._1, item._2._1._2, item._2._2.getOrElse(false))
     })
 
     //读取佣金表,得到<证券类别|席位号|市场号,佣金利率>
@@ -88,8 +89,8 @@ object SHFICCTriPartyRepo {
     })
 
     //<数据,套账号,选项结果,佣金利率>
-    val rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String)] = zqlbAndXwhAndSC2RowDataAndTzhAndSelected.join(zqlbAndXwhAndSC2YjFV).map(item => {
-      (item._2._1._1, item._2._1._2, item._2._1._3, item._2._2)
+    val rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String)] = zqlbAndXwhAndSC2RowDataAndTzhAndSelected.leftOuterJoin(zqlbAndXwhAndSC2YjFV).map(item => {
+      (item._2._1._1, item._2._1._2, item._2._1._3, item._2._2.getOrElse("0"))
     })
 
     //开始计算
@@ -97,12 +98,12 @@ object SHFICCTriPartyRepo {
 
     import spark.implicits._
 
-    val properties = new Properties()
-    properties.put("user", MYSQL_USER)
-    properties.put("password", MYSQL_PASSWD)
-    properties.setProperty("driver", DRIVER_CLASS)
-    resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(MYSQL_JDBC_URL, MYSQL_RESULT_TABLE_NAME, properties)
-
+    // val properties = new Properties()
+    // properties.put("user", MYSQL_USER)
+    // properties.put("password", MYSQL_PASSWD)
+    // properties.setProperty("driver", DRIVER_CLASS)
+    // resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(MYSQL_JDBC_URL, MYSQL_RESULT_TABLE_NAME, properties)
+    resSFHGRDD.toDF().show()
     spark.stop()
 
 
@@ -118,7 +119,7 @@ object SHFICCTriPartyRepo {
     properties.put("password", "root1234")
     properties.put("driver", DRIVER_CLASS)
     spark.sqlContext.read.jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "JSMX03_WDQ_ETL", properties)
-      /*.toDF().show()*/
+    /*.toDF().show()*/
   }
 
   /**
@@ -230,8 +231,11 @@ object SHFICCTriPartyRepo {
       if ("680".equals(YWLX)) {
         FInDate = getRowFieldAsString(row, "QTRQ")
         Fje = BigDecimal(getRowFieldAsString(row, "QSJE")).abs
+
         FCSGHQX = BigDecimal(DateUtils.absDays(FInDate, FDate))
-        Fyj = Fje * BigDecimal(fv)
+        if (isSelected) {
+          Fyj = Fje * BigDecimal(fv)
+        }
         FSSSFJE = BigDecimal(getRowFieldAsString(row, "SJSF")).abs
         FCSHTXH = getRowFieldAsString(row, "CJBH")
       }
@@ -244,7 +248,7 @@ object SHFICCTriPartyRepo {
       }
       else if ("683".equals(YWLX)) {
         FInDate = getRowFieldAsString(row, "JYRQ")
-        FCSGHQX = BigDecimal(DateUtils.absDays(FInDate, getRowFieldAsString(row, "QTRQ")))
+        FCSGHQX = -BigDecimal(DateUtils.absDays(FInDate, getRowFieldAsString(row, "QTRQ")))
         Fje = BigDecimal(getRowFieldAsString(row, "QSJE")).abs / (1 + FRZLV / 100 * FCSGHQX / 365)
         FSSSFJE = BigDecimal(getRowFieldAsString(row, "SJSF")).abs
         FCSHTXH = getRowFieldAsString(row, "SQBH")
@@ -276,7 +280,7 @@ object SHFICCTriPartyRepo {
 
       }
 
-      val FHggain = Fje * FRZLV / (100 * FCSGHQX / 365)
+      val FHggain = Fje * FRZLV / 100 * FCSGHQX / 365
 
       SHFICCTriPartyRepoDto(
         FDate,
@@ -354,7 +358,9 @@ object SHFICCTriPartyRepo {
       val FSZSH = getRowFieldAsString(row, "FSZSH")
       val FSTR1 = getRowFieldAsString(row, "FSTR1")
       val FLV = getRowFieldAsString(row, "FLV", "0")
-      (FZQLB + "|" + FSTR1 + "|" + FSZSH, FLV)
+      val FLVZK = getRowFieldAsString(row, fieldName = "FLVZK", defalutValue = "1")
+      val resFV = (BigDecimal(FLV) * BigDecimal(FLVZK)).toString()
+      (FZQLB + "|" + FSTR1 + "|" + FSZSH, resFV)
     })
   }
 
