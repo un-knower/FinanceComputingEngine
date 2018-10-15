@@ -3,7 +3,7 @@ package com.yss.scala.guzhi
 import java.text.SimpleDateFormat
 
 import com.twitter.chill.java.IterableRegistrar
-import com.yss.scala.dto.ExeOriginalObj
+import com.yss.scala.dto.SZSEOriginalObj
 import com.yss.scala.guzhi.ShghContants.SEPARATE1
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SaveMode, SparkSession}
@@ -25,7 +25,7 @@ import scala.collection.mutable.ListBuffer
 
 
 
-object ExecutionETL extends java.io.Serializable {
+object SZSEETL extends java.io.Serializable {
   def getFywbzAndFzqbz() {
     val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
@@ -180,7 +180,7 @@ object ExecutionETL extends java.io.Serializable {
     val result = exeDF.flatMap{
       case (key1,iterable) => {
 
-        var execution=new  ListBuffer[ExeOriginalObj]()
+        var execution=new  ListBuffer[SZSEOriginalObj]()
 
 
         for (func <- iterable) {
@@ -360,7 +360,7 @@ object ExecutionETL extends java.io.Serializable {
             //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
 
 
-            val Exe = ExeOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), setCode("setCode"))
+            val Exe = SZSEOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), setCode("setCode"))
             execution.append(Exe)
           }
         }
