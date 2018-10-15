@@ -21,7 +21,7 @@ import java.util.*;
  * created by 张锴
  * 消费数据到hbase
  */
-public class Consumer extends ShutdownableThread {
+public class  Consumer extends ShutdownableThread {
     private final KafkaConsumer<Integer, String> consumer;
     private final String topic;
     int i = 0;
