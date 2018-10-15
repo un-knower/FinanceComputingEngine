@@ -197,7 +197,7 @@ object SZSETriPartyRepoETL {
       val startDate = simpleDateFormat.parse(JGCJRQDate)
 
       val FCSGHQXTemp: BigDecimal = (endDate.getTime - startDate.getTime) / (24 * 60 * 60 * 1000) //"SFCS"时的购回期限 = 购回日期 - 首期日期
-      val FRZLV: BigDecimal = BigDecimal(JGCJJG) / 100 // 回购利率
+      val FRZLV: BigDecimal = BigDecimal(JGCJJG)// 回购利率
       val FHggain: BigDecimal = FJETemp.*(FRZLV).*(FCSGHQXTemp)./(365).setScale(2, RoundingMode.HALF_UP) // 回购收益 = 回购金额×回购利率*购回期限/365；
 
       JGETL(JGJSZH,
