@@ -49,7 +49,6 @@ object SZStockExchange extends Serializable {
   def getFywbzAndFzqbz(spark: SparkSession, csb: Broadcast[collection.Map[String, String]])={
     val sc = spark.sparkContext
     val path = "C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv"
-
     val dateSplit = path.split("/")
     val dateSplit1 = dateSplit(5).split("_")
     val fileDate = dateSplit1(4).substring(0, 8)
@@ -58,9 +57,9 @@ object SZStockExchange extends Serializable {
     val dateTime1 = parseDate1.getTime
 
       //   val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_F000995F0401_1_20180808(2).tsv")
-      //val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_1_20180124(1).tsv") //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
-      // val exe = sc.textFile("hdfs://192.168.102.120/yss/guzhi/execution_aggr_tgwid_1_20180124.tsv")
-       val exe = sc.textFile("C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv")
+     // val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_1_20180124(1).tsv") //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
+       val exe = sc.textFile("hdfs://192.168.102.120/yss/guzhi/execution_aggr_tgwid_1_20180124.tsv")
+      // val exe = sc.textFile("C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv")
 
     /**
       *  1.读取原始数据表
@@ -78,7 +77,7 @@ object SZStockExchange extends Serializable {
     /**
       * 2.取数据表 CSQSXW,进行map,将FQSXW为key,FXWLB为value
       */
-    val xwTable = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181013/CSQSXW")
+    val xwTable = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/CSQSXW")
     val xwValue = xwTable.map {
       x => {
         val value = x.split(",")
@@ -92,7 +91,7 @@ object SZStockExchange extends Serializable {
       * 3.读取Lvarlist
       *
       */
-    val varList = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181013/LVARLIST")
+    val varList = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/LVARLIST")
     val varlistValue = varList.map {
       x => {
         val par = x.split(",")
@@ -105,7 +104,7 @@ object SZStockExchange extends Serializable {
       * 4.读取A117cstskm
       *
       */
-    val cstskm = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181013/A001CSTSKM")
+    val cstskm = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/A001CSTSKM")
     val cstskmValue = cstskm.map {
       x => {
         val par = x.split(",")
@@ -118,7 +117,7 @@ object SZStockExchange extends Serializable {
       * 5.读取LSetCsSysJj 这张表
       *
       */
-    val LSETCSSYSJJ = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181013/LSETCSSYSJJ")
+    val LSETCSSYSJJ = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/LSETCSSYSJJ")
     val LSETCSSYSJJValue = LSETCSSYSJJ.map {
       x => {
         val value = x.split(",")
@@ -131,7 +130,7 @@ object SZStockExchange extends Serializable {
       *
       * 6.读取基金信息表
       */
-    val CSJJXX = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181013/CSJJXX")
+    val CSJJXX = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/CSJJXX")
     //hdfs://nscluster/yss/guzhi/basic_list/20180917/CSJJXX
     val CSJJXXValue = CSJJXX.map {
       x => {
@@ -160,7 +159,7 @@ object SZStockExchange extends Serializable {
       *
       */
 
-    val accountNumber = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181013/CSGDZH")
+    val accountNumber = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/CSGDZH")
 
     val setCode = accountNumber.map {
       x => {
@@ -175,7 +174,7 @@ object SZStockExchange extends Serializable {
       * 读取 CSZQXX表
       *
       */
-    val CSZQXX = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181013/CSZQXX")
+    val CSZQXX = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/CSZQXX")
     val fzqlb = CSZQXX.map {
       x => {
         var par = x.split(",")
@@ -806,6 +805,7 @@ object SZStockExchange extends Serializable {
         var sumGhf = BigDecimal(0) //总的过户费
         var sumFxj = BigDecimal(0) //总的风险金
         var sumSXF=BigDecimal(0) //手续费
+        var sumSQGHF=BigDecimal(0)
 
 
         var yhs = BigDecimal(0)
@@ -815,6 +815,7 @@ object SZStockExchange extends Serializable {
         var fx = BigDecimal(0)
         var Yj = BigDecimal(0)
         var sxf=BigDecimal(0)
+        var sqghf=BigDecimal(0)
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
@@ -889,13 +890,14 @@ object SZStockExchange extends Serializable {
           }
 
 
+
           //当为GP时，佣金-券商过户费-过户费
           if (qsghf1 != "-1") {
-            val qsghfValue = cjsl.*(BigDecimal(qsghf1)).setScale(2, RoundingMode.HALF_UP)
-            Yj = Yj - qsghfValue + ghf
+            sqghf = cjsl.*(BigDecimal(qsghf1)).setScale(2, RoundingMode.HALF_UP)
+            Yj = Yj - sqghf + ghf
           } else if (qsghf2 != "-1") {
-            val qsghfValue = cjsl.*(BigDecimal(qsghf2)).setScale(2, RoundingMode.HALF_UP)
-            Yj = Yj - qsghfValue + ghf
+            sqghf = cjsl.*(BigDecimal(qsghf2)).setScale(2, RoundingMode.HALF_UP)
+            Yj = Yj - sqghf + ghf
           }
 
 
@@ -937,6 +939,7 @@ object SZStockExchange extends Serializable {
           }
 
           sumCjje = sumCjje.+(cjje)
+          sumCjsl = sumCjsl.+(cjsl)
           //          sumYj = sumYj.+(yj)
           sumJsf = sumJsf.+(jsf)
           sumYhs = sumYhs.+(yhs)
@@ -945,12 +948,13 @@ object SZStockExchange extends Serializable {
           sumFxj = sumFxj.+(fx)
           sumSXF=sumSXF.+(sxf)
           sumYj = sumYj.+(Yj)
+          sumSQGHF=sumSQGHF.+(sqghf)
         }
 
         // sumYj = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
 
         (key, SJSObj("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
-          sumGhf, sumFxj,sumSXF))
+          sumGhf, sumFxj,sumSXF,sumSQGHF))
     }
 
 
@@ -984,6 +988,7 @@ object SZStockExchange extends Serializable {
         var realGhf = BigDecimal(0)
         var realFxj = BigDecimal(0)
         var realSxf = BigDecimal(0)
+        var realQsghf = BigDecimal(0)
 
         val jsResult = getJsgz(tzh)
         val con8 = jsResult._1
@@ -1050,7 +1055,7 @@ object SZStockExchange extends Serializable {
         }
 
         realSxf=fee1.sumSXF
-
+        realQsghf=fee1.sumQSGHF
 
         var fsfje = totalCjje.+(realJsf).+(realZgf).+(realGhf)
         //        var FSssje = FSje.-(FSjsf).-(FSzgf).-(FSghf).-(FSyhs)
@@ -1073,7 +1078,7 @@ object SZStockExchange extends Serializable {
           //  fhggain.formatted("%.2f"),
           fsfje.formatted("%.2f"),
           zqbz, ywbz,
-          "N", "0", zqdm, "PT", "1", "", "", "0", "", "0",
+          "N", "0", zqdm, "PT", "1", "", "", "0", "", realQsghf.formatted("%.2f"),
           gddm, "", "", "", "", "", "", "", "", "", "", "", "", ""
         )
     }
