@@ -11,11 +11,11 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 /**
   * @auther: lijiayan
   * @date: 2018/9/17
-  * @desc: 固定收益平台三方回购业务
+  * @desc: 上海固定收益平台三方回购业务
   *        源文件:jsmx和wdq清洗后的数据
   *        目标表:
   */
-object SHFICCTriPartyRepo {
+object ShFICCTriPartyRepo {
 
   //存储结果数据的数据库链接
   private val MYSQL_JDBC_URL = "jdbc:mysql://192.168.21.110:3306/yss"
@@ -55,7 +55,6 @@ object SHFICCTriPartyRepo {
     val sfhgDataRDD = /*Util.readCSV(path, spark)*/ readETLDataFromJDBC(spark).rdd.map(row => {
       val xwh = getRowFieldAsString(row, "XWH1")
       (xwh, row)
-      /*("259700", row)*/
     })
 
     // 读取csqsxw,并得到<席位号,套账号>的RDD
@@ -103,13 +102,23 @@ object SHFICCTriPartyRepo {
     // properties.put("password", MYSQL_PASSWD)
     // properties.setProperty("driver", DRIVER_CLASS)
     // resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(MYSQL_JDBC_URL, MYSQL_RESULT_TABLE_NAME, properties)
+    //
     resSFHGRDD.toDF().show()
-    spark.stop()
 
+    saveToMySQL(spark,resSFHGRDD)
+    spark.stop()
 
   }
 
 
+  def saveToMySQL(spark: SparkSession,resSFHGRDD:RDD[SHFICCTriPartyRepoDto]): Unit ={
+    import spark.implicits._
+    val properties = new Properties()
+    properties.put("user", "root")
+    properties.put("password", "root1234")
+    val url = "jdbc:mysql://192.168.102.120:3306/JJCWGZ"
+    resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(url,"SHFICCTriPartyRepo",properties)
+  }
   /**
     * 读取清洗后的数据
     */
@@ -248,7 +257,7 @@ object SHFICCTriPartyRepo {
       }
       else if ("683".equals(YWLX)) {
         FInDate = getRowFieldAsString(row, "JYRQ")
-        FCSGHQX = -BigDecimal(DateUtils.absDays(FInDate, getRowFieldAsString(row, "QTRQ")))
+        FCSGHQX = BigDecimal(DateUtils.absDays(FInDate, getRowFieldAsString(row, "QTRQ")))
         Fje = BigDecimal(getRowFieldAsString(row, "QSJE")).abs / (1 + FRZLV / 100 * FCSGHQX / 365)
         FSSSFJE = BigDecimal(getRowFieldAsString(row, "SJSF")).abs
         FCSHTXH = getRowFieldAsString(row, "SQBH")
