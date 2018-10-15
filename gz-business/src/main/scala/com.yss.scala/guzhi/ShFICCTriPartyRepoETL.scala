@@ -17,6 +17,22 @@ import com.yss.scala.dbf.dbf._
   * @desc: 上海固定收益三方回购ETL
   *        源文件:jsmx和wdq
   *        目标文件:csv
+  *
+  *
+  *        spark-submit --class com.yss.scala.guzhi.ShFICCTriPartyRepoETL \
+  *        --master local[*] \
+  *        --driver-class-path /usr/hdp/2.6.5.0-292/sqoop/lib/mysql-connector-java.jar \
+  *        --driver-memory 2g --num-executors 2 --executor-memory 2g --executor-cores 2 \
+  *        /data/temp/ljy/guzhi.jar \
+  *        hdfs://192.168.102.120:8020/yss/guzhi/interface/20181015/shsfhg-gdsy/2018-08-02/jsmx03_jsjc1.*.csv \
+  *        hdfs://192.168.102.120:8020/yss/guzhi/interface/20181015/shsfhg-gdsy/2018-08-02/wdqjsjc1.*.csv
+  *
+  *
+  *        spark-submit --class com.yss.scala.guzhi.ShFICCTriPartyRepo \
+  *        --master local[*] \
+  *        --driver-class-path /usr/hdp/2.6.5.0-292/sqoop/lib/mysql-connector-java.jar \
+  *        --driver-memory 2g --num-executors 2 --executor-memory 2g --executor-cores 2 \
+  *        /data/temp/ljy/guzhi.jar
   */
 object ShFICCTriPartyRepoETL {
 
