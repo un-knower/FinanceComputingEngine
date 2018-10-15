@@ -3,7 +3,7 @@ package com.yss.scala.guzhi
 import java.text.SimpleDateFormat
 import java.util.Properties
 
-import com.yss.scala.dto.ShenzhenStockExchangeTriPartyRepoDto
+import com.yss.scala.dto.SZSETriPartyRepoDto
 import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -15,33 +15,27 @@ import scala.math.BigDecimal.RoundingMode
 /**
   * @author MingZhang Wang
   * @version 2018-09-17 17:25
-  *          describe:
-  *          目标文件：
-  *          目标表：
+  *          describe: 三方回购（深交所）业务代码，处理ETL后的数据
+  *          目标文件：mysql中ETL的结果
+  *          目标表：sjsmxETL_wmz和sjsjgETL_wmz
   */
-object ShenzhenStockExchangeTriPartyRepo {
+object SZSETriPartyRepo {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
+    val spark = SparkSession.builder().appName("ShenzhenStockExchangeTriPartyRepo").master("local[*]").getOrCreate()
     val sc = spark.sparkContext
 
     val properties = new Properties()
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
     val sjsmxDF: DataFrame = spark.read.jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsmxETL_wmz", properties)
+
     val sjsjgDF: DataFrame = spark.read.jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsjgETL_wmz", properties)
-
+    //将DF转为ARR广播，解决Map内不能使用.rdd方法的问题
     val sjsmxDFArr: Array[Row] = sjsmxDF.collect()
-
     val sjsmxDFArrBroadCast = sc.broadcast(sjsmxDFArr)
-
+    //将DF转为ARR广播，解决Map内不能使用.rdd方法的问题
     val sjsjgDFArr = sjsjgDF.collect()
-
     val sjsjgDFArrBroadCast: Broadcast[Array[Row]] = sc.broadcast(sjsjgDFArr)
-
-
-
-
-
 
     sjsmxDF.createOrReplaceTempView("MXTemp")
     val sjsmxTempDF: DataFrame = spark.sqlContext.sql("select MXFJSM,MXYWLB,FJETemp,MXCJRQ from MXTemp")
@@ -67,7 +61,6 @@ object ShenzhenStockExchangeTriPartyRepo {
     // 广播出去
     val csyjlvTableDFBroadCast: Broadcast[DataFrame] = sc.broadcast(csyjlvTableDF)
 
-
     var mxywlb: String = ""
     var FDate: String = ""
     var FJyxwh: String = ""
@@ -75,7 +68,6 @@ object ShenzhenStockExchangeTriPartyRepo {
     var FCSHTXH: String = ""
     var Fjsf: BigDecimal = BigDecimal(0)
     var Flv: BigDecimal = BigDecimal(0)
-
 
     var FZQLB: String = ""
     var FSZSH: String = ""
@@ -115,18 +107,15 @@ object ShenzhenStockExchangeTriPartyRepo {
       val Fchk: String = "admin" //审核人:当前用户
       val FSJLY: String = "ZD" //数据来源
 
-
       var Fjybz: String = new String //交易标志
       var FJyFs: String = new String //交易方式
       var FinDate: String = new String //日期
-      //      var Fje: BigDecimal = BigDecimal(0) //成交金额
       var Fyj: BigDecimal = BigDecimal(0) //佣金
       //回购收益
       var FSSSFJE: BigDecimal = BigDecimal(0)
       //实收实付金额
       var FRZLV: BigDecimal = BigDecimal(0) //融资/回购利率
       var FCSGHQX: BigDecimal = BigDecimal(0) //初始购回期限
-
 
       val FSETCODE = BigDecimal(0) // 套账号
       val FSL = BigDecimal(0) // 成交数量
@@ -182,8 +171,10 @@ object ShenzhenStockExchangeTriPartyRepo {
       // 实收实付金额判断规则
       if ("SFCS".equals(mxywlb) || "SFDQ".equals(mxywlb) || "SFTG".equals(mxywlb) || "SFJZ".equals(mxywlb)) {
         FSSSFJE = BigDecimal(row.getAs[String]("MXSFJE")).abs
-      } else if ("SFXZ".equals(mxywlb)) {
+      } else if ("SFXZ".equals(mxywlb)&&"RZ".equals(FJyFs)) {
         FSSSFJE = MXQSBJ.abs - Fjsf
+      } else if ("SFXZ".equals(mxywlb)&&"CZ".equals(FJyFs)){
+        FSSSFJE = MXQSBJ.abs + Fjsf
       }
 
       //日期、成交金额、佣金、回购收益、初始购回期限、融资利率判断规则
@@ -203,24 +194,19 @@ object ShenzhenStockExchangeTriPartyRepo {
           FLV = FLVRDD.collect().toBuffer.head.toString()
         }
 
-
         FinDate = row.getAs[String]("MXQTRQ") //日期
         Fje = MXQSBJ.abs // 成交金额
         Fyj = Fje.*(Flv).setScale(2, RoundingMode.HALF_UP) // 佣金
         FRZLV = BigDecimal(row.getAs[String]("MXCJJG")) //融资/回购利率
         FHggain = BigDecimal(row.getAs[String]("FHggain")) //回购收益
-
         FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")).setScale(2,RoundingMode.HALF_UP) //初始购回期限
 
       } else if ("SFDQ".equals(mxywlb) || "SFTG".equals(mxywlb) || "SFJZ".equals(mxywlb)) {
 
         FinDate = row.getAs[String]("MXCJRQ") //购回日期
-
-
         val sjsmxTempArr: Array[Row] = sjsmxTempBrodcast.value.collect()
 
         for (i <- sjsmxTempArr){
-
           MXFJSM = i(0).toString
           MXYWLB = i(1).toString
           FJETemp = i(2).toString
@@ -229,7 +215,6 @@ object ShenzhenStockExchangeTriPartyRepo {
             Fje = BigDecimal(FJETemp) // 成交/回购金额
             Fyj = BigDecimal(0).setScale(2,RoundingMode.HALF_UP) //拥金
             FHggain = MXQSBJ.abs - Fje //回购收益 是否取绝对值 TODO
-            println(Fje)
             val simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
 
             val strYear1=i(3).toString.substring(0,4)
@@ -249,11 +234,9 @@ object ShenzhenStockExchangeTriPartyRepo {
             FRZLV = BigDecimal(0).setScale(2,RoundingMode.HALF_UP) //融资/回购利率
           }
         }
-
-
       }
 
-      ShenzhenStockExchangeTriPartyRepoDto(
+      SZSETriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -298,7 +281,6 @@ object ShenzhenStockExchangeTriPartyRepo {
     })
 
     import spark.implicits._
-    sjsmxXzxkRDD.toDF().show()
     Util.outputMySql(sjsmxXzxkRDD.toDF(), "mxfdTest_wmz")
 
     //    return
@@ -307,8 +289,6 @@ object ShenzhenStockExchangeTriPartyRepo {
       val MXYWLB: String = row.getAs[String]("MXYWLB")
       "SFXZ".equals(MXYWLB)
     })
-
-    println(sjsmxFilterRDD.collect.toBuffer)
 
     val sjsmxXzljRDD = sjsmxFilterRDD.map(row => {
 
@@ -320,8 +300,6 @@ object ShenzhenStockExchangeTriPartyRepo {
       FHTXH= row.getAs[String]("MXYWLSH") //合同序号
       FCSHTXH = row.getAs[String]("MXFJSM") //初始合同序号
 
-
-
       val FZqdm: String = " " //证券代码
       val FSzsh: String = "S" //交易市场
       val Fyj: BigDecimal = BigDecimal(0) //佣金
@@ -332,7 +310,6 @@ object ShenzhenStockExchangeTriPartyRepo {
       val Fzzr: String = "admin" //制作人
       val Fchk: String = "admin" //审核人
       val FSJLY: String = "ZD" //数据来源
-
 
       val FSETCODE = BigDecimal(0) // 套账号
       val FSL = BigDecimal(0) // 成交数量
@@ -354,17 +331,9 @@ object ShenzhenStockExchangeTriPartyRepo {
       val ZqDm = "" //证券代码
       val FBS = "" // 买卖方向
 
-
-
-
-
-      //      val sjsmxSFCSRDD = sjsmxDF.rdd.filter(row => {
-      //        "SFCS".equals(row.getAs[String]("MXYWLB")) && FCSHTXH.equals(row.getAs[String]("MXFJSM"))
-      //      })
       val sjsmxSFCSRDD = sjsmxDFArrBroadCast.value.filter(row =>{
         "SFCS".equals(row.getAs[String]("MXYWLB")) && FCSHTXH.equals(row.getAs[String]("MXFJSM"))
       })
-
 
       val SFCSvalue = sjsmxSFCSRDD.map(row => {
         Fje = BigDecimal(row.getAs[String]("FJETemp"))
@@ -373,7 +342,7 @@ object ShenzhenStockExchangeTriPartyRepo {
 
         Fje + "_" + FHggain + "_" + FRZLV
       })
-      // val sjsmxSFCS: Array[String] = SFCSvalue.toString().split("_")
+
       val sjsmxSFCS: Array[String] = SFCSvalue(0).split("_")
 
       Fje = BigDecimal(sjsmxSFCS(0)) //成交金额
@@ -390,7 +359,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FJyFs = "CZ" //交易方式
       }
 
-      ShenzhenStockExchangeTriPartyRepoDto(
+      SZSETriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -438,7 +407,6 @@ object ShenzhenStockExchangeTriPartyRepo {
 
     var jgywlb: String = ""
 
-
     //结果-非到期续作前期合约了结数据取值规则
     val sjsjgXzxkRDD = sjsjgDF.rdd.map(row => {
 
@@ -457,8 +425,6 @@ object ShenzhenStockExchangeTriPartyRepo {
       val Fzzr: String = "admin" //制作人:当前用户
       val Fchk: String = "admin" //审核人:当前用户
       val FSJLY: String = "ZD" //数据来源
-
-
       var Fjybz: String = "" //交易标志
       var FJyFs: String = "" //交易方式
       var FinDate: String = new String //日期
@@ -470,8 +436,6 @@ object ShenzhenStockExchangeTriPartyRepo {
       //实收实付金额
       var FRZLV: BigDecimal = BigDecimal(0) //融资/回购利率
       var FCSGHQX: BigDecimal = BigDecimal(0) //初始购回期限
-
-
       val FSETCODE = BigDecimal(0) // 套账号
       val FSL = BigDecimal(0) // 成交数量
       val Fyhs = BigDecimal(0) // 印花税
@@ -491,12 +455,6 @@ object ShenzhenStockExchangeTriPartyRepo {
       val Fbz = "" // 币种
       val ZqDm = "" //证券代码
       val FBS = "" // 买卖方向
-
-      //      var FZQLB: String = new String //证券类别
-      //      var FSZSH: String = new String //席位地点
-      //      var FSTR1: String = new String //席位号
-      //      var FLV: String = new String //佣金利率
-
 
       //交易标志判断规则
       jgywlb match {
@@ -532,8 +490,10 @@ object ShenzhenStockExchangeTriPartyRepo {
       // 实收实付金额判断规则
       if ("SFCS".equals(jgywlb) || "SDFQ".equals(jgywlb) || "SFTG".equals(jgywlb) || "SFJZ".equals(jgywlb)) {
         FSSSFJE = BigDecimal(row.getAs[String]("JGSFJE")).abs
-      } else if ("SFXZ".equals(jgywlb)) {
+      } else if ("SFXZ".equals(jgywlb)&&"RZ".equals(FJyFs)) {
         FSSSFJE = JGQSBJ.abs - Fjsf
+      } else if ("SFXZ".equals(jgywlb)&&"CZ".equals(FJyFs)){
+        FSSSFJE = JGQSBJ.abs + Fjsf
       }
 
       //日期、成交金额、佣金、回购收益、初始购回期限、融资利率判断规则
@@ -558,13 +518,6 @@ object ShenzhenStockExchangeTriPartyRepo {
         Fyj = Fje.*(Flv).setScale(2, RoundingMode.HALF_UP) // 佣金
         FRZLV = BigDecimal(row.getAs[String]("JGCJJG")) //融资/回购利率
         FHggain = BigDecimal(row.getAs[String]("FHggain")) //回购收益
-
-        //        val simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
-        //        val endDate = simpleDateFormat.parse(FinDate)
-        //        val startDate = simpleDateFormat.parse(row.getAs[String]("MXCJRQ"))
-        //
-        //        FCSGHQX = (endDate - startDate)/(24*60*60*1000) //初试购回期限
-
         FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")) //初始购回期限
 
       } else if ("SFDQ".equals(jgywlb) || "SFTG".equals(jgywlb) || "SFJZ".equals(jgywlb)) {
@@ -579,7 +532,6 @@ object ShenzhenStockExchangeTriPartyRepo {
           FCSHTXH.equals(JGFJSM) && "SFXZ".equals(JGYWLB) || "SFCS".equals(JGYWLB)
         })
 
-
         //获取广播变量
         val sjsjgTempArr: Array[Row] = sjsjgTempBroadcast.value.collect()
 
@@ -593,7 +545,7 @@ object ShenzhenStockExchangeTriPartyRepo {
             Fje = BigDecimal(FJETemp) // 成交/回购金额
             Fyj = BigDecimal(0).setScale(2,RoundingMode.HALF_UP) //拥金
             FHggain = JGQSBJ.abs - Fje //回购收益 是否取绝对值 TODO
-            println(Fje)
+
             val simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
 
             val strYear1=i(3).toString.substring(0,4)
@@ -616,7 +568,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FRZLV = BigDecimal(0) //融资/回购利率
       }
 
-      ShenzhenStockExchangeTriPartyRepoDto(
+      SZSETriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -679,7 +631,6 @@ object ShenzhenStockExchangeTriPartyRepo {
       FHTXH = row.getAs[String]("JGYWLSH") //合同序号
       FCSHTXH = row.getAs[String]("JGFJSM") //初始合同序号
 
-
       val FZqdm: String = " " //证券代码
       val FSzsh: String = "S" //交易市场
       val Fyj: BigDecimal = BigDecimal(0) //佣金
@@ -690,7 +641,6 @@ object ShenzhenStockExchangeTriPartyRepo {
       val Fzzr: String = "admin" //制作人
       val Fchk: String = "admin" //审核人
       val FSJLY: String = "ZD" //数据来源
-
 
       val FSETCODE = BigDecimal(0) // 套账号
       val FSL = BigDecimal(0) // 成交数量
@@ -712,11 +662,9 @@ object ShenzhenStockExchangeTriPartyRepo {
       val ZqDm = "" //证券代码
       val FBS = "" // 买卖方向
 
-
       val sjsjgSFCSArr = sjsjgDFArrBroadCast.value.filter(row => {
         "SFCS".equals(row.getAs[String]("JGYWLB")) && FCSHTXH.equals(row.getAs[String]("JGFJSM"))
       })
-
 
       val SFCSvalue = sjsjgSFCSArr.map(row => {
         Fje = BigDecimal(row.getAs[String]("FJETemp"))
@@ -741,7 +689,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FJyFs = "CZ" //交易方式
       }
 
-      ShenzhenStockExchangeTriPartyRepoDto(
+      SZSETriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,

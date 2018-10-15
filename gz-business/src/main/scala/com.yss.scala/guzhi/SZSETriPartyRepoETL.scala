@@ -16,9 +16,9 @@ import scala.math.BigDecimal.RoundingMode
   * @version 2018-09-17 16:37
   *          describe: 三方回购业务(深交所) ETL 加入新字段, 并计算需要提前计算的字段, 如:"SFCS"时的成交金额, 购回期限, 回购收益
   *          目标文件：sjsjg,sjsmx下所有文件
-  *          目标表：待定
+  *          目标表：
   */
-object ShenzhenStockExchangeTriPartyRepoETL {
+object SZSETriPartyRepoETL {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val sc = spark.sparkContext
@@ -26,8 +26,6 @@ object ShenzhenStockExchangeTriPartyRepoETL {
     //原始数据
     val sjsjg: DataFrame = spark.sqlContext.dbfFile("hdfs://192.168.102.120:8020/tmp/SFHGTest/SJSJG/sjsjg0723.dbf")
     val sjsmx: DataFrame = spark.sqlContext.dbfFile("hdfs://192.168.102.120:8020/tmp/SFHGTest/sjsmx5.dbf")
-
-    sjsmx.show()
 
     val sjsmxFilterRDD = sjsmx.rdd.filter(row => {
       "20180723".equals(row.getAs[String]("MXCJRQ")) &&
@@ -42,7 +40,6 @@ object ShenzhenStockExchangeTriPartyRepoETL {
         "02".equals(row.getAs[String]("JGJYFS")) &&
         "01".equals(row.getAs[String]("JGSJLX"))
     })
-
 
     val MXvalueRDD = sjsmxFilterRDD.map(lines => {
 
@@ -108,19 +105,15 @@ object ShenzhenStockExchangeTriPartyRepoETL {
       val strDay1 = MXQTRQ.substring(6, 8)
       val MXQTRQDate = strYear1 + "-" + strMonth1 + "-" + strDay1
 
-      println(MXQTRQDate)
-
       val strYear2 = MXCJRQ.substring(0, 4)
       val strMonth2 = MXCJRQ.substring(4, 6)
       val strDay2 = MXCJRQ.substring(6, 8)
       val MXCJRQDate = strYear2 + "-" + strMonth2 + "-" + strDay2
 
-
       val endDate = simpleDateFormat.parse(MXQTRQDate)
       val startDate = simpleDateFormat.parse(MXCJRQDate)
 
       val FCSGHQXTemp: BigDecimal = BigDecimal((endDate.getTime - startDate.getTime)./(24 * 60 * 60 * 1000)) //"SFCS"时的购回期限 = 购回日期 - 首期日期
-
 
       val FRZLV: BigDecimal = BigDecimal(MXCJJG) // 回购利率
       val FHggain: BigDecimal = FJETemp.*(FRZLV).*(FCSGHQXTemp)./(365).setScale(2, RoundingMode.HALF_UP) // 回购收益 = 回购金额×回购利率*购回期限/365；
@@ -207,7 +200,6 @@ object ShenzhenStockExchangeTriPartyRepoETL {
       val FRZLV: BigDecimal = BigDecimal(JGCJJG) / 100 // 回购利率
       val FHggain: BigDecimal = FJETemp.*(FRZLV).*(FCSGHQXTemp)./(365).setScale(2, RoundingMode.HALF_UP) // 回购收益 = 回购金额×回购利率*购回期限/365；
 
-
       JGETL(JGJSZH,
         JGBFZH,
         JGSJLX,
@@ -275,16 +267,11 @@ object ShenzhenStockExchangeTriPartyRepoETL {
     MXvalueRDD.toDF().write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsmxETL_wmz", properties)
     JGvalueRDD.toDF().write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsjgETL_wmz", properties)
 
-
     spark.stop()
-
 
   }
 
-  //写入mySql
-
-
-  // 获取当前日期
+  // 初始化变量方法
   private def getRowFieldAsString(row: Row, fieldName: String, defaultValues: String = "0.00"): String = {
     var field = row.getAs[String](fieldName)
     if (field == "") {
@@ -296,7 +283,6 @@ object ShenzhenStockExchangeTriPartyRepoETL {
     }
     field
   }
-
 
 }
 
