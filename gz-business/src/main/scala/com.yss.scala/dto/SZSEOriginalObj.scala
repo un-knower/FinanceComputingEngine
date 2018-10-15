@@ -1,6 +1,6 @@
 package com.yss.scala.dto
 
-case class ExeOriginalObj (
+case class SZSEOriginalObj(
 
                          date:String,
                          ApplID:String,
