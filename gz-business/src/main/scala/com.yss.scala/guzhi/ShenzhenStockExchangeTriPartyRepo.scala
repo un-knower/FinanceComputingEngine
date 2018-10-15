@@ -15,9 +15,9 @@ import scala.math.BigDecimal.RoundingMode
 /**
   * @author MingZhang Wang
   * @version 2018-09-17 17:25
-  *          describe:
-  *          目标文件：
-  *          目标表：
+  *          describe: 三方回购（深交所）业务代码，处理ETL后的数据
+  *          目标文件：mysql中ETL的结果
+  *          目标表：sjsmxETL_wmz和sjsjgETL_wmz
   */
 object ShenzhenStockExchangeTriPartyRepo {
   def main(args: Array[String]): Unit = {
