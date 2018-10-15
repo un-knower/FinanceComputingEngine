@@ -26,6 +26,7 @@ import com.google.common.base.Preconditions;
 import com.yss.source.spooldir.SpoolDirectorySourceConfigurationConstants.ConsumeOrder;
 import com.yss.source.utils.ReadDbf;
 import com.yss.source.utils.ReadXml;
+import com.yss.source.utils.coding.EncodingDetect;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.FlumeException;
@@ -143,7 +144,7 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
                                             boolean recursiveDirectorySearch,
                                             String setXmlNode,
                                             String currentRecord,
-                                            String csvSeparator  ) throws IOException {
+                                            String csvSeparator) throws IOException {
 
         // Sanity checks
         Preconditions.checkNotNull(spoolDirectory);
@@ -680,10 +681,10 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
             Preconditions.checkState(tracker.getTarget().equals(nextPath),
                     "Tracker target %s does not equal expected filename %s",
                     tracker.getTarget(), nextPath);
-
+            String javaEncode = EncodingDetect.getJavaEncode(file);
             ResettableInputStream in =
                     new ResettableFileInputStream(file, tracker,
-                            ResettableFileInputStream.DEFAULT_BUF_SIZE, inputCharset,
+                            ResettableFileInputStream.DEFAULT_BUF_SIZE, Charset.forName(javaEncode),
                             decodeErrorPolicy);
             EventDeserializer deserializer =
                     EventDeserializerFactory.getInstance(deserializerType, deserializerContext, in);

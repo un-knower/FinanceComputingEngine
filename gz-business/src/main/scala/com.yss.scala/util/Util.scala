@@ -45,7 +45,8 @@ object Util {
     * @param fileName 文件输入名
     */
   def getInputFilePath(fileName: String) = {
-    val hdfsDir = "hdfs://nscluster/yss/guzhi/"
+//    val hdfsDir = "hdfs://nscluster/yss/guzhi/"
+    val hdfsDir = "hdfs://192.168.102.120:8020/yss/guzhi/"
     val inputFilePath = hdfsDir + fileName
     inputFilePath
   }
@@ -57,7 +58,7 @@ object Util {
     */
   def getDailyInputFilePath(fileName: String,prefix:String = "/yss/guzhi/basic_list/") = {
     val today = DateUtils.getToday(DateUtils.yyyyMMdd)
-    val hdfsFile = "hdfs://nscluster"+ prefix + today + "/"+fileName
+    val hdfsFile = "hdfs://192.168.102.120:8020"+ prefix + today + "/"+fileName
     hdfsFile
   }
 

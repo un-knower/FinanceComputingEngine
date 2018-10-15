@@ -1,6 +1,7 @@
 package com.yss.scala.dto
 
 case class SZStockExchangeObj (
+                                FSETID:String,
                                 FDATE: String, //日期
                                 FINDATE: String, //读入日期
                                 FZQDM: String, //证券代码
@@ -15,6 +16,7 @@ case class SZStockExchangeObj (
                                 FZGF: String, //征管费
                                 FGHF: String, //过户费
                                 FFXJ: String, //风险金
+                                HGSY:String,
                                 FGZLX: String, //国债利息
                                 FSSSFJE: String, //实付金额
                                 FZQBZ: String, //证券标志

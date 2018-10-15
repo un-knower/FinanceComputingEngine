@@ -14,12 +14,13 @@ object ShghContants {
 
   /** 资产类型 GP*/
   val ZCLB = "GP"
-  /** 专用资产号 117 */
-  val ZYZCH = "117"
+
   /** 公用资产号 0 */
   val GYZCH = "0"
   /** 市场 H*/
   val SH = "H"
+  /** 通过审核 1 */
+  val FSH = "1"
   /** 参数开启 1 */
   val YES = "1"
   /** 参数不开启 0*/
@@ -29,13 +30,7 @@ object ShghContants {
   /** 卖 S*/
   val SALE = "S"
 
-  /** 默认值 -1*/
-  val DEFORT_VALUE1 = "-1"
-  /** 佣金的默认值 0@0@0@0*/
-  val DEFORT_VALUE3 = "0@0@0@0"
-  /** 费率的默认值 0@0@0*/
-  val DEFORT_VALUE2 = "0@0@0"
-  val DEFORT_ROUND = "2"
+
   val JSF = "JSF"
   val YHS = "YHS"
   val ZGF = "ZGF"
@@ -53,7 +48,9 @@ object ShghContants {
   val CS6_KEY = "计算佣金减去结算费"
   /** 实际收付金额包含佣金*/
   val CON8_KEY = "实际收付金额包含佣金"
+  /** 计算公共费率保留小数位 */
   val CS7_KEY = "计算公共费率保留小数位"
+  /** 计算佣金保留小数位 */
   val CS8_KEY = "计算佣金保留小数位"
 
 
@@ -83,12 +80,42 @@ object ShghContants {
   val TABLE_NAME_A117CSJYLV = "A001CSYJLV"
   /** 特殊处理的ETF基金的业务标志和证券标志 ZQETFJY*/
   val ETF_ZQBZ_OR_YWZ = "ZQETFJY"
-
+  /** 券商过户费 CSQSFYLV*/
   val TABLE_NAME_CSQSFYLV = "CSQSFYLV"
-
+  /** 回购业务HG */
+  val HG = "HG"
+  /** 券商过户费 QSGHF */
   val QSGHF = "QSGHF"
+  /** 券商过户费的ffyfs标识 0 */
   val FFYFS = "0"
+  /** HDFS上的文件路径的前缀 /yss/guzhi/interface/ */
+  val PREFIX = "/yss/guzhi/interface/"
 
+  /** 默认的将数字格式化成字符串格式 %.2f */
+  val DEFAULT_DIGIT_FORMAT = "%.2f"
+  /** 默认的保留的小数位 2 */
+  val DEFAULT_DIGIT = 2
+  /** 默认值 空串*/
+  val DEFAULT_VALUE = ""
+  /** 默认值 -1*/
+  val DEFORT_VALUE1 = "-1"
+  /** 佣金的默认值 0@0@0@0*/
+  val DEFORT_VALUE3 = "0@0@0@0"
+  /** 费率的默认值 0@0@0*/
+  val DEFORT_VALUE2 = "0@0@0"
+  /** 默认保留的小数位 2*/
+  val DEFORT_ROUND = "2"
+  /** 默认值 -1@-1 */
+  val DEFAULT_VALUE4 = "-1@-1"
+
+  /** 债券类型取债券品种信息维护的债券类型 */
+  val CON01_KEY = "债券类型取债券品种信息维护的债券类型"
+  /** 指数、指标股票按特殊科目设置页面处理 */
+  val CON02_KEY = "指数、指标股票按特殊科目设置页面处理"
+  /** 上交所是否启用企债净价交易 */
+  val CON03_KEY = "上交所是否启用企债净价交易"
+  /** 上海回购价格位数 */
+  val CON04_KEY = "上海回购价格位数"
 
   /** 上海过户的可能没有用到 */
   val CON1_KEY = "按申请编号汇总计算经手费"
