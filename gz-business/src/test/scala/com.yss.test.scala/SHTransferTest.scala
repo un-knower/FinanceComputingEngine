@@ -14,23 +14,23 @@ import org.apache.spark.sql.SparkSession
 object SHTransferTest {
 
   def main(args: Array[String]): Unit = {
-    testEtl()
+    testEtl(args(0))
   }
 
   /** 测试etl */
-  def testEtl() = {
+  def testEtl(fileName:String) = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     //    loadTables(spark,"")
-    val df = doETL(spark, broadcastLvarList)
+    val df = doETL(spark, broadcastLvarList,fileName)
     import spark.implicits._
     Util.outputMySql(df.toDF, "shgh_etl_test")
     spark.stop()
   }
 
   /** 测试Exec */
-  def testExec() = {
-    doExec()
+  def testExec(fileName:String,tableName:String) = {
+    doExec(fileName,tableName)
   }
 
 

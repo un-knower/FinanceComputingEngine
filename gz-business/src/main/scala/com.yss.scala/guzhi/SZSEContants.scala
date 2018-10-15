@@ -1,6 +1,6 @@
 package com.yss.scala.guzhi
 
-object ExecutionContants {
+object SZSEContants {
   //定义分隔符
   val SEPARATE1 = "@"
   val SEPARATE2 = ","
@@ -11,7 +11,7 @@ object ExecutionContants {
   /** 公用资产号 */
   val GYZCH = "0"
   /** 市场 */
-  val SH = "H"
+  val SH = "SDZ"
   /** 参数开启 */
   val YES = "1"
   /** 参数不开启 */
@@ -23,12 +23,13 @@ object ExecutionContants {
 
   val DEFORT_VALUE1 = "-1" //默认值1
   val DEFORT_VALUE3 = "0@0@0@0" //佣金的默认值3
-  val DEFORT_VALUE2 = "0@0@0" //费率的默认值2
+  val DEFORT_VALUE2 = "0@0@0@0" //费率的默认值2
   val JSF = "JSF"
   val YHS = "YHS"
   val ZGF = "ZGF"
   val FXJ = "FXJ"
   val GHF = "GHF"
+  val SXF="SXF"
   val CS1_KEY = "佣金包含经手费，证管费"
   val CS3_KEY = "是否按千分之一费率计算过户费"
   val CS4_KEY = "计算佣金减去风险金"
