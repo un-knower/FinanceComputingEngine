@@ -18,7 +18,7 @@ import scala.math.BigDecimal.RoundingMode
   *          目标文件：sjsjg,sjsmx下所有文件
   *          目标表：
   *
-  *          
+  *
   */
 object SZSETriPartyRepoETL {
   def main(args: Array[String]): Unit = {
@@ -256,8 +256,8 @@ object SZSETriPartyRepoETL {
         FJYBZ,
         FJETemp.setScale(2,RoundingMode.HALF_UP).toString(),
         FCSGHQXTemp.setScale(2,RoundingMode.HALF_UP).toString(),
-        FRZLV.setScale(4,RoundingMode.HALF_UP).toString(),
-        FHggain.setScale(2,RoundingMode.HALF_UP).toString()
+        FHggain.setScale(2,RoundingMode.HALF_UP).toString(),
+        FRZLV.setScale(4,RoundingMode.HALF_UP).toString()
       )
     })
 
@@ -266,7 +266,7 @@ object SZSETriPartyRepoETL {
     val properties = new Properties()
     properties.put("user", "root")
     properties.put("password", "root1234")
-    MXvalueRDD.toDF().write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsmxETL_wmz", properties)
+//    MXvalueRDD.toDF().write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsmxETL_wmz", properties)
     JGvalueRDD.toDF().write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsjgETL_wmz", properties)
 
     spark.stop()

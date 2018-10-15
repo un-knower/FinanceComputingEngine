@@ -231,7 +231,7 @@ object SZSETriPartyRepo {
             val endDate = simpleDateFormat.parse(FinDateDate)
             FCSGHQX = (endDate.getTime - startDate.getTime) / (24 * 60 * 60 * 1000) //初始购回期限
             //            FCSGHQX.setScale(2,RoundingMode.HALF_UP)
-            FRZLV = BigDecimal(0).setScale(2,RoundingMode.HALF_UP) //融资/回购利率
+            FRZLV = BigDecimal(0).setScale(4,RoundingMode.HALF_UP) //融资/回购利率
           }
         }
       }
@@ -588,7 +588,7 @@ object SZSETriPartyRepo {
         FHTXH,
         FSETCODE.toString(),
         FCSGHQX.setScale(2,RoundingMode.HALF_UP).toString(),
-        FRZLV.setScale(2,RoundingMode.HALF_UP).toString(),
+        FRZLV.setScale(4,RoundingMode.HALF_UP).toString(),
         FSJLY,
         FCSHTXH,
         FBS,
@@ -709,7 +709,7 @@ object SZSETriPartyRepo {
         FHTXH,
         FSETCODE.toString(),
         FCSGHQX.setScale(2,RoundingMode.HALF_UP).toString(),
-        FRZLV.setScale(2,RoundingMode.HALF_UP).toString(),
+        FRZLV.setScale(4,RoundingMode.HALF_UP).toString(),
         FSJLY,
         FCSHTXH,
         FBS,
