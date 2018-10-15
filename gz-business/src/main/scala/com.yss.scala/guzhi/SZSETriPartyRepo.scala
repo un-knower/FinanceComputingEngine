@@ -3,7 +3,7 @@ package com.yss.scala.guzhi
 import java.text.SimpleDateFormat
 import java.util.Properties
 
-import com.yss.scala.dto.ShenzhenStockExchangeTriPartyRepoDto
+import com.yss.scala.dto.SZSETriPartyRepoDto
 import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -19,7 +19,7 @@ import scala.math.BigDecimal.RoundingMode
   *          目标文件：mysql中ETL的结果
   *          目标表：sjsmxETL_wmz和sjsjgETL_wmz
   */
-object ShenzhenStockExchangeTriPartyRepo {
+object SZSETriPartyRepo {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().appName("ShenzhenStockExchangeTriPartyRepo").master("local[*]").getOrCreate()
     val sc = spark.sparkContext
@@ -236,7 +236,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         }
       }
 
-      ShenzhenStockExchangeTriPartyRepoDto(
+      SZSETriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -359,7 +359,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FJyFs = "CZ" //交易方式
       }
 
-      ShenzhenStockExchangeTriPartyRepoDto(
+      SZSETriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -568,7 +568,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FRZLV = BigDecimal(0) //融资/回购利率
       }
 
-      ShenzhenStockExchangeTriPartyRepoDto(
+      SZSETriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,
@@ -689,7 +689,7 @@ object ShenzhenStockExchangeTriPartyRepo {
         FJyFs = "CZ" //交易方式
       }
 
-      ShenzhenStockExchangeTriPartyRepoDto(
+      SZSETriPartyRepoDto(
         FDate,
         FinDate,
         FZqdm,

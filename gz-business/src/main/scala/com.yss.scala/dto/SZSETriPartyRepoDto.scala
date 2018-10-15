@@ -7,7 +7,7 @@ package com.yss.scala.dto
   *          目标文件：ShenzhenStockExchangeTriPartyRepo.scala
   *          目标表：
   */
-case class ShenzhenStockExchangeTriPartyRepoDto(
+case class SZSETriPartyRepoDto(
                                                  FDate: String, //日期
                                                  FinDate: String, //日期
                                                  FZqdm: String, //证券代码

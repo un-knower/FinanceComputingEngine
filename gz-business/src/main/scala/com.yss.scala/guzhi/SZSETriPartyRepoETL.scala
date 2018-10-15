@@ -18,7 +18,7 @@ import scala.math.BigDecimal.RoundingMode
   *          目标文件：sjsjg,sjsmx下所有文件
   *          目标表：
   */
-object ShenzhenStockExchangeTriPartyRepoETL {
+object SZSETriPartyRepoETL {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().appName("SHDZGH").master("local[*]").getOrCreate()
     val sc = spark.sparkContext
