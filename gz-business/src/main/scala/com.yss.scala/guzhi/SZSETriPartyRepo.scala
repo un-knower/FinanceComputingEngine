@@ -342,7 +342,7 @@ object SZSETriPartyRepo {
 
         Fje + "_" + FHggain + "_" + FRZLV
       })
-
+ 
       val sjsmxSFCS: Array[String] = SFCSvalue(0).split("_")
 
       Fje = BigDecimal(sjsmxSFCS(0)) //成交金额
