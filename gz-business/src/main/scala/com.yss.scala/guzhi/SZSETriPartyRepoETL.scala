@@ -17,6 +17,8 @@ import scala.math.BigDecimal.RoundingMode
   *          describe: 三方回购业务(深交所) ETL 加入新字段, 并计算需要提前计算的字段, 如:"SFCS"时的成交金额, 购回期限, 回购收益
   *          目标文件：sjsjg,sjsmx下所有文件
   *          目标表：
+  *
+  *
   */
 object SZSETriPartyRepoETL {
   def main(args: Array[String]): Unit = {
@@ -197,7 +199,7 @@ object SZSETriPartyRepoETL {
       val startDate = simpleDateFormat.parse(JGCJRQDate)
 
       val FCSGHQXTemp: BigDecimal = (endDate.getTime - startDate.getTime) / (24 * 60 * 60 * 1000) //"SFCS"时的购回期限 = 购回日期 - 首期日期
-      val FRZLV: BigDecimal = BigDecimal(JGCJJG) / 100 // 回购利率
+      val FRZLV: BigDecimal = BigDecimal(JGCJJG)// 回购利率
       val FHggain: BigDecimal = FJETemp.*(FRZLV).*(FCSGHQXTemp)./(365).setScale(2, RoundingMode.HALF_UP) // 回购收益 = 回购金额×回购利率*购回期限/365；
 
       JGETL(JGJSZH,
@@ -254,8 +256,8 @@ object SZSETriPartyRepoETL {
         FJYBZ,
         FJETemp.setScale(2,RoundingMode.HALF_UP).toString(),
         FCSGHQXTemp.setScale(2,RoundingMode.HALF_UP).toString(),
-        FRZLV.setScale(4,RoundingMode.HALF_UP).toString(),
-        FHggain.setScale(2,RoundingMode.HALF_UP).toString()
+        FHggain.setScale(2,RoundingMode.HALF_UP).toString(),
+        FRZLV.setScale(4,RoundingMode.HALF_UP).toString()
       )
     })
 
@@ -264,7 +266,7 @@ object SZSETriPartyRepoETL {
     val properties = new Properties()
     properties.put("user", "root")
     properties.put("password", "root1234")
-    MXvalueRDD.toDF().write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsmxETL_wmz", properties)
+//    MXvalueRDD.toDF().write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsmxETL_wmz", properties)
     JGvalueRDD.toDF().write.mode(SaveMode.Append).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsjgETL_wmz", properties)
 
     spark.stop()

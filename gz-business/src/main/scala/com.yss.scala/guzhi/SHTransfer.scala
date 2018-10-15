@@ -25,7 +25,7 @@ object SHTransfer {
   def doExec(fileName:String,tableName:String) = {
     val spark = SparkSession.builder()
       .appName("SHTransfer")
-//      .master("local[*]")
+      .master("local[*]")
       .getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     val df = doETL(spark, broadcastLvarList,fileName)
@@ -64,7 +64,7 @@ object SHTransfer {
           val fields = row.split(SEPARATE2)
           val fsh = fields(10)
           val fszsh = fields(8)
-          if ("1".equals(fsh) && "H".equals(fszsh)) true
+          if (FSH.equals(fsh) && SH.equals(fszsh)) true
           else false
         })
         .map(row => {
@@ -78,7 +78,7 @@ object SHTransfer {
           //  fetftype='0'
           val filteredRows = rows.filter(str => str.split(",")(17).equals("0"))
           val ele1 =
-            if (filteredRows.size == 0) ""
+            if (filteredRows.size == 0) DEFAULT_VALUE
             else filteredRows.toArray.sortWith((str1, str2) => {
               str1.split(SEPARATE2)(14).compareTo(str2.split(SEPARATE2)(14)) < 0
             })(0)
@@ -134,7 +134,7 @@ object SHTransfer {
       // 过滤 fetftype ='0' FZQLX='HB'的情况
       val csjjxx01HPMap = csjjxx.filter(
         row => {
-          !row._2._1.equals("")
+          !row._2._1.equals(DEFAULT_VALUE)
         }
       ).map(row => {
         val fields = row._2._1.split(SEPARATE2)
@@ -155,7 +155,7 @@ object SHTransfer {
           val fields = row.split(SEPARATE2)
           val fqylx = fields(1)
           val fsh = fields(7)
-          if ("PG".equals(fqylx) && "1".equals(fsh)) true
+          if ("PG".equals(fqylx) && FSH.equals(fsh)) true
           else false
         })
         .map(row => {
@@ -176,7 +176,7 @@ object SHTransfer {
           val fields = row.split(SEPARATE2)
           val fxwlb = fields(4)
           val fsh = fields(6)
-          if ("1".equals(fsh) && ("ZS".equals(fxwlb) || "ZYZS".equals(fxwlb))) true
+          if (FSH.equals(fsh) && ("ZS".equals(fxwlb) || "ZYZS".equals(fxwlb))) true
           else false
         })
         .map(row => {
@@ -250,7 +250,7 @@ object SHTransfer {
         val fjjdm = fields(2)
         val fstartdate = fields(22)
         if (!"银行间".equals(fjysc) && "可分离债券".equals(fzqlb)
-          && "1".equals(fsh)) true
+          && FSH.equals(fsh)) true
         else false
       })
         .map(row => {
@@ -309,14 +309,14 @@ object SHTransfer {
           val fdate = fields(0)
           val fbz = fields(1)
           val fsh = fields(3)
-          if ("0".equals(fbz) && "1".equals(fsh) && fdate.compareTo(today) >= 0) true
+          if ("0".equals(fbz) && FSH.equals(fsh) && fdate.compareTo(today) >= 0) true
           else false
         })
         .map(str => {
           str.split(SEPARATE2)(0)
         }).takeOrdered(1)
-      if (csholidayList.length == 0) throw new Exception("获取工作日信息有误!")
-      csholidayList(0)
+      if (csholidayList.length == 0) today
+      else csholidayList(0)
     }
 
     (loadCsjjxx(), loadCsqyxx(), loadCsqsxw(),
@@ -327,13 +327,12 @@ object SHTransfer {
   def doETL(spark: SparkSession, csb: Broadcast[collection.Map[String, String]],fileName:String) = {
     val sc = spark.sparkContext
 
-    import com.yss.scala.dbf.dbf._
+//    import com.yss.scala.dbf.dbf._
     val sourcePath = Util.getDailyInputFilePath(fileName,PREFIX)
+    val df = Util.readCSV(sourcePath,spark)
 
 //    val sourcePath ="C:\\Users\\wuson\\Desktop\\GuZhi\\test\\20180126\\gh.dbf"
 //    val df = spark.sqlContext.dbfFile(sourcePath)
-
-    val df = Util.readCSV(sourcePath,spark)
     val today = DateUtils.getToday(DateUtils.yyyy_MM_dd)
     // (larlistValue, csjjxxValue,csqyxxValue, csqsxwValue, csTsKmValue, lsetcssysjjValue, csqzxxValue, csgdzhValue)
     val broadcaseValues = loadTables(spark, today)
@@ -363,7 +362,7 @@ object SHTransfer {
       if ("ZQ".equals(zqbz)) {
         val may = gzlxValues.value.get(zqdm + SEPARATE1 + bcrq)
         if (may.isDefined) {
-          gzlx = BigDecimal(may.get).*(BigDecimal(cjsl)).*(BigDecimal(10)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+          gzlx = BigDecimal(may.get).*(BigDecimal(cjsl)).*(BigDecimal(10)).setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP).formatted(DEFAULT_DIGIT_FORMAT)
         }
       }
       gzlx
@@ -425,8 +424,8 @@ object SHTransfer {
       * @return
       */
     def zqlx(tzh: String, bcrq: String, zqdm: String): Boolean = {
-      val condition1 = csbValues.value.get(tzh + "债券类型取债券品种信息维护的债券类型")
-      if (condition1.isDefined && "1".equals(condition1.get)) {
+      val condition1 = csbValues.value.get(tzh + CON01_KEY)
+      if (condition1.isDefined && YES.equals(condition1.get)) {
         val condition2 = csbValues.value.get(tzh + "债券类型取债券品种信息维护的债券类型启用日期")
         if (condition2.isDefined && bcrq.compareTo(condition2.get) >= 0) {
           val condition3 = csbValues.value.get(tzh + "债券类型取债券品种信息维护的债券类型代码段")
@@ -448,10 +447,7 @@ object SHTransfer {
       * @return
       */
     def getTzh(gddm: String): String = {
-      val maybe = csgdzhValues.value.get(gddm)
-      if (maybe.isDefined) {
-       maybe.get
-      }else ""
+      csgdzhValues.value.getOrElse(gddm,DEFAULT_VALUE)
     }
 
     /**
@@ -496,7 +492,7 @@ object SHTransfer {
         return "XG"
       }
       //如果没有匹配到就返回空
-      ""
+      DEFAULT_VALUE
     }
 
     /**
@@ -510,8 +506,8 @@ object SHTransfer {
       */
     def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String): String = {
       if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
-        val condition = csbValues.value.get(tzh + "指数、指标股票按特殊科目设置页面处理")
-        if (condition.isDefined && "1".equals(condition.get)) {
+        val condition = csbValues.value.get(tzh + CON02_KEY)
+        if (condition.isDefined && YES.equals(condition.get)) {
           //gh文件中的gsdm字段在CsQsXw表中有数据
           val maybeString = csqsxwValue.value.get(tzh + SEPARATE1 + gsdm)
           if (maybeString.isDefined) {
@@ -530,7 +526,7 @@ object SHTransfer {
         }
 
         //LSetCsSysJj表中FJJLX=0 (WHERE FSETCODE=套帐号)
-        val lset = lsetcssysjjValues.value.getOrElse(tzh, "-1@-1").split("@")
+        val lset = lsetcssysjjValues.value.getOrElse(tzh, DEFAULT_VALUE4).split(SEPARATE1)
         if ("0".equals(lset(0))) {
           if ("1".equals(lset(1)) || "5".equals(lset(1)) || "7".equals(lset(1))) {
             //gh文件中的gsdm字段在CsQsXw表中有数据
@@ -663,7 +659,7 @@ object SHTransfer {
         if (zqdm.startsWith("753") || zqdm.startsWith("762") || zqdm.startsWith("764")) return "KZZXZ"
         if (zqdm.startsWith("714") || zqdm.startsWith("760") || zqdm.startsWith("781") || zqdm.startsWith("70")) {
           //LSetCsSysJj表中FJJLX=0 并且 FJJLB=1，5，7  并且 （gsdm是指数席位号 || zqdm 是维护的指数债券）
-          val lset = lsetcssysjjValues.value.getOrElse(tzh, "-1@-1").split("@")
+          val lset = lsetcssysjjValues.value.getOrElse(tzh, DEFAULT_VALUE4).split(SEPARATE1)
           if ("0".equals(lset(0))) {
             if ("1".equals(lset(1)) || "5".equals(lset(1)) || "7".equals(lset(1))) {
               //gh文件中的gsdm字段在CsQsXw表中有数据
@@ -696,7 +692,7 @@ object SHTransfer {
         if (zqdm.startsWith("714") || zqdm.startsWith("760") || zqdm.startsWith("781")
           || zqdm.startsWith("742") || zqdm.startsWith("70")) {
           //LSetCsSysJj表中FJJLX=0 并且 FJJLB=1，5，7  并且 （gsdm是指数席位号 || zqdm 是维护的指数债券）
-          val lset = lsetcssysjjValues.value.getOrElse(tzh, "-1@-1").split("@")
+          val lset = lsetcssysjjValues.value.getOrElse(tzh, DEFAULT_VALUE4).split(SEPARATE1)
           if ("0".equals(lset(0))) {
             if ("1".equals(lset(1)) || "5".equals(lset(1)) || "7".equals(lset(1))) {
               //gh文件中的gsdm字段在CsQsXw表中有数据
@@ -714,7 +710,7 @@ object SHTransfer {
           return "PG"
         }
       }
-      ""
+      DEFAULT_VALUE
     }
 
     /**
@@ -754,7 +750,7 @@ object SHTransfer {
         || zqdm.startsWith("733") || zqdm.startsWith("743") || zqdm.startsWith("783")
         || zqdm.startsWith("751") || zqdm.startsWith("753") || zqdm.startsWith("762")
         || zqdm.startsWith("764") || (zqdm.startsWith("70") && cjjg.equals("100"))) {
-        return BigDecimal(cjsl).*(BigDecimal(10)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+        return BigDecimal(cjsl).*(BigDecimal(10)).setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP).formatted(DEFAULT_DIGIT_FORMAT)
       }
       cjsl
     }
@@ -775,18 +771,18 @@ object SHTransfer {
     def getCjje(tzh: String, zqdm: String, zqbz: String, ywbz: String, cjje: String, cjsl: String, cjjg: String, gzlx: String): String = {
       if ("JJ".equals(zqbz)) {
         if ("ETFRG".equals(ywbz) || "ETFFK".equals(ywbz) || "ETFRGZQ".equals(ywbz))
-          return BigDecimal(cjsl).*(BigDecimal(cjjg)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+          return BigDecimal(cjsl).*(BigDecimal(cjjg)).setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP).formatted(DEFAULT_DIGIT_FORMAT)
       }
 
-      if ("3".equals(lsetcssysjjValues.value.getOrElse(tzh, "-1@-1").split("@")(0)) || "-1".equals(cjje)) {
-        return BigDecimal(cjsl).*(BigDecimal(cjjg)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+      if ("3".equals(lsetcssysjjValues.value.getOrElse(tzh, DEFAULT_VALUE4).split(SEPARATE1)(0)) || "-1".equals(cjje)) {
+        return BigDecimal(cjsl).*(BigDecimal(cjjg)).setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP).formatted(DEFAULT_DIGIT_FORMAT)
       }
       if ("HG".equals(zqbz) && zqdm.startsWith("203")) {
-        return BigDecimal(cjsl).*(BigDecimal(100)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+        return BigDecimal(cjsl).*(BigDecimal(100)).setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP).formatted(DEFAULT_DIGIT_FORMAT)
       }
       if ("ZQ".equals(zqbz)) {
         if ("KJHSMZQ".equals(ywbz) || "KJHGSZQ".equals(ywbz)) {
-          return BigDecimal(cjje).+(BigDecimal(gzlx)).setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+          return BigDecimal(cjje).+(BigDecimal(gzlx)).setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP).formatted(DEFAULT_DIGIT_FORMAT)
         }
       }
       return cjje
@@ -800,8 +796,8 @@ object SHTransfer {
       * @return
       */
     def getFindate(bcrq: String, tzh: String) = {
-      val value = csbValues.value.get(tzh + "上交所是否启用企债净价交易")
-      if (value.isDefined && "1".equals(value.get)) csholiday
+      val value = csbValues.value.get(tzh + CON03_KEY)
+      if (value.isDefined && YES.equals(value.get)) csholiday
       else bcrq
     }
 
@@ -938,7 +934,7 @@ object SHTransfer {
             val fzqlx = fields(9)
             val ftzdx = fields(15)
             val fszsh = fields(8)
-          if("ETF".equals(fzqlx) && "H".equals(fszsh) && "ZQ".equals(ftzdx))  true
+          if("ETF".equals(fzqlx) && SH.equals(fszsh) && "ZQ".equals(ftzdx))  true
           else  false
           })
         .map(row => {
@@ -1011,9 +1007,9 @@ object SHTransfer {
           zqbz = ETF_ZQBZ_OR_YWZ
       }
 
-      if(zqbz.startsWith("HG")){
-        zqbz = "HG"+zqdm
-        ywbz = "HG"+zqdm
+      if(zqbz.startsWith(HG)){
+        zqbz = HG + zqdm
+        ywbz = HG + zqdm
         jsf = "SXF"
       }
 
@@ -1135,9 +1131,10 @@ object SHTransfer {
       * @return 回购收益
       */
     def getHgsy( cjjg: BigDecimal, cjsl: BigDecimal, zqdm: String,hgts:String) = {
+      val digit = csbValues.value.getOrElse(CON04_KEY,"5").toInt
       val ts = if(zqdm.startsWith("205")) BigDecimal(36500) else BigDecimal(36000)
-       cjjg.*(BigDecimal(hgts))./(ts).setScale(5,RoundingMode.HALF_UP).*(cjsl).*(BigDecimal(1000))
-        .setScale(2, RoundingMode.HALF_UP).formatted("%.2f")
+       cjjg.*(BigDecimal(hgts))./(ts).setScale(digit,RoundingMode.HALF_UP).*(cjsl).*(BigDecimal(1000))
+        .setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP).formatted(DEFAULT_DIGIT_FORMAT)
     }
 
     /**
@@ -1252,7 +1249,7 @@ object SHTransfer {
             }
           }
           //佣金的计算
-          //          var yj = cjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
+          //          var yj = cjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP)
           //          if (NO.equals(cs1)) {
           //            yj = yj.-(jsf).-(zgf)
           //          }
@@ -1298,7 +1295,7 @@ object SHTransfer {
           sumYj = BigDecimal(minYj)
         }
 
-        (key, ShghFee("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
+        (key, ShghFee(DEFAULT_VALUE, sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
           sumGhf, sumFxj, sumGzlx, sumHgsy))
     }
 
@@ -1344,25 +1341,26 @@ object SHTransfer {
         }
         Hzjkqs(bcrq,
           findate, zqdm, SH, gsdm, bs,
-          totalCjje.formatted("%.2f"),
-          totalCjsl.formatted("%.2f"),
-          realYj.formatted("%.2f"),
-          realJsf.formatted("%.2f"),
-          realYhs.formatted("%.2f"),
-          realZgf.formatted("%.2f"),
-          realGhf.formatted("%.2f"),
-          realFxj.formatted("%.2f"),
+          totalCjje.formatted(DEFAULT_DIGIT_FORMAT),
+          totalCjsl.formatted(DEFAULT_DIGIT_FORMAT),
+          realYj.formatted(DEFAULT_DIGIT_FORMAT),
+          realJsf.formatted(DEFAULT_DIGIT_FORMAT),
+          realYhs.formatted(DEFAULT_DIGIT_FORMAT),
+          realZgf.formatted(DEFAULT_DIGIT_FORMAT),
+          realGhf.formatted(DEFAULT_DIGIT_FORMAT),
+          realFxj.formatted(DEFAULT_DIGIT_FORMAT),
           "0",
-          fgzlx.formatted("%.2f"),
-          fhggain.formatted("%.2f"),
-          fsfje.formatted("%.2f"),
+          fgzlx.formatted(DEFAULT_DIGIT_FORMAT),
+          fhggain.formatted(DEFAULT_DIGIT_FORMAT),
+          fsfje.formatted(DEFAULT_DIGIT_FORMAT),
           zqbz, ywbz,
-          "", "N", zqdm, "PT", "1", "", "", "0", "", "0",
-          gddm, "", "", "", "", "", "", "shgh", "", "", "", "", ""
+          DEFAULT_VALUE, "N", zqdm, "PT", "1", DEFAULT_VALUE, DEFAULT_VALUE, "0", DEFAULT_VALUE, "0",
+          gddm, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE,
+          DEFAULT_VALUE, DEFAULT_VALUE, "shgh", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE
         )
     }
     //将结果输出
     import spark.implicits._
-    Util.outputMySql(result.toDF(), "shgh_ws_test")
+    Util.outputMySql(result.toDF(), tableName)
   }
 }
