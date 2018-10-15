@@ -8,4 +8,4 @@ package com.yss.scala.dto
   *费率参数
   */
 case class SJSObj (ctype: String, sumCjje: BigDecimal, sumCjsl: BigDecimal, sumYj: BigDecimal, sumJsf: BigDecimal, sumYhs: BigDecimal, sumZgf: BigDecimal,
-              sumGhf: BigDecimal, sumFxj: BigDecimal,sumSXF: BigDecimal)
+              sumGhf: BigDecimal, sumFxj: BigDecimal,sumSXF: BigDecimal,sumQSGHF:BigDecimal)
