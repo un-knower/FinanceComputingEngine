@@ -17,6 +17,7 @@ import scala.math.BigDecimal.RoundingMode
   *          describe: 三方回购业务(深交所) ETL 加入新字段, 并计算需要提前计算的字段, 如:"SFCS"时的成交金额, 购回期限, 回购收益
   *          目标文件：sjsjg,sjsmx下所有文件
   *          目标表：
+  *          
   */
 object SZSETriPartyRepoETL {
   def main(args: Array[String]): Unit = {
