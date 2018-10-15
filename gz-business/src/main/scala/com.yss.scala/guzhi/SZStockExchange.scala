@@ -3,7 +3,7 @@ package com.yss.scala.guzhi
 import java.text.SimpleDateFormat
 
 import com.yss.scala.dto._
-import com.yss.scala.guzhi.ExecutionContants._
+import com.yss.scala.guzhi.SZSEContants._
 import com.yss.scala.guzhi.ShghContants.{SEPARATE2, TABLE_NAME_JJXX}
 import com.yss.scala.util.Util
 import org.apache.spark.{SparkConf, SparkContext}
@@ -31,22 +31,22 @@ object SZStockExchange extends Serializable {
   def getResult() = {
     val spark = SparkSession.builder().appName("SJSV5").master("local[*]").getOrCreate() //.master("locl[*]")
 
- /*   val df = spark.read.format("jdbc").option("url", "jdbc:mysql://192.168.102.120:3306/JJCWGZ")
-      .option("user", "root")
-      .option("password", "root1234")
-      .option("dbtable", "sjsv5_etl_cy")
-      .load()*/
+    /*   val df = spark.read.format("jdbc").option("url", "jdbc:mysql://192.168.102.120:3306/JJCWGZ")
+         .option("user", "root")
+         .option("password", "root1234")
+         .option("dbtable", "sjsv5_etl_cy")
+         .load()*/
     import spark.implicits._
     val csb = loadLvarlist(spark.sparkContext)
-    val df=getFywbzAndFzqbz(spark, csb)
-     doExec(df.toDF, csb)
+    val df = getFywbzAndFzqbz(spark, csb)
+    doExec(df.toDF, csb)
   }
 
   /**
     * 进行ETF
     */
 
-  def getFywbzAndFzqbz(spark: SparkSession, csb: Broadcast[collection.Map[String, String]])={
+  def getFywbzAndFzqbz(spark: SparkSession, csb: Broadcast[collection.Map[String, String]]) = {
     val sc = spark.sparkContext
     val path = "C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv"
     val dateSplit = path.split("/")
@@ -56,10 +56,10 @@ object SZStockExchange extends Serializable {
     val parseDate1 = sdf1.parse(fileDate) //解析成date
     val dateTime1 = parseDate1.getTime
 
-      //   val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_F000995F0401_1_20180808(2).tsv")
-      //val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_1_20180124(1).tsv") //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
-       val exe = sc.textFile("hdfs://192.168.102.120/yss/guzhi/execution_aggr_tgwid_1_20180124.tsv")
-      // val exe = sc.textFile("C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv")
+    //   val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_F000995F0401_1_20180808(2).tsv")
+    //val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_1_20180124(1).tsv") //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
+    val exe = sc.textFile("hdfs://192.168.102.120/yss/guzhi/execution_aggr_tgwid_1_20180124.tsv")
+    // val exe = sc.textFile("C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv")
 
     /**
       *  1.读取原始数据表
@@ -69,7 +69,7 @@ object SZStockExchange extends Serializable {
       x =>
         val par = x.split("\t")
         val FZQDM = par(5) // 证券代码 5
-         val key = FZQDM
+      val key = FZQDM
         (key, x)
     }.groupByKey()
     //oriTable.show()
@@ -196,8 +196,7 @@ object SZStockExchange extends Serializable {
     val result = exeDF.flatMap {
       case (key1, iterable) => {
 
-        var execution = new ListBuffer[ExeOriginalObj]()
-
+        var execution = new ListBuffer[SZSEOriginalObj]()
 
         for (func <- iterable) {
           //定义一个map
@@ -217,7 +216,7 @@ object SZStockExchange extends Serializable {
           val Side = text(20) //买卖方向
           val sqbh = text(12) //申请编号
           val AccountID = text(21)
-          if (appId == "052" ||appId == "053"||appId == "060"||appId == "061" ||appId == "020"||appId == "029" ) {
+          if (appId == "052" || appId == "053" || appId == "060" || appId == "061" || appId == "020" || appId == "029") {
             if (key.substring(0, 2) == "00" || key.substring(0, 2) == "30") {
               //判断fzqbz
               if (key.substring(0, 4) == "0010" || key.substring(0, 5) == "00119") {
@@ -253,14 +252,11 @@ object SZStockExchange extends Serializable {
               } else {
                 fywbz("fywbz") = "PT"
               }
-
             } else if (key.substring(0, 3) == "140") {
               fzqbz("fzqbz") = "GP"
               fywbz("fywbz") = "DZYXPT"
 
             } else if (key.substring(0, 2) == "10") {
-
-
               if (key.substring(0, 3) == "104" || key.substring(0, 3) == "106" || key.substring(0, 3) == "105" ||
                 key.substring(0, 3) == "107" || key.substring(0, 3) == "109") {
 
@@ -279,8 +275,6 @@ object SZStockExchange extends Serializable {
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "GZXQ"
               }
-
-
             } else if (key.substring(0, 2) == "11" || key.substring(0, 3) == "133" || key.substring(0, 3) == "134" || key.substring(0, 3) == "138"
               || key.substring(0, 3) == "148" || key.substring(0, 3) == "149") {
 
@@ -311,7 +305,6 @@ object SZStockExchange extends Serializable {
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "KZZ"
               }
-
             } else if (key.substring(0, 2) == "12") {
               fzqbz("fzqbz") = "ZQ"
               fywbz("fywbz") = "KZZ"
@@ -327,7 +320,6 @@ object SZStockExchange extends Serializable {
                   fywbz("fywbz") = "MCHG"
                 }
               }
-
             } else if (key.substring(0, 2) == "16") {
               fzqbz("fzqbz") = "JJ"
               fywbz("fywbz") = "LOF"
@@ -354,7 +346,6 @@ object SZStockExchange extends Serializable {
                 if (key.substring(0, 3) == "159" && jjDate != "0" && dateTime1.toString >= jjDate.toString) {
                   fzqbz("fzqbz") = "JJ"
                   fywbz("fywbz") = "HBETF"
-
                 }
               }
               if (key.substring(0, 4) == "1599") {
@@ -363,20 +354,14 @@ object SZStockExchange extends Serializable {
               } else {
                 fzqbz("fzqbz") = "JJ"
                 fywbz("fywbz") = "LOF"
-
               }
-
             }
-
             val setCodeValue = setCodeValues.value.getOrElse(AccountID, "-1")
             if (setCodeValue != "-1") {
-
               setCode("setCode") = setCodeValue
             }
             //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
-
-
-            val Exe = ExeOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), setCode("setCode"))
+            val Exe = SZSEOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), setCode("setCode"))
             execution.append(Exe)
           }
         }
@@ -387,7 +372,7 @@ object SZStockExchange extends Serializable {
   }
 
 
-    /** 加载公共参数表lvarlist
+  /** 加载公共参数表lvarlist
     * 返回值: 广播变量 key 参数  value : 0 1 是否开启
     *
     * */
@@ -460,12 +445,12 @@ object SZStockExchange extends Serializable {
         //利率类别
         val lv = fields(3) //利率
         val zk = fields(5) //折扣
-        val HGdate=fields(6)
+        val HGdate = fields(6)
         val zch = fields(10) //资产号
         val startDate = fields(13)
         //启用日期
         val key = zqlb + SEPARATE1 + sh + SEPARATE1 + zch + SEPARATE1 + lvlb //证券类别+市场+资产号+利率类别
-        val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk +SEPARATE1+HGdate//启用日期+利率+折扣+回购天数
+        val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk + SEPARATE1 + HGdate //启用日期+利率+折扣+回购天数
         (key, value)
       })
         .groupByKey()
@@ -651,10 +636,11 @@ object SZStockExchange extends Serializable {
         zqbz = "ZQETFJY"
       }
 
-      if(zqbz.startsWith("HG")){
-        zqbz = "HG"+zqdm
-        ywbz = "HG"+zqdm
+      if (zqbz.startsWith("HG")) {
+        zqbz = "HG" + zqdm
+        ywbz = "HG" + zqdm
       }
+
       /** 获取费率
         * 将费率类别带进来，根据 证券标志和业务标志  套账号是0还是117来得到费率
         *
@@ -674,8 +660,8 @@ object SZStockExchange extends Serializable {
         if (maybeRateStr.isDefined) rateStr = maybeRateStr.get
         val rate = rateStr.split(SEPARATE1)(1) //利率
         val rateZk = rateStr.split(SEPARATE1)(2) //折扣
-        val HGdate=rateStr.split(SEPARATE1)(3)
-        (rate, rateZk,HGdate)
+        val HGdate = rateStr.split(SEPARATE1)(3)
+        (rate, rateZk, HGdate)
       }
 
       /**
@@ -713,11 +699,11 @@ object SZStockExchange extends Serializable {
 
       var rateFXJ = getCommonFee(FXJ)
 
-      var rateSXF=getCommonFee(SXF)
+      var rateSXF = getCommonFee(SXF)
 
       val yjFee = getYjFee()
 
-      (rateJS._1, rateJS._2, rateYH._1, rateYH._2, rateZG._1, rateZG._2, rateGH._1, rateGH._2, rateFXJ._1, rateFXJ._2,rateSXF._1,rateSXF._2, rateSXF._3,yjFee._1, yjFee._2, yjFee._3)
+      (rateJS._1, rateJS._2, rateYH._1, rateYH._2, rateZG._1, rateZG._2, rateGH._1, rateGH._2, rateFXJ._1, rateFXJ._2, rateSXF._1, rateSXF._2, rateSXF._3, yjFee._1, yjFee._2, yjFee._3)
     }
 
     /**
@@ -769,13 +755,13 @@ object SZStockExchange extends Serializable {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-        val gsdm = fields(2) //交易席位
-        val bcrq = fields(0) //本次日期
-        val zqdm = fields(1) //证券代码
-        val gddm = fields(4) //股东代码
-        val tzh = fields(5) //套账号
-        val zqbz = fields(6) //证券标志
-        val ywbz = fields(7) //业务标志
+      val gsdm = fields(2) //交易席位
+      val bcrq = fields(0) //本次日期
+      val zqdm = fields(1) //证券代码
+      val gddm = fields(4) //股东代码
+      val tzh = fields(5) //套账号
+      val zqbz = fields(6) //证券标志
+      val ywbz = fields(7) //业务标志
 
         val getRateResult = getRate(zqdm, gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
         val rateJS: String = getRateResult._1
@@ -797,15 +783,15 @@ object SZStockExchange extends Serializable {
 
         val otherFee = BigDecimal(0)
         var sumCjje = BigDecimal(0) //总金额
-        var sumCjsl = BigDecimal(0) //总数量
-        var sumYj = BigDecimal(0) //总的佣金
-        var sumJsf = BigDecimal(0) //总的经手费
-        var sumYhs = BigDecimal(0) //总的印花税
-        var sumZgf = BigDecimal(0) //总的征管费
-        var sumGhf = BigDecimal(0) //总的过户费
-        var sumFxj = BigDecimal(0) //总的风险金
-        var sumSXF=BigDecimal(0) //手续费
-        var sumSQGHF=BigDecimal(0)
+      var sumCjsl = BigDecimal(0) //总数量
+      var sumYj = BigDecimal(0) //总的佣金
+      var sumJsf = BigDecimal(0) //总的经手费
+      var sumYhs = BigDecimal(0) //总的印花税
+      var sumZgf = BigDecimal(0) //总的征管费
+      var sumGhf = BigDecimal(0) //总的过户费
+      var sumFxj = BigDecimal(0) //总的风险金
+      var sumSXF = BigDecimal(0) //手续费
+      var sumSQGHF = BigDecimal(0)
 
 
         var yhs = BigDecimal(0)
@@ -814,13 +800,13 @@ object SZStockExchange extends Serializable {
         var ghf = BigDecimal(0)
         var fx = BigDecimal(0)
         var Yj = BigDecimal(0)
-        var sxf=BigDecimal(0)
-        var sqghf=BigDecimal(0)
+        var sxf = BigDecimal(0)
+        var sqghf = BigDecimal(0)
 
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
         var cs2 = csResults._2 //深圳佣金计算费用保留位数
-         val cs3 = csResults._3
+      val cs3 = csResults._3
         val cs4 = csResults._4
         val cs5 = csResults._5
         val cs6 = csResults._6 //深交所证管费和经手费分别计算
@@ -833,7 +819,7 @@ object SZStockExchange extends Serializable {
 
 
           //计算回购收益
-          sxf=((cjje1.*(BigDecimal(HGDate)))./(365)).setScale(2, RoundingMode.HALF_UP).*(cjsl).setScale(2, RoundingMode.HALF_UP)
+          sxf = ((cjje1.*(BigDecimal(HGDate)))./(365)).setScale(2, RoundingMode.HALF_UP).*(cjsl).setScale(2, RoundingMode.HALF_UP)
 
           if (cs3.equals("-1") || cs3.equals("0")) {
             // 买不计算印花税
@@ -842,7 +828,7 @@ object SZStockExchange extends Serializable {
               yhs = cjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(0, RoundingMode.HALF_UP)
             }
             //征管费的计算
-             zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(0, RoundingMode.HALF_UP)
+            zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(0, RoundingMode.HALF_UP)
 
             //经手费的计算
             if (cs6.equals("-1") || cs6.equals("0")) { // 不启用 经手费 =成交金额*(经手费率*折扣率+征管费*折扣率)
@@ -852,10 +838,10 @@ object SZStockExchange extends Serializable {
             }
 
             //风险金的计算
-             fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(0, RoundingMode.HALF_UP)
+            fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(0, RoundingMode.HALF_UP)
 
             //过户费的计算
-              ghf = cjje.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(0, RoundingMode.HALF_UP)
+            ghf = cjje.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(0, RoundingMode.HALF_UP)
           } else {
             // 买不计算印花税
             if (SALE.equals(bs)) {
@@ -863,7 +849,7 @@ object SZStockExchange extends Serializable {
               yhs = cjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(cs3.toInt, RoundingMode.HALF_UP)
             }
             //征管费的计算
-               zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(cs3.toInt, RoundingMode.HALF_UP)
+            zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(cs3.toInt, RoundingMode.HALF_UP)
 
             //经手费的计算
             if (cs6.equals("-1") || cs6.equals("0")) { // 不启用 经手费 =成交金额*(经手费率*折扣率+征管费*折扣率)
@@ -873,10 +859,10 @@ object SZStockExchange extends Serializable {
             }
 
             //风险金的计算
-             fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(cs3.toInt, RoundingMode.HALF_UP)
+            fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(cs3.toInt, RoundingMode.HALF_UP)
 
             //过户费的计算
-             ghf = cjje.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(cs3.toInt, RoundingMode.HALF_UP)
+            ghf = cjje.*(BigDecimal(rateGH)).*(BigDecimal(rateGhzk)).setScale(cs3.toInt, RoundingMode.HALF_UP)
           }
 
           //计算券商过户费
@@ -888,7 +874,6 @@ object SZStockExchange extends Serializable {
           } else {
             Yj = cjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(cs2.toInt, RoundingMode.HALF_UP)
           }
-
 
 
           //当为GP时，佣金-券商过户费-过户费
@@ -946,15 +931,15 @@ object SZStockExchange extends Serializable {
           sumZgf = sumZgf.+(zgf)
           sumGhf = sumGhf.+(ghf)
           sumFxj = sumFxj.+(fx)
-          sumSXF=sumSXF.+(sxf)
+          sumSXF = sumSXF.+(sxf)
           sumYj = sumYj.+(Yj)
-          sumSQGHF=sumSQGHF.+(sqghf)
+          sumSQGHF = sumSQGHF.+(sqghf)
         }
 
         // sumYj = sumCjje.*(BigDecimal(rateYJ)).*(BigDecimal(rateYjzk)).setScale(2, RoundingMode.HALF_UP)
 
         (key, SJSObj("1", sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
-          sumGhf, sumFxj,sumSXF,sumSQGHF))
+          sumGhf, sumFxj, sumSXF, sumSQGHF))
     }
 
 
@@ -1054,8 +1039,8 @@ object SZStockExchange extends Serializable {
           realFxj = fee1.sumFxj
         }
 
-        realSxf=fee1.sumSXF
-        realQsghf=fee1.sumQSGHF
+        realSxf = fee1.sumSXF
+        realQsghf = fee1.sumQSGHF
 
         var fsfje = totalCjje.+(realJsf).+(realZgf).+(realGhf)
         //        var FSssje = FSje.-(FSjsf).-(FSzgf).-(FSghf).-(FSyhs)
