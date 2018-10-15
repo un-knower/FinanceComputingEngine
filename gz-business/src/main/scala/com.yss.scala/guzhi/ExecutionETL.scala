@@ -344,7 +344,7 @@ object ExecutionETL extends java.io.Serializable {
               if (key.substring(0, 4) == "1599") {
                 fzqbz("fzqbz") = "JJ"
                 fywbz("fywbz") = "ETF"
-              } else {2
+              } else {
                 fzqbz("fzqbz") = "JJ"
                 fywbz("fywbz") = "LOF"
 
