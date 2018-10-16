@@ -10,14 +10,31 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import com.yss.scala.dbf.dbf._
+
 /**
   * @auther: lijiayan
   * @date: 2018/9/13
   * @desc: 上海固定收益三方回购ETL
   *        源文件:jsmx和wdq
   *        目标文件:csv
+  *
+  *
+  *        spark-submit --class com.yss.scala.guzhi.ShFICCTriPartyRepoETL \
+  *        --master local[*] \
+  *        --driver-class-path /usr/hdp/2.6.5.0-292/sqoop/lib/mysql-connector-java.jar \
+  *        --driver-memory 2g --num-executors 2 --executor-memory 2g --executor-cores 2 \
+  *        /data/temp/ljy/guzhi.jar \
+  *        hdfs://192.168.102.120:8020/yss/guzhi/interface/20181015/shsfhg-gdsy/2018-08-02/jsmx03_jsjc1.*.csv \
+  *        hdfs://192.168.102.120:8020/yss/guzhi/interface/20181015/shsfhg-gdsy/2018-08-02/wdqjsjc1.*.csv
+  *
+  *
+  *        spark-submit --class com.yss.scala.guzhi.ShFICCTriPartyRepo \
+  *        --master local[*] \
+  *        --driver-class-path /usr/hdp/2.6.5.0-292/sqoop/lib/mysql-connector-java.jar \
+  *        --driver-memory 2g --num-executors 2 --executor-memory 2g --executor-cores 2 \
+  *        /data/temp/ljy/guzhi.jar
   */
-object SHFICCTriPartyRepoETL {
+object ShFICCTriPartyRepoETL {
 
   //源数据文件所在的hdfs路径
   private val DATA_FILE_PATH = "hdfs://192.168.102.120:8020/yss/guzhi/interface/"
@@ -32,22 +49,30 @@ object SHFICCTriPartyRepoETL {
 
 
   def main(args: Array[String]): Unit = {
+
+
+
     val spark = SparkSession.builder()
-      .appName(SHFICCTriPartyRepoETL.getClass.getSimpleName)
+      .appName(ShFICCTriPartyRepoETL.getClass.getSimpleName)
       .master("local[*]")
       //.config("user", "hadoop")
       .getOrCreate()
 
     val day = DateUtils.formatDate(System.currentTimeMillis())
-    val jsmxpath = DATA_FILE_PATH + day + File.separator + JSMXFILENAME_PRE + "*"
-    val wdqpath = DATA_FILE_PATH + day + File.separator + WDQFILENAME_PRE + "*"
+    var jsmxpath = DATA_FILE_PATH + day + File.separator + "shsfhg-gdsy/2018-08-02/" + JSMXFILENAME_PRE + "*"
+    var wdqpath = DATA_FILE_PATH + day + File.separator + "shsfhg-gdsy/2018-08-02/" + WDQFILENAME_PRE + "*"
+
+    if (args != null && args.length == 2) {
+      jsmxpath = args(0)
+      wdqpath = args(1)
+    }
+
     val jsmxRDD: RDD[Row] = readJsmxFileAndFilted(spark, jsmxpath)
 
     val jsmx013FiltedRDD = jsmxRDD.filter(row => {
       val YWLX = getRowFieldAsString(row, "YWLX")
       "680".equals(YWLX) || "681".equals(YWLX) || "683".equals(YWLX)
     })
-
 
 
     val jsmx013SFHGETL: RDD[SHFICCTriPartyRepoETLDto] = jsmx013Entity(jsmx013FiltedRDD)
@@ -63,10 +88,10 @@ object SHFICCTriPartyRepoETL {
     val path = ETL_HDFS_PATH + day
 
 
-//    val fs = FileSystem.get(new URI(ETL_HDFS_NAMENODE), spark.sparkContext.hadoopConfiguration)
-//    if (fs.exists(new Path(path))) {
-//      fs.delete(new Path(path), true)
-//    }
+    //    val fs = FileSystem.get(new URI(ETL_HDFS_NAMENODE), spark.sparkContext.hadoopConfiguration)
+    //    if (fs.exists(new Path(path))) {
+    //      fs.delete(new Path(path), true)
+    //    }
 
     //res.collect().foreach(println(_))
     //saveAsCSV(spark, res, path)
@@ -435,8 +460,8 @@ object SHFICCTriPartyRepoETL {
     * @return
     */
   private def readJsmxFileAndFilted(spark: SparkSession, jsmxFilePath: String): RDD[Row] = {
-    //TODO val jsmxRDD: RDD[Row] = Util.readCSV(jsmxFilePath, spark).rdd
-    val jsmxRDD: RDD[Row] = spark.sqlContext.dbfFile("/Users/lijiayan/Desktop/dbf/jsmx/jsmx03_jsjc1.802.dbf").rdd
+    val jsmxRDD: RDD[Row] = Util.readCSV(jsmxFilePath, spark).rdd
+    //val jsmxRDD: RDD[Row] = spark.sqlContext.dbfFile("/Users/lijiayan/Desktop/dbf/jsmx/jsmx03_jsjc1.802.1.dbf").rdd
     jsmxRDD.filter(row => {
       val JLLX = getRowFieldAsString(row, "JLLX")
       val JYFS = getRowFieldAsString(row, "JYFS")
@@ -450,14 +475,22 @@ object SHFICCTriPartyRepoETL {
 
 
   private def readWdqFileAndFilted(spark: SparkSession, wdqFilePath: String): RDD[Row] = {
-    //TODO val wdqRDD: RDD[Row] = Util.readCSV(wdqFilePath, spark).rdd
-    val wdqRDD: RDD[Row]  = spark.sqlContext.dbfFile("/Users/lijiayan/Desktop/dbf/wdq/wdqjsjc1.730.dbf").rdd
-    //过滤数据,wdq（未到期）文件中：scdm=‘01’and wdqlb=‘008’的所有数据
-    wdqRDD.filter(row => {
-      val SCDM = getRowFieldAsString(row, "SCDM")
-      val WDQLB = getRowFieldAsString(row, "WDQLB")
-      "01".equals(SCDM) && "008".equals(WDQLB)
-    })
+    try {
+      val wdqRDD: RDD[Row] = Util.readCSV(wdqFilePath, spark).rdd
+      //val wdqRDD: RDD[Row]  = spark.sqlContext.dbfFile("/Users/lijiayan/Desktop/dbf/test").rdd
+      //过滤数据,wdq（未到期）文件中：scdm=‘01’and wdqlb=‘008’的所有数据
+      wdqRDD.filter(row => {
+        val SCDM = getRowFieldAsString(row, "SCDM")
+        val WDQLB = getRowFieldAsString(row, "WDQLB")
+        "01".equals(SCDM) && "008".equals(WDQLB)
+      })
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        spark.sparkContext.parallelize(Seq())
+
+    }
+
   }
 
 
