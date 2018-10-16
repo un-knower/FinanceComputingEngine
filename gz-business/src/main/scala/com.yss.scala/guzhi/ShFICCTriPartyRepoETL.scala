@@ -1,15 +1,12 @@
 package com.yss.scala.guzhi
 
 import java.io.File
-import java.net.URI
 import java.util.Properties
 
 import com.yss.scala.dto.SHFICCTriPartyRepoETLDto
 import com.yss.scala.util.{DateUtils, Util}
-import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
-import com.yss.scala.dbf.dbf._
 
 /**
   * @auther: lijiayan
@@ -17,22 +14,6 @@ import com.yss.scala.dbf.dbf._
   * @desc: 上海固定收益三方回购ETL
   *        源文件:jsmx和wdq
   *        目标文件:csv
-  *
-  *
-  *        spark-submit --class com.yss.scala.guzhi.ShFICCTriPartyRepoETL \
-  *        --master local[*] \
-  *        --driver-class-path /usr/hdp/2.6.5.0-292/sqoop/lib/mysql-connector-java.jar \
-  *        --driver-memory 2g --num-executors 2 --executor-memory 2g --executor-cores 2 \
-  *        /data/temp/ljy/guzhi.jar \
-  *        hdfs://192.168.102.120:8020/yss/guzhi/interface/20181015/shsfhg-gdsy/2018-08-02/jsmx03_jsjc1.*.csv \
-  *        hdfs://192.168.102.120:8020/yss/guzhi/interface/20181015/shsfhg-gdsy/2018-08-02/wdqjsjc1.*.csv
-  *
-  *
-  *        spark-submit --class com.yss.scala.guzhi.ShFICCTriPartyRepo \
-  *        --master local[*] \
-  *        --driver-class-path /usr/hdp/2.6.5.0-292/sqoop/lib/mysql-connector-java.jar \
-  *        --driver-memory 2g --num-executors 2 --executor-memory 2g --executor-cores 2 \
-  *        /data/temp/ljy/guzhi.jar
   */
 object ShFICCTriPartyRepoETL {
 
@@ -51,10 +32,9 @@ object ShFICCTriPartyRepoETL {
   def main(args: Array[String]): Unit = {
 
 
-
     val spark = SparkSession.builder()
       .appName(ShFICCTriPartyRepoETL.getClass.getSimpleName)
-      .master("local[*]")
+      //.master("local[*]")
       //.config("user", "hadoop")
       .getOrCreate()
 
@@ -97,6 +77,8 @@ object ShFICCTriPartyRepoETL {
     //saveAsCSV(spark, res, path)
     saveMySQL(spark, res, path)
 
+    //import spark.implicits._
+    //ShFICCTriPartyRepo.exec(spark,res.toDF())
     spark.stop()
   }
 
@@ -221,6 +203,7 @@ object ShFICCTriPartyRepoETL {
     val properties = new Properties()
     properties.put("user", "root")
     properties.put("password", "root1234")
+    properties.put("driver","com.mysql.jdbc.Driver")
     resDF.toDF().write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "JSMX03_WDQ_ETL", properties)
 
   }
