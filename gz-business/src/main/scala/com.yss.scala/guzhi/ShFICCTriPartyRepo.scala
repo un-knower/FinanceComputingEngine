@@ -6,7 +6,7 @@ import java.util.Properties
 import com.yss.scala.dto.SHFICCTriPartyRepoDto
 import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 /**
   * @auther: lijiayan
@@ -46,13 +46,21 @@ object ShFICCTriPartyRepo {
   def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder().appName(getClass.getSimpleName)
-      .master("local[*]")
+      //.master("local[*]")
       .getOrCreate()
 
     //readETLDataFromJDBC(spark)
     // 读取etl后的csv文件并转化成RDD
     val path = ETL_DATA_PATH + DateUtils.formatDate(System.currentTimeMillis())
-    val sfhgDataRDD = /*Util.readCSV(path, spark)*/ readETLDataFromJDBC(spark).rdd.map(row => {
+    val dataDF: DataFrame = readETLDataFromJDBC(spark)
+    exec(spark, dataDF)
+    spark.stop()
+
+  }
+
+
+  def exec(spark: SparkSession, dataDF: DataFrame): Unit = {
+    val sfhgDataRDD = /*Util.readCSV(path, spark)*/ dataDF.rdd.map(row => {
       val xwh = getRowFieldAsString(row, "XWH1")
       (xwh, row)
     })
@@ -105,17 +113,15 @@ object ShFICCTriPartyRepo {
     //
     resSFHGRDD.toDF().show()
 
-    saveToMySQL(spark,resSFHGRDD)
-    spark.stop()
-
+    saveToMySQL(spark, resSFHGRDD)
   }
 
-
-  def saveToMySQL(spark: SparkSession,resSFHGRDD:RDD[SHFICCTriPartyRepoDto]): Unit ={
+  def saveToMySQL(spark: SparkSession, resSFHGRDD:RDD[SHFICCTriPartyRepoDto]): Unit ={
     import spark.implicits._
     val properties = new Properties()
     properties.put("user", "root")
     properties.put("password", "root1234")
+    properties.put("driver","com.mysql.jdbc.Driver")
     val url = "jdbc:mysql://192.168.102.120:3306/JJCWGZ"
     resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(url,"SHFICCTriPartyRepo",properties)
   }
