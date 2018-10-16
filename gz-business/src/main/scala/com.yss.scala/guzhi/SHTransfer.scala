@@ -25,7 +25,7 @@ object SHTransfer {
   def doExec(fileName:String,tableName:String) = {
     val spark = SparkSession.builder()
       .appName("SHTransfer")
-      .master("local[*]")
+//      .master("local[*]")
       .getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     val df = doETL(spark, broadcastLvarList,fileName)
@@ -327,14 +327,9 @@ object SHTransfer {
   def doETL(spark: SparkSession, csb: Broadcast[collection.Map[String, String]],fileName:String) = {
     val sc = spark.sparkContext
 
-//    import com.yss.scala.dbf.dbf._
-    val sourcePath = Util.getDailyInputFilePath(fileName,PREFIX)
+    val sourcePath = Util.getInputFilePath(fileName,PREFIX)
     val df = Util.readCSV(sourcePath,spark)
-
-//    val sourcePath ="C:\\Users\\wuson\\Desktop\\GuZhi\\test\\20180126\\gh.dbf"
-//    val df = spark.sqlContext.dbfFile(sourcePath)
     val today = DateUtils.getToday(DateUtils.yyyy_MM_dd)
-    // (larlistValue, csjjxxValue,csqyxxValue, csqsxwValue, csTsKmValue, lsetcssysjjValue, csqzxxValue, csgdzhValue)
     val broadcaseValues = loadTables(spark, today)
     val csbValues = csb
     val csjjxxValues = broadcaseValues._1
@@ -346,6 +341,55 @@ object SHTransfer {
     val csgdzhValues = broadcaseValues._7
     val gzlxValues = broadcaseValues._8
     val csholiday = broadcaseValues._9
+
+    /**
+      * 进行日期的格式化，基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd
+      * 这里将原始数据转换成yyyy-MM-dd的格式
+      * @param bcrq
+      * @return yyyy-MM-dd
+      */
+    def convertDate(bcrq:String) = {
+      val yyyy = bcrq.substring(0,4)
+      val mm = bcrq.substring(4,6)
+      val dd = bcrq.substring(6)
+      yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
+    }
+
+    /**
+      * 判断基金信息表维护 FZQDMETF0、1 、2、3、4、5=该zqdm
+      * select 1 from csjjxx a,(select FZQDM, FZQLX,max(fstartdate) as fstartdate from csjjxx where fsh=1 and fstartdate<=日期 group by fzqdm,fzqlx) b where a.fsh=1 and a.fzqdm=b.fzqdm and a.fzqlx=b.fzqlx and a.fstartdate=b.fstartdate and a.FSZSH='H' and a.FZQLX='ETF' where a.FZQDMETF0=该zqdm
+      *
+      * @param fzqlx 基金类型ETF / HP
+      * @param zqdm  证券代码
+      * @param bcrq  日期
+      * @param flag  FZQDMETF0、1 、2、3、4、5
+      * @return 是否维护
+      */
+    def jjxxbwh(fzqlx: String, zqdm: String, bcrq: String, flag: Int): Boolean = {
+      val map = csjjxxValues.value(flag)
+      val maybeString = map.get(fzqlx + SEPARATE1 + zqdm)
+      if (maybeString.isDefined) {
+        if (bcrq.compareTo(maybeString.get) >= 0) return true
+      }
+      return false
+    }
+
+    //ETF基金需要获取文件的中sqbh,在计算业务标识时候需要用到
+    val sqbhs = df.rdd.filter(row => {
+      var bcrq = row.getAs[String](2)
+      bcrq = convertDate(bcrq)
+      var zqdm = row.getAs[String](7)
+      val cjjg = row.getAs[String](10)
+      if (zqdm.startsWith("5")) {
+        if (cjjg.equals("0")) {
+          if (jjxxbwh("ETF", zqdm, bcrq, 0))  true
+          else false
+        }else false
+      }else false
+    }).map(row => {
+      row.getAs[String](12)
+    })collect()
+    val sqbhValues =  sc.broadcast(sqbhs)
 
     /**
       * 计算国债利息
@@ -366,25 +410,6 @@ object SHTransfer {
         }
       }
       gzlx
-    }
-
-    /**
-      * 判断基金信息表维护 FZQDMETF0、1 、2、3、4、5=该zqdm
-      * select 1 from csjjxx a,(select FZQDM, FZQLX,max(fstartdate) as fstartdate from csjjxx where fsh=1 and fstartdate<=日期 group by fzqdm,fzqlx) b where a.fsh=1 and a.fzqdm=b.fzqdm and a.fzqlx=b.fzqlx and a.fstartdate=b.fstartdate and a.FSZSH='H' and a.FZQLX='ETF' where a.FZQDMETF0=该zqdm
-      *
-      * @param fzqlx 基金类型ETF / HP
-      * @param zqdm  证券代码
-      * @param bcrq  日期
-      * @param flag  FZQDMETF0、1 、2、3、4、5
-      * @return 是否维护
-      */
-    def jjxxbwh(fzqlx: String, zqdm: String, bcrq: String, flag: Int): Boolean = {
-      val map = csjjxxValues.value(flag)
-      val maybeString = map.get(fzqlx + SEPARATE1 + zqdm)
-      if (maybeString.isDefined) {
-        if (bcrq.compareTo(maybeString.get) >= 0) return true
-      }
-      return false
     }
 
     /**
@@ -504,7 +529,7 @@ object SHTransfer {
       * @param bs   买卖
       * @return
       */
-    def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String): String = {
+    def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String,sqbh:String): String = {
       if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
         val condition = csbValues.value.get(tzh + CON02_KEY)
         if (condition.isDefined && YES.equals(condition.get)) {
@@ -561,7 +586,7 @@ object SHTransfer {
           if ("B".equals(bs)) return "ETFSG"
           else return "ETFSH"
         }
-        if (jjxxbwh("ETF", zqdm, bcrq, 2) || jjxxbwh("ETF", zqdm, bcrq, 5)) {
+        if (sqbhValues.value.contains(sqbh) && (jjxxbwh("ETF", zqdm, bcrq, 2) || jjxxbwh("ETF", zqdm, bcrq, 5))) {
           if ("B".equals(bs)) return "ETFSG"
           else return "ETFSH"
         }
@@ -801,19 +826,6 @@ object SHTransfer {
       else bcrq
     }
 
-    /**
-      * 进行日期的格式化，基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd
-      * 这里将原始数据转换成yyyy-MM-dd的格式
-      * @param bcrq
-      * @return yyyy-MM-dd
-      */
-    def convertDate(bcrq:String) = {
-      val yyyy = bcrq.substring(0,4)
-      val mm = bcrq.substring(4,6)
-      val dd = bcrq.substring(6)
-      yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
-    }
-
     // 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
     val etlRdd = df.rdd.map(row => {
       val gddm = row.getAs[String](0)
@@ -834,7 +846,7 @@ object SHTransfer {
       val mjbh = row.getAs[String](14)
       val zqbz = getZqbz(zqdm, cjjg, bcrq)
       val tzh = getTzh(gddm)
-      val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq)
+      val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq,sqbh)
       val gzlv = gzlx(zqbz, zqdm, bcrq, cjsl)
       val findate = getFindate(bcrq, tzh)
       zqdm = getZqdm(zqdm, cjjg)
