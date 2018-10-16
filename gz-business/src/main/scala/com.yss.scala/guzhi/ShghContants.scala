@@ -88,7 +88,7 @@ object ShghContants {
   val QSGHF = "QSGHF"
   /** 券商过户费的ffyfs标识 0 */
   val FFYFS = "0"
-  /** HDFS上的文件路径的前缀 /yss/guzhi/interface/ */
+  /** HDFS上源数据前缀 /yss/guzhi/interface/ */
   val PREFIX = "/yss/guzhi/interface/"
 
   /** 默认的将数字格式化成字符串格式 %.2f */
