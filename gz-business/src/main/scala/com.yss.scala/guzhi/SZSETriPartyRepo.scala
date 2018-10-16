@@ -29,6 +29,7 @@ object SZSETriPartyRepo {
     val sc = spark.sparkContext
 
     val properties = new Properties()
+    properties.put("driver","com.mysql.jdbc.Driver")
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
     val sjsmxDF: DataFrame = spark.read.jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsmxETL_wmz", properties)
