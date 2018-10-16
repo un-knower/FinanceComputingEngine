@@ -242,8 +242,8 @@ object SHGHTest {
       .map(row => {
         val fields = row.split(SEPARATE2)
         val zqdm = fields(0)
-        val fzqlb = fields(11)
-        (zqdm, fzqlb)
+        val fzqlx = fields(11)
+        (zqdm, fzqlx)
       }).collectAsMap()
     val cszqxxValue1 = sc.broadcast(cszqxxMap1)
 
@@ -532,18 +532,19 @@ object SHGHTest {
           val regex = "123[0-4][0-9]{2}".r
           if (regex.findFirstMatchIn(zqdm).isDefined) return "CJZQ"
           if (zqdm.startsWith("137")) return "KJHSMZQ"
-          if (zqbz.startsWith("130") || zqdm.startsWith("140") || zqdm.startsWith("147")) return "DFZQ"
+          if (zqdm.startsWith("130") || zqdm.startsWith("140") || zqdm.startsWith("147")) return "DFZQ"
           if (zqdm.startsWith("132") && "0".equals(cjjg)) return "KJHGSZQ"
           if ("0".equals(cjjg)) return "KZZGP"
           if (zqdm.startsWith("132")) return "KJHGSZQ"
-          var res = cszqxxValue2.value.get(zqdm + tzh)
+          var res = cszqxxValue2.value.get(zqdm + SEPARATE1 + tzh)
           if (res.isDefined && bcrq.compareTo(res.get) >= 0) {
             return "FLKZZ"
           } else {
-            res = cszqxxValue2.value.get(zqdm + "")
+            res = cszqxxValue2.value.get(zqdm + SEPARATE1 + " ")
             if (res.isDefined && bcrq.compareTo(res.get) >= 0) return "FLKZZ"
           }
           return "QYZQ"
+
         }
       }
       if ("HG".equals(zqbz)) {
