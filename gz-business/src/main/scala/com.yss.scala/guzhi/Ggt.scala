@@ -1,14 +1,19 @@
 package com.yss.scala.guzhi
 
 import java.io.File
+import java.net.URI
 import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util.{Date, Properties}
 
 import com.yss.scala.dto._
+import com.yss.scala.util.Util
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, LocatedFileStatus, Path, RemoteIterator}
 import org.apache.spark.SparkConf
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.storage.StorageLevel
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -30,41 +35,44 @@ object Ggt {
     //获取配置参数
     val (commonUrl, currentDate,jsmxPath) = loadInitParam(arr)
 
-    val listFiles = getDirFileNames(new File("C:\\Users\\yelin\\Desktop\\dbf\\shuju\\ght"))
+//    val listFiles = getDirFileNames(new File("C:\\Users\\yelin\\Desktop\\dbf\\shuju\\ght"))
+    val listFiles = getHadoopFilesName("/yss/guzhi/interface/20181014/ght")
 
     //过滤不需要的数据
-    val jsmxdbfDF = filterYWLX(spark, jsmxPath,listFiles).cache()
+    val jsmxdbfDF = filterYWLX(spark, jsmxPath,listFiles).persist(StorageLevel.MEMORY_ONLY)
     //获取业务日期
 //    var qsrq = jsmxdbfDF.head().getAs[String]("QSRQ")
     var qsrq = currentDate
     val qsrqformat = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(qsrq))
 
     //获取原始数据的GDDM数据
-    val gddmPairRDD = jsmxdbfDF.select("ZQZH").distinct().rdd.map(item => (item.getAs[String]("ZQZH").trim, 1)).cache()
+    val gddmPairRDD = jsmxdbfDF.select("ZQZH").distinct().rdd.map(item => (trim(item.getAs[String]("ZQZH")), 1)).persist(StorageLevel.MEMORY_ONLY)
 
     //获取原始数据的XWH数据
-    val xwhPairRDD = jsmxdbfDF.select("XWH1").distinct().rdd.map(item => (item.getAs[String]("XWH1").trim, 1)).cache()
+    val xwhPairRDD = jsmxdbfDF.select("XWH1").distinct().rdd.map(item => (trim(item.getAs[String]("XWH1")), 1)).persist(StorageLevel.MEMORY_ONLY)
+
+    jsmxdbfDF.select("QSRQ","ZQDM1").distinct().show(1000, false)
 
     //获取原始数据的zqdm1数据
-    val zqdm1PairRDD = jsmxdbfDF.select("ZQDM1").distinct().rdd.map(item => (item.getAs[String]("ZQDM1").trim, 1)).cache()
+    val zqdm1PairRDD = jsmxdbfDF.select("ZQDM1").distinct().rdd.map(item =>(trim(item.getAs("ZQDM1")), 1)).persist(StorageLevel.MEMORY_ONLY)
 
     //获取原始数据的(XWH,gddm)数据
-    val xwhGddmPairRDD = jsmxdbfDF.select("XWH1", "ZQZH").distinct().rdd.map(item => (item.getAs[String]("XWH1").trim, item.getAs[String]("ZQZH").trim)).cache()
+    val xwhGddmPairRDD = jsmxdbfDF.select("XWH1", "ZQZH").distinct().rdd.map(item => (trim(item.getAs[String]("XWH1")), trim(item.getAs[String]("ZQZH")))).persist(StorageLevel.MEMORY_ONLY)
 
     //gddm和套账号fsetcode的对应关系
-    val gddmFsetCodeRDD = buildGddmFsetCode(gddmPairRDD, spark, commonUrl, currentDate).cache()
+    val gddmFsetCodeRDD = buildGddmFsetCode(gddmPairRDD, spark, commonUrl, currentDate).persist(StorageLevel.MEMORY_ONLY)
 
     //xwh和fsetcode的关系
-    val xwhFsetcodeRDD = xwhGddmPairRDD.map(item => (item._2, item._1)).join(gddmFsetCodeRDD).map(item => (item._2._1, item._2._2)).cache()
+    val xwhFsetcodeRDD = xwhGddmPairRDD.map(item => (item._2, item._1)).join(gddmFsetCodeRDD).map(item => (item._2._1, item._2._2)).persist(StorageLevel.MEMORY_ONLY)
 
     //gddm为key相关参数信息
-    val gddmParamRDD = builGddmKeyParamRDD(gddmFsetCodeRDD, spark, commonUrl, currentDate).cache()
+    val gddmParamRDD = builGddmKeyParamRDD(gddmFsetCodeRDD, spark, commonUrl, currentDate).persist(StorageLevel.MEMORY_ONLY)
 
     //构建gddm为key的参数信息的map结构 [gddm, params], 并broadcast
     val broadcastGddmParamMap = spark.sparkContext.broadcast(gddmParamRDD.collectAsMap())
 
     //根据原始字段zqdm1计算证券代码
-    val zqdm1ValueRDD = buildZqdm1ValueRDD(zqdm1PairRDD, spark, commonUrl, currentDate, qsrq).cache()
+    val zqdm1ValueRDD = buildZqdm1ValueRDD(zqdm1PairRDD, spark, commonUrl, currentDate, qsrq).persist(StorageLevel.MEMORY_ONLY)
     val zqdm1ValueMap = buildZqdm1ValueMap(zqdm1ValueRDD)
     val broadcastZqdm1ValueMap = spark.sparkContext.broadcast(zqdm1ValueMap)
 
@@ -91,7 +99,7 @@ object Ggt {
     //抽取计算的数据
     import spark.implicits._
     val calculationDF = buildCalculationDF(jsmxdbfDF, spark, gddmParamRDD)
-    val basicsRDD = calculationDF.as[HkJsmxModel].rdd.cache()
+    val basicsRDD = calculationDF.as[HkJsmxModel].rdd.persist(StorageLevel.MEMORY_ONLY)
 
     //blnFyCjBhMx==0&&blnFySqBhMx==0
     val basics00RDD = basicsRDD.filter { item =>
@@ -142,15 +150,15 @@ object Ggt {
     val resultOutputDS = cjBhMxSqBhMx00RDD.union(cjBhMx1RDD).union(sqBhMx1RDD).union(cjBhMxSqBhMx11RDD)
 
     //测试输出
-    resultOutputDS.createOrReplaceTempView("bbbbbb_t")
-    spark.sql("select * from bbbbbb_t order by Fdate,FinDate,FZqdm,Fjyxwh,FZqbz,Fywbz,Zqdm").show(10000, false)
+//    resultOutputDS.createOrReplaceTempView("bbbbbb_t")
+//    spark.sql("select * from bbbbbb_t order by Fdate,FinDate,FZqdm,Fjyxwh,FZqbz,Fywbz,Zqdm").show(10000, false)
 
     //输出mysql
-//    val properties = new Properties()
-//    properties.setProperty("user", "root")
-//    properties.setProperty("password", "root1234")
-//    properties.setProperty("driver", "com.mysql.jdbc.Driver")
-//    resultOutputDS.write.jdbc("jdbc:mysql://192.168.102.120/JJCWGZ?useUnicode=true&characterEncoding=utf8", "tablename", properties)
+    val properties = new Properties()
+    properties.setProperty("user", "root")
+    properties.setProperty("password", "root1234")
+    properties.setProperty("driver", "com.mysql.jdbc.Driver")
+    resultOutputDS.write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.120/JJCWGZ?useUnicode=true&characterEncoding=utf8", "ggt_table", properties)
   }
 
   /**
@@ -589,7 +597,7 @@ object Ggt {
     //清算标志
     val FQsbz:String = "N"
     //证券代码
-    val ZQDM:String = item.getAs[String]("zqdm1").trim
+    val ZQDM:String = trim(item.getAs[String]("zqdm1"))
     //交易方式
     val FJYFS:String = "PT"
     //	审核状态
@@ -605,7 +613,7 @@ object Ggt {
     //券商过户费
     val FQsghf:String	= "0"
     //股东代码
-    val fgddm	= item.getAs[String]("zqzh").trim
+    val fgddm	= trim(item.getAs[String]("zqzh"))
     //交易标志
     val Fjybz	= ""
     //结算方式
@@ -684,11 +692,11 @@ object Ggt {
                xwhzslMap:scala.collection.Map[String,String],
                zqdm1zs2Map:scala.collection.Map[String,String]):String = {
     var Fywbz = ""
-    val ywlx:String = item.getAs[String]("ywlx").trim
-    val qsbz:String = item.getAs[String]("qsbz").trim
-    val ggdm = item.getAs[String]("zqzh").trim
-    val zqdm1 = item.getAs[String]("zqdm1").trim
-    val xwh = item.getAs[String]("xwh1").trim
+    val ywlx:String = trim(item.getAs[String]("ywlx"))
+    val qsbz:String = trim(item.getAs[String]("qsbz"))
+    val ggdm = trim(item.getAs[String]("zqzh"))
+    val zqdm1 = trim(item.getAs[String]("zqdm1"))
+    val xwh = trim(item.getAs[String]("xwh1"))
 
     val fjjxb = gddmfjjlxlbMap.getOrElse(ggdm, "-1_-1")
     val fjjlx = fjjxb.split("_")(0)
@@ -744,8 +752,8 @@ object Ggt {
     * @return
     */
   def getFZqbz(item:Row): String = {
-    val ywlx = item.getAs[String]("ywlx").trim
-    val qsbz = item.getAs[String]("qsbz").trim
+    val ywlx = trim(item.getAs[String]("ywlx"))
+    val qsbz = trim(item.getAs[String]("qsbz"))
     var FZqbz:String = ""
     if (ywlx.equals("H01")) {
       if (qsbz.equals("H01")) {
@@ -781,7 +789,7 @@ object Ggt {
     * @return
     */
   def getFzqdm(item:Row, zqdm1Map:scala.collection.Map[String,String]):String={
-    val zqdm1 = item.getAs[String]("zqdm1").trim
+    val zqdm1 = trim(item.getAs[String]("zqdm1"))
     zqdm1Map.getOrElse(zqdm1, "")
   }
 
@@ -791,7 +799,7 @@ object Ggt {
     * @return
     */
   def getFjyxwh(item:Row):String ={
-    var xwh1 = item.getAs[String]("xwh1").trim
+    var xwh1 = trim(item.getAs[String]("xwh1"))
     if(xwh1.length>=5) {
       xwh1 = xwh1.substring(0,5)
     }else {
@@ -1137,7 +1145,7 @@ object Ggt {
     * @return
     */
   def buildFbs(item:Row, ywlx:String):String = {
-    val mmbz = item.getAs[String]("mmbz").trim
+    val mmbz = trim(item.getAs[String]("mmbz"))
     var mm = "S"
     if(ywlx.equals("H01") || ywlx.equals("H02")) {
       if(mmbz.equals("B")) {
@@ -1158,8 +1166,8 @@ object Ggt {
     * @return
     */
   def buildFsl(item:Row, ywlx:String):BigDecimal = {
-    val cjsl:String = item.getAs[Double]("cjsl").doubleValue().toString.trim
-    val sl:String = item.getAs[Double]("sl").doubleValue().toString.trim
+    val cjsl:String = item.getAs[Double]("cjsl").doubleValue().toString
+    val sl:String = item.getAs[Double]("sl").doubleValue().toString
     var fsl = BigDecimal(0)
     if (ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")) {
       fsl = round(abs(cjsl),2)
@@ -1179,8 +1187,8 @@ object Ggt {
     */
   def buildFjsf(item:Row, ywlx:String):BigDecimal ={
     var fjsf = BigDecimal(0)
-    val jyf:String = item.getAs[Double]("jyf").doubleValue().toString.trim
-    val wbhl:String = item.getAs[String]("wbhl").trim
+    val jyf:String = item.getAs[Double]("jyf").doubleValue().toString
+    val wbhl:String = trim(item.getAs[String]("wbhl"))
     if(ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")
       || ywlx.equals("H64") || ywlx.equals("H65") || ywlx.equals("H67")) {
       fjsf = round(abs(jyf)*BigDecimal(wbhl),2)
@@ -1197,8 +1205,8 @@ object Ggt {
     * @return
     */
   def buildFyhs(item:Row, ywlx:String):BigDecimal={
-    val wbhl:String = item.getAs[String]("wbhl").trim
-    val yhs:String = item.getAs[Double]("yhs").doubleValue().toString.trim
+    val wbhl:String = trim(item.getAs[String]("wbhl"))
+    val yhs:String = item.getAs[Double]("yhs").doubleValue().toString
     var fyhs = BigDecimal(0)
 
     if (ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")
@@ -1218,7 +1226,7 @@ object Ggt {
     * @return
     */
   def buildFzgf(item:Row, ywlx:String):BigDecimal={
-    val wbhl:String = item.getAs[String]("wbhl").trim
+    val wbhl:String = trim(item.getAs[String]("wbhl"))
     val jyzf:String = item.getAs[Double]("jyzf").doubleValue().toString
     var fzgf = BigDecimal(0)
 
@@ -1239,7 +1247,7 @@ object Ggt {
     */
   def buildFghf(item:Row, ywlx:String):BigDecimal ={
     val syf:String = item.getAs[Double]("syf").doubleValue().toString
-    val wbhl:String = item.getAs[String]("wbhl").trim
+    val wbhl:String = trim(item.getAs[String]("wbhl"))
     var fghf = BigDecimal(0)
 
     if (ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")
@@ -1259,7 +1267,7 @@ object Ggt {
     */
   def buildFfxj(item:Row, ywlx:String):BigDecimal = {
     var ffxj = BigDecimal(0)
-    val wbhl:String = item.getAs[String]("wbhl").trim
+    val wbhl:String = trim(item.getAs[String]("wbhl"))
     val jsf:String = item.getAs[Double]("jsf").doubleValue().toString
 
     if (ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")
@@ -1277,7 +1285,7 @@ object Ggt {
     val jyzf:String = item.getAs[Double]("jyzf").doubleValue().toString
     val yhs:String = item.getAs[Double]("yhs").doubleValue().toString
     val jyf:String = item.getAs[Double]("jyf").doubleValue().toString
-    val wbhl:String = item.getAs[String]("wbhl").trim
+    val wbhl:String = trim(item.getAs[String]("wbhl"))
     round((abs(syf)+abs(jsf)+abs(jyzf)+abs(yhs)+abs(jyf))*BigDecimal(wbhl),2)
   }
 
@@ -1311,12 +1319,12 @@ object Ggt {
                gddmParamMap:scala.collection.Map[String,String],
                yjlvMap:scala.collection.Map[String,String],
                ffyffsMap:scala.collection.Map[String,String]):(BigDecimal,BigDecimal,BigDecimal,BigDecimal)= {
-    val wbhl: String = item.getAs[String]("wbhl").trim
+    val wbhl: String = trim(item.getAs[String]("wbhl"))
     val ysfje: String = item.getAs[Double]("ysfje").doubleValue().toString
     val wbje: String = item.getAs[Double]("wbje").doubleValue().toString
     var fsssfje: BigDecimal = BigDecimal(0)
-    val xwh = item.getAs[String]("xwh1").trim
-    val gddm = item.getAs[String]("zqzh").trim
+    val xwh = trim(item.getAs[String]("xwh1"))
+    val gddm = trim(item.getAs[String]("zqzh"))
 
     //港股通一级费用
     val ffyffs = ffyffsMap.getOrElse(xwh + "_" + gddm + "_" + Fzqbz, "")
@@ -1482,7 +1490,8 @@ object Ggt {
     val listDf = new mutable.ListBuffer[DataFrame]
 //    val jsmxdbfDF = spark.sqlContext.dbfFile(jsmxPath)
     for (filename <- listFiles) {
-      listDf += spark.sqlContext.dbfFile(filename)
+//      listDf += spark.sqlContext.dbfFile(filename)
+      listDf += Util.readCSV(filename, spark, true)
     }
     var jsmxdbfDF = listDf(0)
 
@@ -1490,9 +1499,8 @@ object Ggt {
       jsmxdbfDF = jsmxdbfDF.union(listDf(i))
     }
 
-    println(jsmxdbfDF.count())
-    jsmxdbfDF.createOrReplaceTempView("hk_jsmx_table")
 
+    jsmxdbfDF.createOrReplaceTempView("hk_jsmx_table")
     spark.sql("select * from hk_jsmx_table where YWLX in ('H01','H02','H54','H55','H60','H63','H64','H65','H67')")
   }
 
@@ -1528,7 +1536,7 @@ object Ggt {
     val csgdzhRDD = spark.sparkContext.textFile(commonUrl + date + "/" + fileName)
     val csgdzhPairRDD = csgdzhRDD.map{ item=>
       val items = item.split(",")
-      (items(0).trim, items(5).trim)
+      (trim(items(0)), trim(items(5)))
     }
     csgdzhPairRDD.distinct()
   }
@@ -1546,8 +1554,8 @@ object Ggt {
 
         val csgdzhPairRDD = csgdzhRDD.map { item =>
           val items = item.split(",")
-          CsxwfyModel(items(0).trim, items(1).trim, items(2).trim, items(3).trim, items(4).trim,
-            items(5).trim, items(6).trim, items(7).trim, items(8).trim)
+          CsxwfyModel(trim(items(0)), trim(items(1)), trim(items(2)), trim(items(3)), trim(items(4)),
+            trim(items(5)), trim(items(6)), trim(items(7)), trim(items(8)))
         }
     csgdzhPairRDD
   }
@@ -1610,7 +1618,7 @@ object Ggt {
     val cstskmRDD = spark.sparkContext.textFile(commonUrl + date + "/" + fileName)
     val cstskmPairRDD = cstskmRDD.map{ item=>
       val items = item.split(",")
-      (items(0).trim, items(1).trim, items(2).trim, items(3).trim, items(4).trim, items(5).trim)
+      (trim(items(0)), trim(items(1)), trim(items(2)), trim(items(3)), trim(items(4)), trim(items(5)))
     }
     val cstskmPairDF = cstskmPairRDD.distinct()
       .toDF("FZQDM","FBZ", "FSH", "FZZR", "FCHK", "FSTARTDATE")
@@ -1635,11 +1643,11 @@ object Ggt {
     val csSysJjRDD = spark.sparkContext.textFile(commonUrl + date + "/" + fileName)
     val csSysJjPairRDD = csSysJjRDD.map { item =>
       val items = item.split(",")
-      var item1 = items(1).trim
-      var item2 = items(3).trim
+      var item1 = trim(items(1))
+      var item2 = trim(items(3))
       if (strIsNull(item1)) item1 = ""
       if (strIsNull(item2)) item2 = ""
-      (items(0).trim, item1 + "_" + item2)
+      (trim(items(0)), item1 + "_" + item2)
     }
     csSysJjPairRDD.distinct()
   }
@@ -1696,8 +1704,8 @@ object Ggt {
   def testparam(args: Array[String]) ={
     args(0) = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
     args(1) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\2"
-    args(2) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\hk_jsmxjs614.812.dbf"
-    args(3) = "20181011"
+    args(2) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\hk_jsmxjs844.425.DBF"
+    args(3) = "20181014"
   }
 
   def getDirFileNames(filepath:File):ListBuffer[String] = {
@@ -1715,5 +1723,35 @@ object Ggt {
 
     return list
   }
+  def getHadoopFilesName(path:String):ListBuffer[String] = {
+    val list = new mutable.ListBuffer[String]
+    var fs:FileSystem = null
+    try {
+      val config:Configuration = new Configuration()
+      config.set("fs.default.name", "hdfs://192.168.102.120:8020")
+      fs = FileSystem.get(new URI("hdfs://192.168.102.120:8020"),config,"hadoop")
 
+      //会递归找到所有的文件
+      val listFiles: RemoteIterator[LocatedFileStatus]  = fs.listFiles(new Path(path), true)
+
+      while(listFiles.hasNext()){
+        val fileStatus:LocatedFileStatus = listFiles.next()
+        if (fileStatus.getPath.getName.contains("jsmx")) {
+          list += fileStatus.getPath.toString
+        }
+      }
+      list
+    }catch {
+      case e1:Exception => throw new Exception("读取hadoop文件出错")
+    }
+
+  }
+
+  def trim(str:String):String={
+    var str2:String = ""
+    if(!strIsNull(str)){
+      str2 = str.trim
+    }
+    str2
+  }
 }

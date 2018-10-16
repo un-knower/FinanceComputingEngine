@@ -40,21 +40,23 @@ object Util {
   }
 
   /**
-    * 获取文件输入路径
-    *
-    * @param fileName 文件输入名
+    * 获取hdfs上的文件路径 prefix+fileName
+    * @param fileName 文件名
+    * @param prefix 前缀
+    * @return
     */
-  def getInputFilePath(fileName: String) = {
+  def getInputFilePath(fileName: String,prefix:String ="/yss/guzhi/" ) = {
 //    val hdfsDir = "hdfs://nscluster/yss/guzhi/"
-    val hdfsDir = "hdfs://192.168.102.120:8020/yss/guzhi/"
+    val hdfsDir = "hdfs://192.168.102.120:8020" + prefix
     val inputFilePath = hdfsDir + fileName
     inputFilePath
   }
 
   /**
-    * 获取文件输入路径
-    *
-    * @param fileName 文件输入名
+    * 获取每天的hdfs的文件  prefix/today(yyyyMMdd)/filename
+    * @param fileName 文件名
+    * @param prefix 默认是 /yss/guzhi/basic_list/
+    * @return
     */
   def getDailyInputFilePath(fileName: String,prefix:String = "/yss/guzhi/basic_list/") = {
     val today = DateUtils.getToday(DateUtils.yyyyMMdd)

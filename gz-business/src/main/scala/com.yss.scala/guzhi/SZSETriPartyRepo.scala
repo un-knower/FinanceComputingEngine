@@ -10,6 +10,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.math.BigDecimal.RoundingMode
 
 /**
@@ -19,12 +20,17 @@ import scala.math.BigDecimal.RoundingMode
   *          目标文件：mysql中ETL的结果
   *          目标表：sjsmxETL_wmz和sjsjgETL_wmz
   */
+
 object SZSETriPartyRepo {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().appName("ShenzhenStockExchangeTriPartyRepo").master("local[*]").getOrCreate()
+    val spark = SparkSession.builder().appName("ShenzhenStockExchangeTriPartyRepo")
+//      .master("local[*]")
+      .getOrCreate()
+//    spark.conf.set("spark.sql.broadcastTimeout", 1200)
     val sc = spark.sparkContext
 
     val properties = new Properties()
+    properties.put("driver","com.mysql.jdbc.Driver")
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
     val sjsmxDF: DataFrame = spark.read.jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "sjsmxETL_wmz", properties)
@@ -39,11 +45,11 @@ object SZSETriPartyRepo {
 
     sjsmxDF.createOrReplaceTempView("MXTemp")
     val sjsmxTempDF: DataFrame = spark.sqlContext.sql("select MXFJSM,MXYWLB,FJETemp,MXCJRQ from MXTemp")
-    val sjsmxTempBrodcast: Broadcast[DataFrame] = sc.broadcast(sjsmxTempDF)
+    val sjsmxTempArrBrodcast = sc.broadcast(sjsmxTempDF.collect())
 
     sjsjgDF.createOrReplaceTempView("JGTemp")
     val sjsjgTempDF: DataFrame = spark.sqlContext.sql("select JGFJSM,JGYWLB,FJETemp,JGCJRQ from JGTemp")
-    val sjsjgTempBroadcast = sc.broadcast(sjsjgTempDF)
+    val sjsjgTempArrBroadcast = sc.broadcast(sjsjgTempDF.collect())
 
     val day = DateUtils.formatDate(System.currentTimeMillis())
     // 读取费率表
@@ -59,7 +65,11 @@ object SZSETriPartyRepo {
     csyjlvDF.createOrReplaceTempView("csyjlvTemp1")
     val csyjlvTableDF: DataFrame = spark.sqlContext.sql("select FZQLB,FSZSH,FSTR1,FLV from csyjlvTemp1")
     // 广播出去
-    val csyjlvTableDFBroadCast: Broadcast[DataFrame] = sc.broadcast(csyjlvTableDF)
+    val csyjlvTableArr: Array[Row] = csyjlvTableDF.rdd.collect()
+
+    val csyjlvTableArrBroadCast = sc.broadcast(csyjlvTableArr)
+
+//    csyjlvTableDFBroadCast.value.show()
 
     var mxywlb: String = ""
     var FDate: String = ""
@@ -168,6 +178,9 @@ object SZSETriPartyRepo {
         }
       }
 
+//      val csyjlvTableDFTemp: DataFrame = csyjlvTableDFBroadCast.value
+//      csyjlvTableDFTemp.show()
+
       // 实收实付金额判断规则
       if ("SFCS".equals(mxywlb) || "SFDQ".equals(mxywlb) || "SFTG".equals(mxywlb) || "SFJZ".equals(mxywlb)) {
         FSSSFJE = BigDecimal(row.getAs[String]("MXSFJE")).abs
@@ -180,7 +193,11 @@ object SZSETriPartyRepo {
       //日期、成交金额、佣金、回购收益、初始购回期限、融资利率判断规则
       if ("SFCS".equals(mxywlb) || "SFXZ".equals(mxywlb)) {
 
-        val FLVRDD = csyjlvTableDFBroadCast.value.rdd.filter(row => {
+
+println(csyjlvTableArrBroadCast.value.toBuffer)
+
+        val FLVRDD =csyjlvTableArrBroadCast.value.filter(row => {
+
           FZQLB = row.getAs[String]("FZQLB") //证券类别
           FSZSH = row.getAs[String]("FSZSH") //席位地点
           FSTR1 = row.getAs[String]("FSTR1") //席位号
@@ -188,11 +205,11 @@ object SZSETriPartyRepo {
         })
 
         var FLV = "0"
-        if (FLVRDD.count()==0) {
-          var FLV = "0"
-        }else{
-          FLV = FLVRDD.collect().toBuffer.head.toString()
-        }
+                if (FLVRDD.length==0) {
+                  var FLV = "0"
+                }else{
+                  FLV = FLVRDD.head.getAs("FLV")
+                }
 
         FinDate = row.getAs[String]("MXQTRQ") //日期
         Fje = MXQSBJ.abs // 成交金额
@@ -204,7 +221,8 @@ object SZSETriPartyRepo {
       } else if ("SFDQ".equals(mxywlb) || "SFTG".equals(mxywlb) || "SFJZ".equals(mxywlb)) {
 
         FinDate = row.getAs[String]("MXCJRQ") //购回日期
-        val sjsmxTempArr: Array[Row] = sjsmxTempBrodcast.value.collect()
+
+        val sjsmxTempArr: Array[Row] = sjsmxTempArrBrodcast.value
 
         for (i <- sjsmxTempArr){
           MXFJSM = i(0).toString
@@ -332,24 +350,59 @@ object SZSETriPartyRepo {
       val FBS = "" // 买卖方向
 
       val sjsmxSFCSRDD = sjsmxDFArrBroadCast.value.filter(row =>{
-        "SFCS".equals(row.getAs[String]("MXYWLB")) && FCSHTXH.equals(row.getAs[String]("MXFJSM"))
+        "SFXZ SFCS".contains(row.getAs[String]("MXYWLB")) && FCSHTXH.equals(row.getAs[String]("MXFJSM"))
       })
 
       val SFCSvalue = sjsmxSFCSRDD.map(row => {
         Fje = BigDecimal(row.getAs[String]("FJETemp"))
         FHggain = BigDecimal(row.getAs[String]("FHggain"))
         FRZLV = BigDecimal(row.getAs[String]("FRZLV"))
+        MXYWLB = row.getAs("MXYWLB")
 
-        Fje + "_" + FHggain + "_" + FRZLV
+        Fje + "_" + FHggain + "_" + FRZLV + "_" + MXYWLB
       })
- 
-      val sjsmxSFCS: Array[String] = SFCSvalue(0).split("_")
 
-      Fje = BigDecimal(sjsmxSFCS(0)) //成交金额
-      FHggain = BigDecimal(sjsmxSFCS(1)) //回购收益
-      FRZLV = BigDecimal(sjsmxSFCS(2)) //融资/购回利率
+      var sjsmxSFCS: Array[String] = new Array[String](2)
 
-      val FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")) //初始购回期限
+      import scala.util.control.Breaks._
+
+      for (i <- SFCSvalue) {
+        sjsmxSFCS = i.split("_")
+        breakable {
+          if ("SFXZ".equals(sjsmxSFCS(3))) {
+            Fje = BigDecimal(sjsmxSFCS(0)) //成交金额
+            FHggain = BigDecimal(sjsmxSFCS(1)) //回购收益
+            FRZLV = BigDecimal(sjsmxSFCS(2)) //融资/购回利率
+
+            FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")) //初始购回期限
+
+            break()
+          }
+          else if ("SFCS".equals(sjsmxSFCS(3))) {
+            Fje = BigDecimal(sjsmxSFCS(0)) //成交金额
+            Fje = BigDecimal(sjsmxSFCS(0)) //成交金额
+            FHggain = BigDecimal(sjsmxSFCS(1)) //回购收益
+            FRZLV = BigDecimal(sjsmxSFCS(2)) //融资/购回利率
+
+            FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")) //初始购回期限
+
+          }
+
+        }
+      }
+
+//
+//      val sjsmxSFCS: Array[String] = SFCSvalue(0).split("_")
+//
+//      if ("SFXZ".equals(sjsmxSFCS(3))) {
+//        Fje = BigDecimal(sjsmxSFCS(0)) //成交金额
+//      }else if("SFCS".equals(sjsmxSFCS(3))){
+//        Fje = BigDecimal(sjsmxSFCS(0))
+//      }
+//      FHggain = BigDecimal(sjsmxSFCS(1)) //回购收益
+//      FRZLV = BigDecimal(sjsmxSFCS(2)) //融资/购回利率
+//
+//      val FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")) //初始购回期限
 
       var FJyFs: String = new String
 
@@ -488,7 +541,7 @@ object SZSETriPartyRepo {
       }
 
       // 实收实付金额判断规则
-      if ("SFCS".equals(jgywlb) || "SDFQ".equals(jgywlb) || "SFTG".equals(jgywlb) || "SFJZ".equals(jgywlb)) {
+      if ("SFCS".equals(jgywlb) || "SFDQ".equals(jgywlb) || "SFTG".equals(jgywlb) || "SFJZ".equals(jgywlb)) {
         FSSSFJE = BigDecimal(row.getAs[String]("JGSFJE")).abs
       } else if ("SFXZ".equals(jgywlb)&&"RZ".equals(FJyFs)) {
         FSSSFJE = JGQSBJ.abs - Fjsf
@@ -499,7 +552,7 @@ object SZSETriPartyRepo {
       //日期、成交金额、佣金、回购收益、初始购回期限、融资利率判断规则
       if ("SFCS".equals(jgywlb) || "SFXZ".equals(jgywlb)) {
 
-        val FLVRDD = csyjlvTableDFBroadCast.value.rdd.filter(row => {
+        val FLVRDD = csyjlvTableArrBroadCast.value.filter(row => {
           FZQLB = row.getAs[String]("FZQLB") //证券类别
           FSZSH = row.getAs[String]("FSZSH") //席位地点
           FSTR1 = row.getAs[String]("FSTR1") //席位号
@@ -507,11 +560,13 @@ object SZSETriPartyRepo {
         })
 
         var FLV = "0"
-        if (FLVRDD.count()==0) {
+        if (FLVRDD.length==0) {
           var FLV = "0"
         }else{
-          FLV = FLVRDD.collect().toBuffer.head.toString()
-        } // 佣金费率
+          FLV = FLVRDD.head.getAs("FLV")
+        }
+
+      // 佣金费率
 
         FinDate = row.getAs[String]("JGQTRQ") //日期
         Fje = JGQSBJ.abs // 成交金额
@@ -524,7 +579,7 @@ object SZSETriPartyRepo {
         FinDate = row.getAs[String]("JGCJRQ") //购回日期
 
         //获取对应初试合同序号的业务类别为SFXZ的回购业务
-        val FjeArr = sjsjgTempBroadcast.value.filter(row => {
+        val FjeArr = sjsjgTempArrBroadcast.value.filter(row => {
           JGFJSM = row.getAs[String]("JGFJSM")
           JGYWLB = row.getAs[String]("JGYWLB")
           FJETemp = row.getAs[String]("FJETemp")
@@ -533,7 +588,7 @@ object SZSETriPartyRepo {
         })
 
         //获取广播变量
-        val sjsjgTempArr: Array[Row] = sjsjgTempBroadcast.value.collect()
+        val sjsjgTempArr: Array[Row] = sjsjgTempArrBroadcast.value
 
         for (i <- sjsjgTempArr){
 
@@ -663,23 +718,52 @@ object SZSETriPartyRepo {
       val FBS = "" // 买卖方向
 
       val sjsjgSFCSArr = sjsjgDFArrBroadCast.value.filter(row => {
-        "SFCS".equals(row.getAs[String]("JGYWLB")) && FCSHTXH.equals(row.getAs[String]("JGFJSM"))
+        "SFCS SFXZ".contains(row.getAs[String]("JGYWLB")) && FCSHTXH.equals(row.getAs[String]("JGFJSM"))
       })
 
       val SFCSvalue = sjsjgSFCSArr.map(row => {
         Fje = BigDecimal(row.getAs[String]("FJETemp"))
         FHggain = BigDecimal(row.getAs[String]("FHggain"))
         FRZLV = BigDecimal(row.getAs[String]("FRZLV"))
+        JGYWLB = row.getAs("JGYWLB")
 
-        Fje + "_" + FHggain + "_" + FRZLV
+        Fje + "_" + FHggain + "_" + FRZLV + "_" + JGYWLB
       })
-      val sjsjgSFCS: Array[String] = SFCSvalue(0).split("_")
 
-      Fje = BigDecimal(sjsjgSFCS(0)) //成交金额
-      FHggain = BigDecimal(sjsjgSFCS(1)) //回购收益
-      FRZLV = BigDecimal(sjsjgSFCS(2)) //融资/购回利率
+      var sjsjgSFCS: ArrayBuffer[String] = new ArrayBuffer[String]
 
-      FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")) //初始购回期限
+      import scala.util.control.Breaks._
+
+        for (i <- SFCSvalue) {
+          sjsjgSFCS.appendAll(i.split("_"))
+          breakable {
+            if ("SFXZ".equals(sjsjgSFCS(3))) {
+              Fje = BigDecimal(sjsjgSFCS(0)) //成交金额
+              FHggain = BigDecimal(sjsjgSFCS(1)) //回购收益
+              FRZLV = BigDecimal(sjsjgSFCS(2)) //融资/购回利率
+
+              FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")) //初始购回期限
+
+              break()
+            }
+            else if ("SFCS".equals(sjsjgSFCS(3))) {
+              Fje = BigDecimal(sjsjgSFCS(0)) //成交金额
+              Fje = BigDecimal(sjsjgSFCS(0)) //成交金额
+              FHggain = BigDecimal(sjsjgSFCS(1)) //回购收益
+              FRZLV = BigDecimal(sjsjgSFCS(2)) //融资/购回利率
+
+              FCSGHQX = BigDecimal(row.getAs[String]("FCSGHQXTemp")) //初始购回期限
+
+            }
+
+          }
+        }
+
+
+
+//      val sjsjgSFCS: Array[String] = SFCSvalue(0).split("_")
+
+
 
       var FJyFs: String = ""
 
