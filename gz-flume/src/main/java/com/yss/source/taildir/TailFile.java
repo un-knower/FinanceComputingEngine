@@ -92,6 +92,7 @@ public class TailFile {
         this.csvSeparator = csvSeparator;
         String fileName = file.getName();
         fileSuffixes = fileName.substring(fileName.length() - 4);
+        System.out.println("Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath() + "   当前时间是:" + System.currentTimeMillis() + "  文件大小是:" + file.length());
         if (fileSuffixes.equalsIgnoreCase(".dbf")) {
             readDbf = new ReadDbf(this.fileInputStream, currentRecord, csvSeparator);
         } else if (fileSuffixes.equalsIgnoreCase(".xml")) {
@@ -292,10 +293,10 @@ public class TailFile {
             long now = System.currentTimeMillis();
             setLastUpdated(now);
             //读取完后对文件修改文件的后缀
-//            File file = new File(getPath());
-//            if (!path.endsWith(".xlsd")) {
-//                file.renameTo(new File(path + now + ".xlsd"));
-//            }
+            File file = new File(getPath());
+            if (!path.endsWith(".COMPLETED")) {
+                file.renameTo(new File(path + now + ".COMPLETED"));
+            }
         } catch (IOException e) {
             logger.error("Failed closing file: " + path + ", inode: " + inode, e);
         }

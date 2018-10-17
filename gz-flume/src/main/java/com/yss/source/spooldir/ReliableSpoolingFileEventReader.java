@@ -26,7 +26,6 @@ import com.google.common.base.Preconditions;
 import com.yss.source.spooldir.SpoolDirectorySourceConfigurationConstants.ConsumeOrder;
 import com.yss.source.utils.ReadDbf;
 import com.yss.source.utils.ReadXml;
-import com.yss.source.utils.coding.EncodingDetect;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.FlumeException;
@@ -330,12 +329,15 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
     private void initialize() throws IOException {
         File file = currentFile.get().getFile();
         String fileName = file.getName();
+        long currentTimeMillis = System.currentTimeMillis();
         fileSuffixes = fileName.substring(fileName.length() - 4);
         if (fileSuffixes.equalsIgnoreCase(".dbf")) {
             readDBF = new ReadDbf(new FileInputStream(file), currentRecord, csvSeparator);
         } else if (fileSuffixes.equalsIgnoreCase(".xml")) {
             readXml = new ReadXml(xmlNode, new RandomAccessFile(file, "r"), 0, currentRecord, csvSeparator);
         }
+        System.out.println("创建文件的对象准备开始读取文件:" + file.getAbsolutePath() + "   当前时间是:" + currentTimeMillis + "  文件大小是:" + file.length());
+        logger.info("创建文件的对象准备开始读取文件:" + file.getAbsolutePath() + "   当前时间是:" + currentTimeMillis + "  文件大小是:" + file.length());
     }
 
     //读取数据
@@ -369,6 +371,7 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
          * If so, try to roll to the next file, if there is one.
          * Loop until events is not empty or there is no next file in case of 0 byte files */
         while (events.isEmpty()) {
+
             logger.info("Last read took us just up to a file boundary. " +
                     "Rolling to the next file, if there is one.");
             retireCurrentFile();
@@ -520,10 +523,10 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
      * @throws IOException
      */
     private void rollCurrentFile(File fileToRoll) throws IOException {
-        long l = System.currentTimeMillis();
-        File dest = new File(fileToRoll.getPath() + l + completedSuffix);
+        long currentTimeMillis = System.currentTimeMillis();
+        File dest = new File(fileToRoll.getPath() + currentTimeMillis + completedSuffix);
         logger.info("Preparing to move file {} to {}", fileToRoll, dest);
-
+        logger.info("当前文件读取完毕:" + fileToRoll.getAbsolutePath() + "   当前时间是:" + currentTimeMillis + "  文件大小是:" + fileToRoll.length());
         // Before renaming, check whether destination file name exists
         if (dest.exists() && PlatformDetect.isWindows()) {
             /*
@@ -681,10 +684,9 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
             Preconditions.checkState(tracker.getTarget().equals(nextPath),
                     "Tracker target %s does not equal expected filename %s",
                     tracker.getTarget(), nextPath);
-            String javaEncode = EncodingDetect.getJavaEncode(file);
             ResettableInputStream in =
                     new ResettableFileInputStream(file, tracker,
-                            ResettableFileInputStream.DEFAULT_BUF_SIZE, Charset.forName(javaEncode),
+                            ResettableFileInputStream.DEFAULT_BUF_SIZE, inputCharset,
                             decodeErrorPolicy);
             EventDeserializer deserializer =
                     EventDeserializerFactory.getInstance(deserializerType, deserializerContext, in);

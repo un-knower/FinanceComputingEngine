@@ -188,6 +188,7 @@ class BucketWriter {
 
     private Method getRefIsClosed() {
         try {
+            //文件关闭
             return fileSystem.getClass().getMethod("isFileClosed",
                     Path.class);
         } catch (Exception e) {
@@ -215,14 +216,14 @@ class BucketWriter {
         }
 
         final Configuration config = new Configuration();
-        // disable FileSystem JVM shutdown hook
+        // 禁用文件系统JVM关机钩
         config.setBoolean("fs.automatic.close", false);
 
-        // Hadoop is not thread safe when doing certain RPC operations,
-        // including getFileSystem(), when running under Kerberos.
-        // open() must be called by one thread at a time in the JVM.
-        // NOTE: tried synchronizing on the underlying Kerberos principal previously
-        // which caused deadlocks. See FLUME-1231.
+        // 在执行某些RPC操作时，Hadoop并不是线程安全的，
+        //在Kerberos之下运行时，包括get文件系统（）。
+        //open（）必须在JVM中一次被一个线程调用。
+        //注意：以前尝试在底层Kerberos主体上同步
+        //造成死锁。看到水槽- 1231。
         synchronized (staticLock) {
             checkAndThrowInterruptedException();
 
@@ -242,20 +243,20 @@ class BucketWriter {
                 targetPath = filePath + "/" + fullFileName;
 
                 LOG.info("Creating " + bucketPath);
+                //暂停
                 callWithTimeout(new CallRunner<Void>() {
                     @Override
                     public Void call() throws Exception {
                         if (codeC == null) {
-                            // Need to get reference to FS using above config before underlying
-                            // writer does in order to avoid shutdown hook &
-                            // IllegalStateExceptions
+                            // 需要在底层使用上述配置来引用FS
+                            //作者为了避免关闭钩子和非法的州例外
                             if (!mockFsInjected) {
                                 fileSystem = new Path(bucketPath).getFileSystem(config);
                             }
                             writer.open(bucketPath);
                         } else {
-                            // need to get reference to FS before writer does to
-                            // avoid shutdown hook
+                            //在写作者之前需要参考FS
+                            //避免关闭钩子
                             if (!mockFsInjected) {
                                 fileSystem = new Path(bucketPath).getFileSystem(config);
                             }
@@ -277,7 +278,7 @@ class BucketWriter {
         sinkCounter.incrementConnectionCreatedCount();
         resetCounters();
 
-        // if time-based rolling is enabled, schedule the roll
+        // 如果启用了基于时间的滚动，请安排滚动
         if (rollInterval > 0) {
             Callable<Void> action = new Callable<Void>() {
                 public Void call() throws Exception {
@@ -300,13 +301,13 @@ class BucketWriter {
     }
 
     /**
-     * Close the file handle and rename the temp file to the permanent filename.
-     * Safe to call multiple times. Logs HDFSWriter.close() exceptions. This
-     * method will not cause the bucket writer to be dereferenced from the HDFS
-     * sink that owns it. This method should be used only when size or count
-     * based rolling closes this file.
+     * 关闭文件句柄并将临时文件重命名为永久文件名。
+     * 安全多次呼叫。异常日志HDFSWriter.close()。这
+     * 方法不会使bucket编写器从HDFS中被取消引用。
+     * 拥有它的水槽。这个方法应该只在大小或计数时使用。
+     * 基于滚动关闭这个文件。
      *
-     * @throws IOException          On failure to rename if temp file exists.
+     * @throws IOException          如果临时文件存在，则无法重命名。
      * @throws InterruptedException
      */
     public synchronized void close() throws IOException, InterruptedException {
@@ -331,7 +332,7 @@ class BucketWriter {
             private final String path = bucketPath;
             private final String finalPath = targetPath;
             private FileSystem fs = fileSystem;
-            private int renameTries = 1; // one attempt is already done
+            private int renameTries = 1; // 一次尝试已经完成了
 
             @Override
             public Void call() throws Exception {
@@ -355,9 +356,9 @@ class BucketWriter {
     }
 
     /**
-     * Tries to start the lease recovery process for the current bucketPath
-     * if the fileSystem is DistributedFileSystem.
-     * Catches and logs the IOException.
+     * 试着为当前的bucketPath启动租赁恢复过程
+     * 如果文件系统是分布式文件系统。
+     * 捕获并记录IOException。
      */
     private synchronized void recoverLease() {
         if (bucketPath != null && fileSystem instanceof DistributedFileSystem) {
@@ -371,10 +372,10 @@ class BucketWriter {
     }
 
     /**
-     * Close the file handle and rename the temp file to the permanent filename.
-     * Safe to call multiple times. Logs HDFSWriter.close() exceptions.
+     * 关闭文件句柄并将临时文件重命名为永久文件名。
+     * 安全多次呼叫。异常日志HDFSWriter.close()。
      *
-     * @throws IOException          On failure to rename if temp file exists.
+     * @throws IOException          如果临时文件存在，则无法重命名。
      * @throws InterruptedException
      */
     public synchronized void close(boolean callCloseCallback)
@@ -390,6 +391,7 @@ class BucketWriter {
         CallRunner<Void> closeCallRunner = createCloseCallRunner();
         if (isOpen) {
             try {
+                //暂停
                 callWithTimeout(closeCallRunner);
                 sinkCounter.incrementConnectionClosedCount();
             } catch (IOException e) {
@@ -404,12 +406,14 @@ class BucketWriter {
             LOG.info("HDFSWriter is already closed: {}", bucketPath);
         }
 
-        // NOTE: timed rolls go through this codepath as well as other roll types
+        // NOTE: 定时滚动通过这个codepath和其他滚动类型
+        //根据时间进行滚动
         if (timedRollFuture != null && !timedRollFuture.isDone()) {
-            timedRollFuture.cancel(false); // do not cancel myself if running!
+            timedRollFuture.cancel(false); // 如果跑步，不要取消我自己！
             timedRollFuture = null;
         }
-
+        //HDFS操作允许的毫秒数，例如打开、写入、刷新、关闭
+        //如果idleFuture不为null或者这个任务没有完成
         if (idleFuture != null && !idleFuture.isDone()) {
             idleFuture.cancel(false); // do not cancel myself if running!
             idleFuture = null;
@@ -441,12 +445,12 @@ class BucketWriter {
      */
     public synchronized void flush() throws IOException, InterruptedException {
         checkAndThrowInterruptedException();
+        //批处理完成
         if (!isBatchComplete()) {
             doFlush();
 
             if (idleTimeout > 0) {
-                // if the future exists and couldn't be cancelled, that would mean it has already run
-                // or been cancelled
+                // 如果未来存在并且不能被取消，那就意味着它已经运行或被取消了
                 if (idleFuture == null || idleFuture.cancel(false)) {
                     Callable<Void> idleAction = new Callable<Void>() {
                         public Void call() throws Exception {
@@ -465,13 +469,15 @@ class BucketWriter {
         }
     }
 
+    //运行关闭删除hashMap表中的数据
     private void runCloseAction() {
+        System.out.println("文件上传HDFS完成当前时间是:" + System.currentTimeMillis());
         try {
             if (onCloseCallback != null) {
                 onCloseCallback.run(onCloseCallbackPath);
             }
         } catch (Throwable t) {
-            LOG.error("Unexpected error", t);
+            LOG.error("意外的错误", t);
         }
     }
 
@@ -492,13 +498,13 @@ class BucketWriter {
     }
 
     /**
-     * Open file handles, write data, update stats, handle file rolling and
-     * batching / flushing. <br />
-     * If the write fails, the file is implicitly closed and then the IOException
-     * is rethrown. <br />
-     * We rotate before append, and not after, so that the active file rolling
-     * mechanism will never roll an empty file. This also ensures that the file
-     * creation time reflects when the first event was written.
+     * 打开文件句柄，写入数据，更新状态，处理文件滚动
+     * 批处理/冲洗。< br / >
+     * 如果写失败，文件被隐式关闭，然后是IOException
+     * * rethrown。< br / >
+     * 我们在append之前旋转，而不是之后，所以活动文件滚动
+     * 机制永远不会滚动一个空文件。这也确保了文件
+     * 创建时间反映了第一个事件被写入的时间。
      *
      * @throws IOException
      * @throws InterruptedException
@@ -506,17 +512,18 @@ class BucketWriter {
     public synchronized void append(final Event event)
             throws IOException, InterruptedException {
         checkAndThrowInterruptedException();
-        // If idleFuture is not null, cancel it before we move forward to avoid a
-        // close call in the middle of the append.
+        // 如果idleFuture不是空的，在我们前进之前取消它，以避免
+        ////在附加的中间关闭呼叫。
         if (idleFuture != null) {
             idleFuture.cancel(false);
-            // There is still a small race condition - if the idleFuture is already
-            // running, interrupting it can cause HDFS close operation to throw -
-            // so we cannot interrupt it while running. If the future could not be
-            // cancelled, it is already running - wait for it to finish before
-            // attempting to write.
+            // 仍然有一个小的种族条件——如果idleFuture已经是
+            ////运行，中断它会导致HDFS关闭操作-
+            ////所以我们不能在跑步时打断它。如果未来不可能
+            ////取消了，它已经在运行了-等它完成之前
+            ////试图写作。
             if (!idleFuture.isDone()) {
                 try {
+                    //HDFS操作允许的毫秒数，例如打开、写入、刷新、关闭
                     idleFuture.get(callTimeout, TimeUnit.MILLISECONDS);
                 } catch (TimeoutException ex) {
                     LOG.warn("Timeout while trying to cancel closing of idle file. Idle" +
@@ -528,9 +535,9 @@ class BucketWriter {
             idleFuture = null;
         }
 
-        // If the bucket writer was closed due to roll timeout or idle timeout,
-        // force a new bucket writer to be created. Roll count and roll size will
-        // just reuse this one
+        // 如果bucket编写者由于滚动超时或空闲超时而关闭，
+        //强迫一个新的bucket编写器被创建。卷数和卷大小
+        //重复使用这个
         if (!isOpen) {
             if (closed) {
                 throw new BucketClosedException("This bucket writer was closed and " +
@@ -539,7 +546,7 @@ class BucketWriter {
             open();
         }
 
-        // check if it's time to rotate the file
+        // 检查是否该滚动文件
         if (shouldRotate()) {
             boolean doRotate = true;
 
@@ -566,7 +573,7 @@ class BucketWriter {
             }
         }
 
-        // write the event
+        // 写事件
         try {
             sinkCounter.incrementEventDrainAttemptCount();
             callWithTimeout(new CallRunner<Void>() {
@@ -600,7 +607,8 @@ class BucketWriter {
     }
 
     /**
-     * check if time to rotate the file
+     * 检查是否有根据事件的数量旋转文件
+     * 文件大小以字节为单位，以字节为单位
      */
     private boolean shouldRotate() {
         boolean doRotate = false;
@@ -611,12 +619,12 @@ class BucketWriter {
         } else {
             this.isUnderReplicated = false;
         }
-
+        //根据事件的数量
         if ((rollCount > 0) && (rollCount <= eventCounter)) {
             LOG.debug("rolling: rollCount: {}, events: {}", rollCount, eventCounter);
             doRotate = true;
         }
-
+        //根据文件的大小
         if ((rollSize > 0) && (rollSize <= processSize)) {
             LOG.debug("rolling: rollSize: {}, bytes: {}", rollSize, processSize);
             doRotate = true;
@@ -626,17 +634,17 @@ class BucketWriter {
     }
 
     /**
-     * Rename bucketPath file from .tmp to permanent location.
+     * 将bucketPath文件重命名为.tmp到永久位置。
      */
-    // When this bucket writer is rolled based on rollCount or
-    // rollSize, the same instance is reused for the new file. But if
-    // the previous file was not closed/renamed,
-    // the bucket writer fields no longer point to it and hence need
-    // to be passed in from the thread attempting to close it. Even
-    // when the bucket writer is closed due to close timeout,
-    // this method can get called from the scheduled thread so the
-    // file gets closed later - so an implicit reference to this
-    // bucket writer would still be alive in the Callable instance.
+    // 当这个bucket编写器基于rollCount或
+    ////rollSize，同一个实例被重新用于新文件。但是,如果
+    ////以前的文件没有关闭/重命名，
+    ////桶写作者字段不再指向它，因此需要
+    ////从线程中传递过来，试图关闭它。甚至
+    ////当bucket编写者由于关闭超时而关闭时，
+    ////这个方法可以从预定的线程中调用
+    ////文件稍后会被关闭——因此隐含的引用
+    ////桶写作者仍然可以在可调用的实例中存活。
     private void renameBucket(String bucketPath, String targetPath, final FileSystem fs)
             throws IOException, InterruptedException {
         if (bucketPath.equals(targetPath)) {
