@@ -75,10 +75,10 @@ object ShFICCTriPartyRepoETL {
 
     //res.collect().foreach(println(_))
     //saveAsCSV(spark, res, path)
-    saveMySQL(spark, res, path)
+    //saveMySQL(spark, res, path)
 
-    //import spark.implicits._
-    //ShFICCTriPartyRepo.exec(spark,res.toDF())
+    import spark.implicits._
+    ShFICCTriPartyRepo.exec(spark,res.toDF())
     spark.stop()
   }
 

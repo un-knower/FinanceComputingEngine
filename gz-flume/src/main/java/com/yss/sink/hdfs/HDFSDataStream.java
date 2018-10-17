@@ -85,6 +85,7 @@ public class HDFSDataStream extends AbstractHDFSWriter {
             if (hdfs.exists(fs)) {
                 hdfs.delete(fs, false);
             }
+            logger.info("HDFS创建文件开始写数据:" + filePath + "    当前时间是:" + System.currentTimeMillis());
             outStream = hdfs.create(dstPath);
         }
 
@@ -97,7 +98,7 @@ public class HDFSDataStream extends AbstractHDFSWriter {
                     ") does not support append");
         }
 
-        // must call superclass to check for replication issues
+        // 必须调用超类来检查复制问题
         registerCurrentStream(outStream, hdfs, dstPath);
 
         if (appending) {
