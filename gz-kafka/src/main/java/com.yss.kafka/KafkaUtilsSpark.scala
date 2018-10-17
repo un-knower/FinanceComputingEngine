@@ -26,10 +26,10 @@ object KafkaUtilsSpark {
     "key.deserializer" -> classOf[StringDeserializer],
     "value.deserializer" -> classOf[BytesDeserializer],
     "group.id" -> "ws_test",
-    "auto.offset.reset" -> "latest",
+    "auto.offset.reset" -> "earliest",//latest
     "enable.auto.commit" -> (false: java.lang.Boolean)
   )
-  val topics = Array("ws_test")
+  val topics = Array("flume_guzhi")
   val reader = new SpecificDatumReader[AvroFlumeEvent](classOf[AvroFlumeEvent])
 
   def getStream(ssc: StreamingContext) = {
