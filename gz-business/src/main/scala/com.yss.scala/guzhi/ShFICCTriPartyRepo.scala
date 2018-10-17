@@ -103,7 +103,7 @@ object ShFICCTriPartyRepo {
     //开始计算
     val resSFHGRDD: RDD[SHFICCTriPartyRepoDto] = calculate(rowDataAndTzhAndSelectedAndYjFV)
 
-    import spark.implicits._
+    // import spark.implicits._
 
     // val properties = new Properties()
     // properties.put("user", MYSQL_USER)
@@ -111,7 +111,7 @@ object ShFICCTriPartyRepo {
     // properties.setProperty("driver", DRIVER_CLASS)
     // resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(MYSQL_JDBC_URL, MYSQL_RESULT_TABLE_NAME, properties)
     //
-    resSFHGRDD.toDF().show()
+    // resSFHGRDD.toDF().show()
 
     saveToMySQL(spark, resSFHGRDD)
   }
@@ -125,6 +125,7 @@ object ShFICCTriPartyRepo {
     val url = "jdbc:mysql://192.168.102.120:3306/JJCWGZ"
     resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(url,"SHFICCTriPartyRepo",properties)
   }
+
   /**
     * 读取清洗后的数据
     */
