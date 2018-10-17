@@ -25,7 +25,7 @@ object KafkaUtilsSpark {
     "bootstrap.servers" -> " bj-rack001-hadoop004:6667,bj-rack001-hadoop002:6667,bj-rack001-hadoop003:6667",
     "key.deserializer" -> classOf[StringDeserializer],
     "value.deserializer" -> classOf[BytesDeserializer],
-    "group.id" -> "ws_test",
+    "group.id" -> "gh",
     "auto.offset.reset" -> "earliest",//latest
     "enable.auto.commit" -> (false: java.lang.Boolean)
   )
