@@ -1,11 +1,11 @@
-package com.yss.scala.util
+package com.spark
 
 import java.io.FileInputStream
+import java.net.InetAddress
 import java.sql.{Connection, DriverManager}
-import java.util.{Properties}
+import java.util.Properties
 
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
-import java.net.{InetAddress}
 
 object Util {
 
@@ -40,28 +40,26 @@ object Util {
   }
 
   /**
-    * 获取hdfs上的文件路径 prefix+fileName
-    * @param fileName 文件名
-    * @param prefix 前缀
-    * @return
+    * 获取文件输入路径
+    *
+    * @param fileName 文件输入名
     */
-  def getInputFilePath(fileName: String,prefix:String ="/yss/guzhi/" ) = {
-//    val hdfsDir = "hdfs://nscluster/yss/guzhi/"
-    val hdfsDir = "hdfs://192.168.102.120:8020" + prefix
+  def getInputFilePath(fileName: String) = {
+    val hdfsDir = "hdfs://192.168.102.120:8020/yss/guzhi/"
     val inputFilePath = hdfsDir + fileName
     inputFilePath
   }
 
   /**
-    * 获取每天的hdfs的文件  prefix/today(yyyyMMdd)/filename
-    * @param fileName 文件名
-    * @param prefix 默认是 /yss/guzhi/basic_list/
-    * @return
+    * 获取文件输入路径
+    *
+    * @param fileName 文件输入名
     */
-  def getDailyInputFilePath(fileName: String,prefix:String = "/yss/guzhi/basic_list/") = {
+  def getDailyInputFilePath(fileName: String) = {
     val today = DateUtils.getToday(DateUtils.yyyyMMdd)
-    val hdfsFile = "hdfs://192.168.102.120:8020"+ prefix + today + "/"+fileName
-    hdfsFile
+    val hdfsDir = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/" + today + "/"
+    val inputFilePath = hdfsDir + fileName
+    inputFilePath
   }
 
   /**
@@ -76,7 +74,6 @@ object Util {
     val inputFilePath = hdfsDir + fileName
     inputFilePath
   }
-
   /**
     * 将dataFrame类型数据结果输出到MySql<192.168.102.119>数据库J<JJCWGZ>中
     *

@@ -359,9 +359,9 @@ public class HDFSEventSink extends AbstractSink implements Configurable {
         String lookupPath = realPath + DIRECTORY_DELIMITER + realName;
         BucketWriter bucketWriter;
         HDFSWriter hdfsWriter = null;
-        // Callback to remove the reference to the bucket writer from the
-        // sfWriters map so that all buffers used by the HDFS file
-        // handles are garbage collected.
+        // 回调，以删除对bucket编写者的引用
+        //sf编写者映射到HDFS文件所使用的所有缓冲区
+        //句柄是垃圾收集。
         WriterCallback closeCallback = new WriterCallback() {
           @Override
           public void run(String bucketPath) {
