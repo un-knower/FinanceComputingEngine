@@ -29,16 +29,14 @@ public class GuZhiOozie {
         conf.setProperty("jobmode", "cluster");
         conf.setProperty("jobname1", "Ggt");
         conf.setProperty("jobname2", "ShFICCTriPartyRepoETL");
-        conf.setProperty("jobname3", "ShFICCTriPartyRepo");
-        conf.setProperty("jobname4", "SHTransfer");
-        conf.setProperty("jobname5", "SZSETriPartyRepo");
-        conf.setProperty("jobname6", "SZStockExchange");
+        conf.setProperty("jobname3", "SHTransfer");
+        conf.setProperty("jobname4", "SZSETriPartyRepo");
+        conf.setProperty("jobname5", "SZStockExchange");
         conf.setProperty("jarclass1", "com.yss.scala.guzhi.Ggt");
         conf.setProperty("jarclass2", "com.yss.scala.guzhi.ShFICCTriPartyRepoETL");
-        conf.setProperty("jarclass3", "com.yss.scala.guzhi.ShFICCTriPartyRepo");
-        conf.setProperty("jarclass4", "com.yss.scala.guzhi.SHTransfer");
-        conf.setProperty("jarclass5", "com.yss.scala.guzhi.SZSETriPartyRepo");
-        conf.setProperty("jarclass6", "com.yss.scala.guzhi.SZStockExchange");
+        conf.setProperty("jarclass3", "com.yss.scala.guzhi.SHTransfer");
+        conf.setProperty("jarclass4", "com.yss.scala.guzhi.SZSETriPartyRepo");
+        conf.setProperty("jarclass5", "com.yss.scala.guzhi.SZStockExchange");
         conf.setProperty("shell", "getDate.sh");
         conf.setProperty("jarpath", "hdfs://bj-rack001-hadoop002:8020/tmp/zhs/spark-sqoop/gz-business-1.0.0-jar-with-dependencies.jar");
         conf.setProperty("queueName1", "launcher");
@@ -61,11 +59,12 @@ public class GuZhiOozie {
             String jobId = wc.run(conf);
             System.out.println("Workflow job submitted");
             System.out.println(jobId);
-
             while(true){
-                if (wc.getJobInfo(jobId).getStatus() == WorkflowJob.Status.RUNNING) {
+                //获取oozie运行状态
+                WorkflowJob.Status status= wc.getJobInfo(jobId).getStatus();
+                if (status == WorkflowJob.Status.RUNNING) {
                     System.out.println("Workflow job running...");
-                } else if (wc.getJobInfo(jobId).getStatus() == WorkflowJob.Status.SUCCEEDED) {
+                } else if (status == WorkflowJob.Status.SUCCEEDED) {
                     System.out.println("Workflow job success");
                     break;
                 } else {
@@ -75,9 +74,13 @@ public class GuZhiOozie {
 
                 try{
                     Thread.sleep(10*1000);
-                }catch(InterruptedException e){e.printStackTrace();}
+                }catch(InterruptedException e){
+                    e.printStackTrace();
+                }
             }
-        }catch(OozieClientException e){e.printStackTrace();}
+        }catch(OozieClientException e){
+            e.printStackTrace();
+        }
 
     }
 }

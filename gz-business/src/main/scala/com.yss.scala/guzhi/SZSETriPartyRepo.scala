@@ -24,7 +24,7 @@ import scala.math.BigDecimal.RoundingMode
 object SZSETriPartyRepo {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().appName("ShenzhenStockExchangeTriPartyRepo")
-      .master("local[*]")
+     // .master("local[*]")
       .getOrCreate()
     //    spark.conf.set("spark.sql.broadcastTimeout", 1200)
     val sc = spark.sparkContext
