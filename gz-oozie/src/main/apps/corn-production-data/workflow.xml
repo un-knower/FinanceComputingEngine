@@ -7,7 +7,7 @@
 			<port>22</port>
 			<user>hadoop</user>
 			<password>1q2w3ehadoop</password>
-			<command>cp -r /data/gz_interface/`date -d "1 day ago" +"%Y%m%d"`/* /data/gz_interface/$(date "+%Y%m%d") </command>
+			<commands>cp -r /data/gz_interface/`date -d "1 day ago" +"%Y%m%d"`/* /data/gz_interface/$(date "+%Y%m%d") </commands>
 		</command>
 		<ok to="end"/>
 		<error to="fail"/>

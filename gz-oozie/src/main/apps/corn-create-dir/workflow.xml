@@ -7,7 +7,7 @@
 			<port>22</port>
 			<user>hadoop</user>
 			<password>1q2w3ehadoop</password>
-			<command>mkdir -p /data/gz_interface/$(date "+%Y%m%d")</command>
+			<commands>mkdir -p /data/gz_interface/$(date "+%Y%m%d")</commands>
 		</command>
 		<ok to="end"/>
 		<error to="fail"/>
