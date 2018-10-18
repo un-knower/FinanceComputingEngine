@@ -26,7 +26,7 @@ object Ggt {
 
   def main(args: Array[String]): Unit = {
 
-    val conf = new SparkConf().setAppName("ggt").setMaster("local[*]")
+    val conf = new SparkConf().setAppName("ggt")
     val spark = SparkSession.builder().config(conf).getOrCreate()
 
     val arr = new Array[String](4)

@@ -3,7 +3,7 @@ package com.yss.scala.guzhi
 import java.text.SimpleDateFormat
 
 import com.yss.scala.dto._
-import com.yss.scala.guzhi.SZSEContants._
+import com.yss.scala.guzhi.SZStockExchangeContants._
 import com.yss.scala.guzhi.ShghContants.{SEPARATE2, TABLE_NAME_JJXX}
 import com.yss.scala.util.Util
 import org.apache.spark.{SparkConf, SparkContext}
@@ -30,6 +30,7 @@ object SZStockExchange extends Serializable {
 
   def getResult() = {
     val spark = SparkSession.builder().appName("SJSV5").getOrCreate() //.master("local[*]")
+
     /*   val df = spark.read.format("jdbc").option("url", "jdbc:mysql://192.168.102.120:3306/JJCWGZ")
          .option("user", "root")
          .option("password", "root1234")
@@ -47,23 +48,21 @@ object SZStockExchange extends Serializable {
 
   def getFywbzAndFzqbz(spark: SparkSession, csb: Broadcast[collection.Map[String, String]]) = {
     val sc = spark.sparkContext
-    val path = "C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv"
-    val dateSplit = path.split("/")
-    val dateSplit1 = dateSplit(5).split("_")
+    val path = "execution_aggr_tgwid_1_20180124.tsv"
+    val dateSplit1 = path.split("_")
     val fileDate = dateSplit1(4).substring(0, 8)
     val sdf1 = new SimpleDateFormat("yyyyMMdd")
     val parseDate1 = sdf1.parse(fileDate) //解析成date
     val dateTime1 = parseDate1.getTime
 
-    //   val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_F000995F0401_1_20180808(2).tsv")
-    // val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_1_20180124(1).tsv") //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
-     val exe = sc.textFile("hdfs://192.168.102.120/yss/guzhi/execution_aggr_tgwid_1_20180124.tsv")
-    // val exe = sc.textFile("C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv")
+    //val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_F000995F0401_1_20180808(2).tsv")
+    //val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_1_20180124(1).tsv") //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
+    val exe = sc.textFile("hdfs://192.168.102.120/yss/guzhi/execution_aggr_tgwid_1_20180124.tsv")
+    //val exe = sc.textFile("C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv")
 
     /**
       *  1.读取原始数据表
       */
-    import spark.implicits._
     val exeDF = exe.map {
       x =>
         val par = x.split("\t")
@@ -72,11 +71,11 @@ object SZStockExchange extends Serializable {
         (key, x)
     }.groupByKey()
     //oriTable.show()
-
     /**
       * 2.取数据表 CSQSXW,进行map,将FQSXW为key,FXWLB为value
       */
-    val xwTable = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/CSQSXW")
+    val CSJYLVPath = Util.getDailyInputFilePath("CSJYLV")
+    val xwTable = sc.textFile(CSJYLVPath)
     val xwValue = xwTable.map {
       x => {
         val value = x.split(",")
@@ -90,7 +89,8 @@ object SZStockExchange extends Serializable {
       * 3.读取Lvarlist
       *
       */
-    val varList = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/LVARLIST")
+    val LVARLISTPath = Util.getDailyInputFilePath("LVARLIST")
+    val varList = sc.textFile(LVARLISTPath)
     val varlistValue = varList.map {
       x => {
         val par = x.split(",")
@@ -103,7 +103,8 @@ object SZStockExchange extends Serializable {
       * 4.读取A117cstskm
       *
       */
-    val cstskm = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/A001CSTSKM")
+    val A001CSTSKMPath = Util.getDailyInputFilePath("A001CSTSKM")
+    val cstskm = sc.textFile(A001CSTSKMPath)
     val cstskmValue = cstskm.map {
       x => {
         val par = x.split(",")
@@ -116,7 +117,8 @@ object SZStockExchange extends Serializable {
       * 5.读取LSetCsSysJj 这张表
       *
       */
-    val LSETCSSYSJJ = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/LSETCSSYSJJ")
+    val LSETCSSYSJJPath = Util.getDailyInputFilePath("LSETCSSYSJJ")
+    val LSETCSSYSJJ = sc.textFile(LSETCSSYSJJPath)
     val LSETCSSYSJJValue = LSETCSSYSJJ.map {
       x => {
         val value = x.split(",")
@@ -129,7 +131,9 @@ object SZStockExchange extends Serializable {
       *
       * 6.读取基金信息表
       */
-    val CSJJXX = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/CSJJXX")
+
+    val CSJJXXPath = Util.getDailyInputFilePath("CSJJXX")
+    val CSJJXX = sc.textFile(CSJJXXPath)
     //hdfs://nscluster/yss/guzhi/basic_list/20180917/CSJJXX
     val CSJJXXValue = CSJJXX.map {
       x => {
@@ -157,8 +161,8 @@ object SZStockExchange extends Serializable {
       * 7.读取股东账号
       *
       */
-
-    val accountNumber = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/CSGDZH")
+    val CSGDZHPath = Util.getDailyInputFilePath("CSGDZH")
+    val accountNumber = sc.textFile(CSGDZHPath )
 
     val setCode = accountNumber.map {
       x => {
@@ -173,7 +177,8 @@ object SZStockExchange extends Serializable {
       * 读取 CSZQXX表
       *
       */
-    val CSZQXX = sc.textFile("hdfs://192.168.102.120/yss/guzhi/basic_list/20181015/CSZQXX")
+    val CSZQXXPath = Util.getDailyInputFilePath("CSZQXX")
+    val CSZQXX = sc.textFile(CSZQXXPath)
     val fzqlb = CSZQXX.map {
       x => {
         var par = x.split(",")

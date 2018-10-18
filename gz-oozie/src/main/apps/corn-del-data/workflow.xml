@@ -7,7 +7,7 @@
 			<port>22</port>
 			<user>hadoop</user>
 			<password>1q2w3ehadoop</password>
-			<command>rm -fr /data/gz_interface/`date -d "15 day ago" +"%Y%m%d"` </command>
+			<commands>rm -fr /data/gz_interface/`date -d "15 day ago" +"%Y%m%d"` </commands>
 		</command>
 		<ok to="end"/>
 		<error to="fail"/>
