@@ -9,8 +9,8 @@ import java.util.Properties;
 /**
  * @author zhanghaisui
  * @version 2018-09-14 15:01
- * describe:JavaAPI调用oozie任务，yarn模式执行oozie中的fork，方法二
- * 目标文件：
+ * describe:JavaAPI调用oozie任务，yarn模式执行oozie中的fork
+ * 目标文件：测试用
  * 目标表：
  */
 public class WorkFlowClientFork {
