@@ -104,6 +104,17 @@ public class TaildirSourceConfigurationConstants {
     public static final String SEPARATOR = "csvSeparator";
     public static final String DEFAULT_SEPARATOR = ",";
 
+    /**
+     * 在监控的目录里是否根据时间排除过期的目录
+     */
+    public static final String DIRECTORY_DATE = "directoryDate";
+    public static final boolean DEFAULT_DIRECTORY_DATE = true;
+
+    /**
+     * 文件读完后是否修改文件名
+     */
+    public static final String RENAME_FLIE = "renameFlie";
+    public static final boolean DEFAULT_RENAME_FLIE = false;
 
 
 }

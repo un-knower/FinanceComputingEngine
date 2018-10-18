@@ -65,13 +65,13 @@ public class TailFile {
     private String fileSuffixes;
     private String parentDir;
     private final String csvSeparator;
-
+    private final Boolean renameFlie;
 
     /*-------------------------*/
 
 
     public TailFile(File file, Map<String, String> headers, long inode, long pos, String parentDir,
-                    String xmlNode, String currentRecord, String csvSeparator)
+                    String xmlNode, String currentRecord, String csvSeparator, boolean renameFlie)
             throws IOException {
         this.raf = new RandomAccessFile(file, "r");
         if (pos > 0) {
@@ -89,6 +89,7 @@ public class TailFile {
         /*---------------------------------------------------------------*/
         this.fileInputStream = new FileInputStream(file);
         this.parentDir = parentDir;
+        this.renameFlie = renameFlie;
         this.csvSeparator = csvSeparator;
         String fileName = file.getName();
         fileSuffixes = fileName.substring(fileName.length() - 4);
@@ -293,10 +294,13 @@ public class TailFile {
             long now = System.currentTimeMillis();
             setLastUpdated(now);
             //读取完后对文件修改文件的后缀
-            File file = new File(getPath());
-            if (!path.endsWith(".COMPLETED")) {
-                file.renameTo(new File(path + now + ".COMPLETED"));
+            if (renameFlie) {
+                File file = new File(getPath());
+                if (!path.endsWith(".COMPLETED")) {
+                    file.renameTo(new File(path + now + ".COMPLETED"));
+                }
             }
+
         } catch (IOException e) {
             logger.error("Failed closing file: " + path + ", inode: " + inode, e);
         }
