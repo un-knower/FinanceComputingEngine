@@ -332,9 +332,9 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
         long currentTimeMillis = System.currentTimeMillis();
         fileSuffixes = fileName.substring(fileName.length() - 4);
         if (fileSuffixes.equalsIgnoreCase(".dbf")) {
-            readDBF = new ReadDbf(new FileInputStream(file), currentRecord, csvSeparator);
+            readDBF = new ReadDbf(new FileInputStream(file), currentRecord, csvSeparator, 10);
         } else if (fileSuffixes.equalsIgnoreCase(".xml")) {
-            readXml = new ReadXml(xmlNode, new RandomAccessFile(file, "r"), 0, currentRecord, csvSeparator);
+            readXml = new ReadXml(xmlNode, new RandomAccessFile(file, "r"), 0, currentRecord, csvSeparator, 10);
         }
         System.out.println("创建文件的对象准备开始读取文件:" + file.getAbsolutePath() + "   当前时间是:" + currentTimeMillis + "  文件大小是:" + file.length());
         logger.info("创建文件的对象准备开始读取文件:" + file.getAbsolutePath() + "   当前时间是:" + currentTimeMillis + "  文件大小是:" + file.length());
