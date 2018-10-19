@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.security.PrivilegedExceptionAction;
+import java.time.LocalDateTime;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -579,7 +580,7 @@ class BucketWriter {
                 @Override
                 public Void call() throws Exception {
 
-                    if (!body.equals("end")) {
+                    if (!body.equals("fileEnd")) {
                         writer.append(event); // could block
                     }
                     return null;
@@ -606,8 +607,9 @@ class BucketWriter {
         if (batchCounter == batchSize) {
             flush();
         }
-        if (body.equals("end")) {
-            System.out.println("成功的关闭了");
+        if (body.equals("fileEnd")) {
+
+            System.out.println(LocalDateTime.now()+"    HDFS文件上传完毕:" + fileName);
             flush();
             close(true);//关闭hdfs流,并修改为永久名字
         }
