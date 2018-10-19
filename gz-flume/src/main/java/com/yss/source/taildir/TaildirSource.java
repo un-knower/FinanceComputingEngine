@@ -82,6 +82,7 @@ public class TaildirSource extends AbstractSource implements
     private String csvSeparator;
     private Boolean directoryDate;
     private Boolean renameFlie;
+    private Integer eventLines;
 
     @Override
     public synchronized void start() {
@@ -101,6 +102,7 @@ public class TaildirSource extends AbstractSource implements
                     .csvSeparator(csvSeparator)
                     .directoryDate(directoryDate)
                     .renameFlie(renameFlie)
+                    .eventLines(eventLines)
                     .build();
         } catch (IOException e) {
             throw new FlumeException("Error instantiating ReliableTaildirEventReader", e);
@@ -192,6 +194,7 @@ public class TaildirSource extends AbstractSource implements
         csvSeparator = context.getString(SEPARATOR, DEFAULT_SEPARATOR);
         directoryDate = context.getBoolean(DIRECTORY_DATE, DEFAULT_DIRECTORY_DATE);
         renameFlie = context.getBoolean(RENAME_FLIE, DEFAULT_RENAME_FLIE);
+        eventLines = context.getInteger(EVENT_LINES, DEFAULT_EVENT_LINES);
 
 
         if (sourceCounter == null) {

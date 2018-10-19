@@ -31,7 +31,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -57,12 +60,13 @@ public class TailFile {
     private long lineReadPos;
 
     /*-------------------------*/
-
+    private int endRow = 0;
     private ReadDbf readDbf;
     private ReadXml readXml;
     private FileInputStream fileInputStream;
 
     private String fileSuffixes;
+    private String currentRecord;
     private String parentDir;
     private final String csvSeparator;
     private final Boolean renameFlie;
@@ -71,7 +75,7 @@ public class TailFile {
 
 
     public TailFile(File file, Map<String, String> headers, long inode, long pos, String parentDir,
-                    String xmlNode, String currentRecord, String csvSeparator, boolean renameFlie)
+                    String xmlNode, String currentRecord, String csvSeparator, boolean renameFlie, Integer eventLines)
             throws IOException {
         this.raf = new RandomAccessFile(file, "r");
         if (pos > 0) {
@@ -91,13 +95,14 @@ public class TailFile {
         this.parentDir = parentDir;
         this.renameFlie = renameFlie;
         this.csvSeparator = csvSeparator;
+        this.currentRecord = currentRecord;
         String fileName = file.getName();
         fileSuffixes = fileName.substring(fileName.length() - 4);
-        System.out.println("Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath() + "   当前时间是:" + System.currentTimeMillis() + "  文件大小是:" + file.length());
+        System.out.println(LocalDateTime.now()+"    Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
         if (fileSuffixes.equalsIgnoreCase(".dbf")) {
-            readDbf = new ReadDbf(this.fileInputStream, currentRecord, csvSeparator);
+            readDbf = new ReadDbf(this.fileInputStream, currentRecord, csvSeparator, eventLines);
         } else if (fileSuffixes.equalsIgnoreCase(".xml")) {
-            readXml = new ReadXml(xmlNode, this.raf, this.pos, currentRecord, csvSeparator);
+            readXml = new ReadXml(xmlNode, this.raf, this.pos, currentRecord, csvSeparator, eventLines);
         }
         /*---------------------------------------------------------------*/
     }
@@ -178,6 +183,13 @@ public class TailFile {
         for (int i = 0; i < numEvents; i++) {
             Event event = readEvent(backoffWithoutNL, addByteOffset);
             if (event == null) {
+                if (endRow == 0) {
+                    System.out.println(LocalDateTime.now() + "    监控文件已读到最后,发送标识位!");
+                    Event eventBody = EventBuilder.withBody("fileEnd".getBytes("utf-8"));
+                    eventBody.getHeaders().put(currentRecord, String.valueOf(0));
+                    events.add(eventBody);
+                    endRow++;
+                }
                 break;
             }
             events.add(event);
@@ -188,12 +200,15 @@ public class TailFile {
     private Event readEvent(boolean backoffWithoutNL, boolean addByteOffset) throws IOException {
         Event event;
         if (fileSuffixes.equalsIgnoreCase(".dbf")) {
-            event = readDbf.readDBF();
+            event = readDbf.readDBFFile();
             //更新pos,从而更新posJson文件
             setPos(fileInputStream.getChannel().position());
 
         } else if (fileSuffixes.equalsIgnoreCase(".xml")) {
             event = readXml.readNode();
+            if (event == null) {
+                setPos(raf.length());
+            }
         } else {
             Long posTmp = getLineReadPos();
             LineResult line = readLine();
