@@ -32,6 +32,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -96,6 +98,7 @@ public class TaildirMatcher {
     private long currentParentDirMTime = -1;
     //正则匹配
     private Pattern fileNamePattern;
+    private Boolean directoryDate;
 
     public String getParentDir() {
         return parentDir.getAbsolutePath();
@@ -119,7 +122,7 @@ public class TaildirMatcher {
      *                             for stamping mtime (eg: remote filesystems)
      * @see TaildirSourceConfigurationConstants
      */
-    TaildirMatcher(String fileGroup, String filePattern, boolean cachePatternMatching) {
+    TaildirMatcher(String fileGroup, String filePattern, boolean cachePatternMatching, boolean directoryDate) {
         // store whatever came from configuration
         this.fileGroup = fileGroup;
         this.filePattern = filePattern;
@@ -130,6 +133,7 @@ public class TaildirMatcher {
         this.parentDir = f.getParentFile();
         String regex = f.getName();
         this.fileNamePattern = Pattern.compile(regex);
+        this.directoryDate = directoryDate;
 
         final PathMatcher matcher = FS.getPathMatcher("regex:" + regex);
 //        this.fileFilter = new DirectoryStream.Filter<Path>() {
@@ -321,9 +325,34 @@ public class TaildirMatcher {
         if (directory == null || !directory.isDirectory()) {
             return candidateFiles;
         }
+        String date = LocalDate.now().toString().replaceAll("-", "");
         for (File file : directory.listFiles(filter)) {
             if (file.isDirectory()) {
-                candidateFiles.addAll(getCandidateFiles(file, filter));
+                if (directoryDate) {
+                    System.out.println(LocalDateTime.now()+"    监控目录下的所有子目录 "+file.getName());
+                    if (file.getName().equals(date)) {
+                        candidateFiles.addAll(getChildDirectoryFiles(file, filter));
+                    }
+                } else {
+                    candidateFiles.addAll(getCandidateFiles(file, filter));
+                }
+
+            } else {
+                candidateFiles.add(file);
+            }
+        }
+        return candidateFiles;
+    }
+
+    private List<File> getChildDirectoryFiles(File directory, FileFilter filter) {
+        List<File> candidateFiles = new ArrayList<File>();
+        if (directory == null || !directory.isDirectory()) {
+            return candidateFiles;
+        }
+        for (File file : directory.listFiles(filter)) {
+            if (file.isDirectory()) {
+                System.out.println(LocalDateTime.now()+ "    符合当前日期的所有目录及其子目录    "+file.getName() );
+                candidateFiles.addAll(getChildDirectoryFiles(file, filter));
             } else {
                 candidateFiles.add(file);
             }

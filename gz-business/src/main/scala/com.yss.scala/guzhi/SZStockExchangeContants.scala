@@ -1,6 +1,6 @@
 package com.yss.scala.guzhi
 
-object SZSEContants {
+object SZStockExchangeContants {
   //定义分隔符
   val SEPARATE1 = "@"
   val SEPARATE2 = ","

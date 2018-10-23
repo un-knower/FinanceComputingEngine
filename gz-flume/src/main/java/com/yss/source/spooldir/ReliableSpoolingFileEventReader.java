@@ -45,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -332,12 +333,12 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
         long currentTimeMillis = System.currentTimeMillis();
         fileSuffixes = fileName.substring(fileName.length() - 4);
         if (fileSuffixes.equalsIgnoreCase(".dbf")) {
-            readDBF = new ReadDbf(new FileInputStream(file), currentRecord, csvSeparator);
+            readDBF = new ReadDbf(new FileInputStream(file), currentRecord, csvSeparator, 50);
         } else if (fileSuffixes.equalsIgnoreCase(".xml")) {
-            readXml = new ReadXml(xmlNode, new RandomAccessFile(file, "r"), 0, currentRecord, csvSeparator);
+            readXml = new ReadXml(xmlNode, new RandomAccessFile(file, "r"), 0, currentRecord, csvSeparator, 50);
         }
-        System.out.println("创建文件的对象准备开始读取文件:" + file.getAbsolutePath() + "   当前时间是:" + currentTimeMillis + "  文件大小是:" + file.length());
-        logger.info("创建文件的对象准备开始读取文件:" + file.getAbsolutePath() + "   当前时间是:" + currentTimeMillis + "  文件大小是:" + file.length());
+        System.out.println(LocalDateTime.now()+"    创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
+        logger.info(LocalDateTime.now()+"   创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
     }
 
     //读取数据
@@ -404,7 +405,7 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
         List<Event> events = new ArrayList<Event>();
         if (fileSuffixes.equalsIgnoreCase(".dbf")) {
             for (int i = 0; i < numEvents; i++) {
-                Event event = readDBF.readDBF();
+                Event event = readDBF.readDBFFile();
                 if (event != null) {
                     events.add(event);
                 } else {
@@ -526,7 +527,6 @@ public class ReliableSpoolingFileEventReader implements ReliableEventReader {
         long currentTimeMillis = System.currentTimeMillis();
         File dest = new File(fileToRoll.getPath() + currentTimeMillis + completedSuffix);
         logger.info("Preparing to move file {} to {}", fileToRoll, dest);
-        logger.info("当前文件读取完毕:" + fileToRoll.getAbsolutePath() + "   当前时间是:" + currentTimeMillis + "  文件大小是:" + fileToRoll.length());
         // Before renaming, check whether destination file name exists
         if (dest.exists() && PlatformDetect.isWindows()) {
             /*

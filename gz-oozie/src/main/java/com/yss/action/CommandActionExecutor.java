@@ -14,6 +14,7 @@ import org.jdom.Namespace;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 /**
  * author:   ZhangLong
@@ -66,10 +67,17 @@ public class CommandActionExecutor extends org.apache.oozie.action.ActionExecuto
             int port = Integer.valueOf(actionXml.getChildTextTrim("port", ns));
             String user = actionXml.getChildTextTrim("user", ns);
             String password = actionXml.getChildTextTrim("password", ns);
-            String command = actionXml.getChildTextTrim("command", ns);
 
-            exeCommand(host,  port,  user,  password,  command);
+            List<Element> commandsList = actionXml.getChildren("commands", ns);
+            if (commandsList != null && commandsList.size() > 0) {
+                for (Element commandsElement : commandsList) {
+                    String command = commandsElement.getValue() ;
+                    if(null != command && command.trim().length() > 0 ){
+                        exeCommand(host,  port,  user,  password,  command );
+                    }
+                }
 
+            }
             context.setExecutionData(SUCCEEDED, null);
             System.out.println("============== command end  =======================");
         } catch (Exception e) {
