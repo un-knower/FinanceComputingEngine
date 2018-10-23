@@ -26,7 +26,7 @@ object KafkaUtilsSpark {
     "key.deserializer" -> classOf[StringDeserializer],
     "value.deserializer" -> classOf[BytesDeserializer],
     "group.id" -> "gh",
-    "auto.offset.reset" -> "earliest",//latest
+    "auto.offset.reset" -> "earliest", //latest
     "enable.auto.commit" -> (false: java.lang.Boolean)
   )
   val topics = Array("flume_guzhi")
@@ -40,10 +40,18 @@ object KafkaUtilsSpark {
       val body = record.value().get()
       val decoder = DecoderFactory.get().binaryDecoder(body, null)
       val event = reader.read(null, decoder)
-      val fileName = event.getHeaders.get(new Utf8("fileName"))
-      val currentRecord = event.getHeaders.get(new Utf8("currentRecord"))
-      val str = new String(event.getBody.array())
-      KafkaUtilsSpark(fileName.toString, str, Integer.valueOf(currentRecord.toString))
+      val fileName = event.getHeaders.get(new Utf8("fileName")).toString
+      var currentRecord = 0
+      //无表头文件时会出现空指针,处理该异常
+      //对于有表头的文件通过currentRecord=1来排除
+      try
+        currentRecord =
+          Integer.valueOf(event.getHeaders.get(new Utf8("currentRecord")).toString)
+      catch {
+        case ex: NullPointerException =>
+      }
+      val value = new String(event.getBody.array())
+      KafkaUtilsSpark(fileName, value, currentRecord)
     })
   }
 }
