@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 object SZStockExchangeContants {
   //定义分隔符
