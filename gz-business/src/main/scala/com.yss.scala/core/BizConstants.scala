@@ -7,6 +7,6 @@ package com.yss.scala.core
   *  * 目标文件：
   *  * 目标表：
   *  */
-private object  Constants {
+private object  BizConstants {
 
 }
