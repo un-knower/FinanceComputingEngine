@@ -1,7 +1,7 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 import com.yss.scala.dto.{Hzjkqs, ShghFee, ShghYssj}
-import com.yss.scala.guzhi.ShghContants._
+import com.yss.scala.core.ShghContants._
 import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast

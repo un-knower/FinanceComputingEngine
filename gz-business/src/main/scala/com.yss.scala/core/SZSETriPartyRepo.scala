@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 import java.text.SimpleDateFormat
 import java.util.Properties

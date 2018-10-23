@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 import java.util.Properties
 import org.apache.spark.sql.types.{StringType, StructField, StructType}

@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 import java.io.File
 import java.net.URI

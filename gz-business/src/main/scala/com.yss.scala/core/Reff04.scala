@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 import java.sql.{Connection, DriverManager, PreparedStatement}
 import java.util.Properties

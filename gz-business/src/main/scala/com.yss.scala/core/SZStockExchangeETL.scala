@@ -1,10 +1,10 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 import java.text.SimpleDateFormat
 
 import com.twitter.chill.java.IterableRegistrar
 import com.yss.scala.dto.SZSEOriginalObj
-import com.yss.scala.guzhi.ShghContants.SEPARATE1
+import com.yss.scala.core.ShghContants.SEPARATE1
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import com.yss.scala.util.Util
