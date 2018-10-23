@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.yss</groupId>
-    <artifactId>GuZhi</artifactId>
+    <artifactId>FinanceComputingEngine</artifactId>
     <version>1.0.0</version>
     <modules>
         <module>gz-flume</module>
