@@ -295,6 +295,7 @@ object SZSETriPartyRepo {
     field
   }
 
+  //业务代码计算逻辑
   private def calculator(sjsmxDF: DataFrame,sjsjgDF:DataFrame,spark: SparkSession): Unit = {
 
     val sc = spark.sparkContext
