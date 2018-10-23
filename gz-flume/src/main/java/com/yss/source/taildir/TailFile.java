@@ -186,7 +186,7 @@ public class TailFile {
                 if (endRow == 0) {
                     System.out.println(LocalDateTime.now() + "    监控文件已读到最后,发送标识位!");
                     Event eventBody = EventBuilder.withBody("fileEnd".getBytes("utf-8"));
-                    eventBody.getHeaders().put(currentRecord, String.valueOf(0));
+                    eventBody.getHeaders().put(currentRecord, String.valueOf(1));
                     events.add(eventBody);
                     endRow++;
                 }
