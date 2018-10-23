@@ -117,4 +117,11 @@ public class TaildirSourceConfigurationConstants {
     public static final boolean DEFAULT_RENAME_FLIE = false;
 
 
+    /**
+     * 每个Event包含行多少行的数据
+     */
+    public static final String EVENT_LINES = "eventLines";
+    public static final int DEFAULT_EVENT_LINES = 50;
+
+
 }

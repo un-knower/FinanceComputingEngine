@@ -63,6 +63,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private final String currentRecord;
     private final String csvSeparator;
     private Boolean renameFlie;
+    private int eventLines;
 
     /**
      * Create a ReliableTaildirEventReader to watch the given directory.
@@ -72,7 +73,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                                        boolean skipToEnd, boolean addByteOffset, boolean cachePatternMatching,
                                        boolean annotateFileName, String fileNameHeader, String xmlNode,
                                        String currentRecord, String csvSeparator, Boolean directoryDate,
-                                       Boolean renameFlie) throws IOException {
+                                       Boolean renameFlie, int eventLines) throws IOException {
         // Sanity checks
         Preconditions.checkNotNull(filePaths);
         Preconditions.checkNotNull(positionFilePath);
@@ -99,6 +100,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         this.currentRecord = currentRecord;
         this.csvSeparator = csvSeparator;
         this.renameFlie = renameFlie;
+        this.eventLines = eventLines;
         updateTailFiles(skipToEnd);
 
         logger.info("Updating position from position file: " + positionFilePath);
@@ -300,7 +302,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private TailFile openFile(File file, Map<String, String> headers, long inode, long pos, String parentDir) {
         try {
             logger.info("Opening file: " + file + ", inode: " + inode + ", pos: " + pos + ", parentDir: " + parentDir);
-            return new TailFile(file, headers, inode, pos, parentDir, xmlNode, currentRecord, csvSeparator, renameFlie);
+            return new TailFile(file, headers, inode, pos, parentDir, xmlNode, currentRecord, csvSeparator, renameFlie, eventLines);
         } catch (IOException e) {
             throw new FlumeException("Failed opening file: " + file, e);
         }
@@ -330,6 +332,13 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 TaildirSourceConfigurationConstants.DEFAULT_DIRECTORY_DATE;
         private boolean setRenameFlie =
                 TaildirSourceConfigurationConstants.DEFAULT_RENAME_FLIE;
+        private Integer setEventLines =
+                TaildirSourceConfigurationConstants.DEFAULT_EVENT_LINES;
+
+        public Builder eventLines(int setEventLines) {
+            this.setEventLines = setEventLines;
+            return this;
+        }
 
         public Builder directoryDate(boolean setDirectoryDate) {
             this.setDirectoryDate = setDirectoryDate;
@@ -401,7 +410,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
             return new ReliableTaildirEventReader(filePaths, headerTable, positionFilePath, skipToEnd,
                     addByteOffset, cachePatternMatching,
                     annotateFileName, fileNameHeader, setXmlNode,
-                    setCurrentRecord, setCsvSeparator, setDirectoryDate, setRenameFlie);
+                    setCurrentRecord, setCsvSeparator, setDirectoryDate, setRenameFlie, setEventLines);
         }
     }
 

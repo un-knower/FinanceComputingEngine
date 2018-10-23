@@ -654,12 +654,12 @@ object SHTransfer {
         if ("B".equals(bs)) {
           if (zqdm.startsWith("201") || zqdm.startsWith("203")
             || zqdm.startsWith("204") || zqdm.startsWith("205")) return "MCHG"
-          else if (zqdm.startsWith("22")) return "MCHG_QY"
+          else if (zqdm.startsWith("202")) return "MCHG_QY"
           else return "MC"
         } else {
           if (zqdm.startsWith("201") || zqdm.startsWith("203")
             || zqdm.startsWith("204") || zqdm.startsWith("205")) return "MRHG"
-          else if (zqdm.startsWith("22")) return "MRHG_QY"
+          else if (zqdm.startsWith("202")) return "MRHG_QY"
           else return "MR"
         }
       }

@@ -33,6 +33,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -328,7 +329,7 @@ public class TaildirMatcher {
         for (File file : directory.listFiles(filter)) {
             if (file.isDirectory()) {
                 if (directoryDate) {
-                    System.out.println(file.getName() + "父目录");
+                    System.out.println(LocalDateTime.now()+"    监控目录下的所有子目录 "+file.getName());
                     if (file.getName().equals(date)) {
                         candidateFiles.addAll(getChildDirectoryFiles(file, filter));
                     }
@@ -350,7 +351,7 @@ public class TaildirMatcher {
         }
         for (File file : directory.listFiles(filter)) {
             if (file.isDirectory()) {
-                System.out.println(file.getName() + "子目录");
+                System.out.println(LocalDateTime.now()+ "    符合当前日期的所有目录及其子目录    "+file.getName() );
                 candidateFiles.addAll(getChildDirectoryFiles(file, filter));
             } else {
                 candidateFiles.add(file);
