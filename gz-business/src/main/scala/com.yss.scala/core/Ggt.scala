@@ -29,19 +29,16 @@ object Ggt {
     val conf = new SparkConf().setAppName("ggt")
     val spark = SparkSession.builder().config(conf).getOrCreate()
 
-    val arr = new Array[String](4)
-    testparam(arr)//TODO 测试代码
-
     //获取配置参数
-    val (commonUrl, currentDate,jsmxPath) = loadInitParam(arr)
+    val (commonUrl, currentDate,ggtHadoopPath) = loadInitParam()
 
-//    val listFiles = getDirFileNames(new File("C:\\Users\\yelin\\Desktop\\dbf\\shuju\\ght"))
-    val listFiles = getHadoopFilesName("/yss/guzhi/interface/20181014/ght")
+    val jsmxFiles = getHadoopFilesName(ggtHadoopPath, "jsmx")
+    val tzxxFiles = getHadoopFilesName(ggtHadoopPath, "tzxx")
 
     //过滤不需要的数据
-    val jsmxdbfDF = filterYWLX(spark, jsmxPath,listFiles).persist(StorageLevel.MEMORY_ONLY)
-    //获取业务日期
-//    var qsrq = jsmxdbfDF.head().getAs[String]("QSRQ")
+    val jsmxdbfDF = filterYWLX(spark,jsmxFiles).persist(StorageLevel.MEMORY_ONLY)
+    val tzxxDF = getHktzxxDF(spark,tzxxFiles).persist(StorageLevel.MEMORY_ONLY)
+
     var qsrq = currentDate
     val qsrqformat = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(qsrq))
 
@@ -72,7 +69,7 @@ object Ggt {
     val broadcastGddmParamMap = spark.sparkContext.broadcast(gddmParamRDD.collectAsMap())
 
     //根据原始字段zqdm1计算证券代码
-    val zqdm1ValueRDD = buildZqdm1ValueRDD(zqdm1PairRDD, spark, commonUrl, currentDate, qsrq).persist(StorageLevel.MEMORY_ONLY)
+    val zqdm1ValueRDD = buildZqdm1ValueRDD(zqdm1PairRDD, tzxxDF,spark, qsrq).persist(StorageLevel.MEMORY_ONLY)
     val zqdm1ValueMap = buildZqdm1ValueMap(zqdm1ValueRDD)
     val broadcastZqdm1ValueMap = spark.sparkContext.broadcast(zqdm1ValueMap)
 
@@ -149,16 +146,14 @@ object Ggt {
 
     val resultOutputDS = cjBhMxSqBhMx00RDD.union(cjBhMx1RDD).union(sqBhMx1RDD).union(cjBhMxSqBhMx11RDD)
 
-    //测试输出
-//    resultOutputDS.createOrReplaceTempView("bbbbbb_t")
-//    spark.sql("select * from bbbbbb_t order by Fdate,FinDate,FZqdm,Fjyxwh,FZqbz,Fywbz,Zqdm").show(10000, false)
+    val resultOrder = resultOutputDS.orderBy("Fdate", "FinDate", "FZqdm", "Fjyxwh", "FZqbz", "Fywbz","Zqdm")
 
     //输出mysql
     val properties = new Properties()
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
     properties.setProperty("driver", "com.mysql.jdbc.Driver")
-    resultOutputDS.write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.120/JJCWGZ?useUnicode=true&characterEncoding=utf8", "ggt_table", properties)
+    resultOrder.write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.120/JJCWGZ?useUnicode=true&characterEncoding=utf8", "ggt_table", properties)
   }
 
   /**
@@ -1014,17 +1009,16 @@ object Ggt {
   /**
     * 根据原始字段zqdm1计算证券代码
     * @param zqdm1PairRDD
+    * @param hktzxxDF
     * @param spark
-    * @param curl
-    * @param cdate
     * @param qsrq 业务日期
     * @return RDD[(zqdm1, zqdm1对应的证券代码)]
     */
-  def buildZqdm1ValueRDD(zqdm1PairRDD:RDD[(String, Int)], spark:SparkSession, curl:String, cdate:String, qsrq:String):RDD[(String,String)] = {
+  def buildZqdm1ValueRDD(zqdm1PairRDD:RDD[(String, Int)], hktzxxDF:DataFrame, spark:SparkSession, qsrq:String):RDD[(String,String)] = {
     import spark.implicits._
     zqdm1PairRDD.toDF("zqdm1","oth").createOrReplaceTempView("zqdm1_table")
     //加载并过滤通知信息文件数据
-    getHktzxxDF(spark,  curl, cdate,"HK_TZXX").createOrReplaceTempView("hktzxx_h10_table")
+    hktzxxDF.createOrReplaceTempView("hktzxx_h10_table")
 
     val hktzzFzdm1DF = spark.sql(
       " select t1.zqdm1, ZQDM zqdm, COUNT(*) OVER(partition by zqdm1) zcount " +
@@ -1485,12 +1479,10 @@ object Ggt {
     result
   }
 
-  def filterYWLX(spark: SparkSession, jsmxPath:String, listFiles:ListBuffer[String]) = {
-    import com.yss.scala.dbf.dbf._
+  def mergeFileDF(spark: SparkSession, listFiles:ListBuffer[String]) = {
     val listDf = new mutable.ListBuffer[DataFrame]
-//    val jsmxdbfDF = spark.sqlContext.dbfFile(jsmxPath)
+
     for (filename <- listFiles) {
-//      listDf += spark.sqlContext.dbfFile(filename)
       listDf += Util.readCSV(filename, spark, true)
     }
     var jsmxdbfDF = listDf(0)
@@ -1498,24 +1490,31 @@ object Ggt {
     for (i <- 1 to listDf.length-1) {
       jsmxdbfDF = jsmxdbfDF.union(listDf(i))
     }
+    jsmxdbfDF
+  }
 
+  def filterYWLX(spark: SparkSession, listFiles:ListBuffer[String]) = {
+//    val listDf = new mutable.ListBuffer[DataFrame]
+//
+//    for (filename <- listFiles) {
+//      listDf += Util.readCSV(filename, spark, true)
+//    }
+//    var jsmxdbfDF = listDf(0)
+//
+//    for (i <- 1 to listDf.length-1) {
+//      jsmxdbfDF = jsmxdbfDF.union(listDf(i))
+//    }
+    val jsmxdbfDF = mergeFileDF(spark,listFiles)
 
     jsmxdbfDF.createOrReplaceTempView("hk_jsmx_table")
     spark.sql("select * from hk_jsmx_table where YWLX in ('H01','H02','H54','H55','H60','H63','H64','H65','H67')")
   }
 
-  def loadInitParam(args: Array[String]):(String,String,String)={
-    if(strIsNull(args(0)) || strIsNull(args(1)) || strIsNull(args(2))) {
-      throw new Exception("配置参数不存在")
-    }
-    var commonUrl = args(0)
-    var tzxxPath = args(1)
-    var jsmxPath = args(2)
-    var currentDate = args(3)
-    if (strIsNull(args(3))) {
-      currentDate = getCurrentDate()
-    }
-    (commonUrl, currentDate,jsmxPath)
+  def loadInitParam():(String,String,String)={
+    var commonUrl = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
+    var currentDate = getCurrentDate()
+    var ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/ggt"
+    (commonUrl, currentDate,ggtHadoopPath)
   }
 
   def getCurrentDate():String = {
@@ -1565,14 +1564,16 @@ object Ggt {
     * @param spark
     * @return
     */
-  def getHktzxxDF(spark: SparkSession, commonUrl:String, date:String, fileName:String) = {
+  def getHktzxxDF(spark: SparkSession, listFiles:ListBuffer[String]) = {
 
-    import spark.implicits._
-    val tzxxRDD = spark.sparkContext.textFile(commonUrl + date + "/" + fileName)
-      .map{ item =>
-        val items = item.split(",")
-        (items(1),items(28), items(29), items(12), items(13), items(4))
-      }.toDF("TZLB", "FZDM1","FZDM2", "RQ1", "RQ2", "ZQDM").createOrReplaceTempView("hk_tzxx_table")
+    mergeFileDF(spark,listFiles).createOrReplaceTempView("hk_tzxx_table")
+
+//    import spark.implicits._
+//    val tzxxRDD = spark.sparkContext.textFile(commonUrl + date + "/" + fileName)
+//      .map{ item =>
+//        val items = item.split(",")
+//        (items(1),items(28), items(29), items(12), items(13), items(4))
+//      }.toDF("TZLB", "FZDM1","FZDM2", "RQ1", "RQ2", "ZQDM").createOrReplaceTempView("hk_tzxx_table")
 
     spark.sql("select FZDM1,FZDM2,RQ1,RQ2,ZQDM from hk_tzxx_table where TZLB='H10'")
   }
@@ -1705,7 +1706,6 @@ object Ggt {
     args(0) = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
     args(1) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\2"
     args(2) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\hk_jsmxjs844.425.DBF"
-    args(3) = "20181014"
   }
 
   def getDirFileNames(filepath:File):ListBuffer[String] = {
@@ -1723,7 +1723,7 @@ object Ggt {
 
     return list
   }
-  def getHadoopFilesName(path:String):ListBuffer[String] = {
+  def getHadoopFilesName(path:String, filterStr:String):ListBuffer[String] = {
     val list = new mutable.ListBuffer[String]
     var fs:FileSystem = null
     try {
@@ -1736,7 +1736,7 @@ object Ggt {
 
       while(listFiles.hasNext()){
         val fileStatus:LocatedFileStatus = listFiles.next()
-        if (fileStatus.getPath.getName.contains("jsmx")) {
+        if (fileStatus.getPath.getName.contains(filterStr)) {
           list += fileStatus.getPath.toString
         }
       }
