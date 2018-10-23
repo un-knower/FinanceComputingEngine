@@ -30,10 +30,9 @@ object Ggt {
     val spark = SparkSession.builder().config(conf).getOrCreate()
 
     //获取配置参数
-    val (commonUrl, currentDate,ggtHadoopPath) = loadInitParam()
+    val (commonUrl, currentDate,ggtHadoopPath, hadoopRpcPath) = loadInitParam()
 
-    val jsmxFiles = getHadoopFilesName(ggtHadoopPath, "jsmx")
-    val tzxxFiles = getHadoopFilesName(ggtHadoopPath, "tzxx")
+    val (jsmxFiles,tzxxFiles) = getHadoopFilesName(hadoopRpcPath, ggtHadoopPath, "jsmx", "tzxx")
 
     //过滤不需要的数据
     val jsmxdbfDF = filterYWLX(spark,jsmxFiles).persist(StorageLevel.MEMORY_ONLY)
@@ -47,8 +46,6 @@ object Ggt {
 
     //获取原始数据的XWH数据
     val xwhPairRDD = jsmxdbfDF.select("XWH1").distinct().rdd.map(item => (trim(item.getAs[String]("XWH1")), 1)).persist(StorageLevel.MEMORY_ONLY)
-
-    jsmxdbfDF.select("QSRQ","ZQDM1").distinct().show(1000, false)
 
     //获取原始数据的zqdm1数据
     val zqdm1PairRDD = jsmxdbfDF.select("ZQDM1").distinct().rdd.map(item =>(trim(item.getAs("ZQDM1")), 1)).persist(StorageLevel.MEMORY_ONLY)
@@ -1494,27 +1491,19 @@ object Ggt {
   }
 
   def filterYWLX(spark: SparkSession, listFiles:ListBuffer[String]) = {
-//    val listDf = new mutable.ListBuffer[DataFrame]
-//
-//    for (filename <- listFiles) {
-//      listDf += Util.readCSV(filename, spark, true)
-//    }
-//    var jsmxdbfDF = listDf(0)
-//
-//    for (i <- 1 to listDf.length-1) {
-//      jsmxdbfDF = jsmxdbfDF.union(listDf(i))
-//    }
     val jsmxdbfDF = mergeFileDF(spark,listFiles)
 
     jsmxdbfDF.createOrReplaceTempView("hk_jsmx_table")
     spark.sql("select * from hk_jsmx_table where YWLX in ('H01','H02','H54','H55','H60','H63','H64','H65','H67')")
   }
 
-  def loadInitParam():(String,String,String)={
-    var commonUrl = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
-    var currentDate = getCurrentDate()
-    var ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/ggt"
-    (commonUrl, currentDate,ggtHadoopPath)
+  def loadInitParam():(String,String,String,String)={
+    val currentDate = getCurrentDate()
+    val hadoopRpcPath = "hdfs://192.168.102.120:8020"
+    val commonUrl = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
+    val ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/ggt"
+
+    (commonUrl, currentDate,ggtHadoopPath,hadoopRpcPath)
   }
 
   def getCurrentDate():String = {
@@ -1723,24 +1712,29 @@ object Ggt {
 
     return list
   }
-  def getHadoopFilesName(path:String, filterStr:String):ListBuffer[String] = {
-    val list = new mutable.ListBuffer[String]
+
+  def getHadoopFilesName(hadoopRpcPath:String, filePath:String, jxms:String, tzxx:String) = {
+    val jxmslist = new mutable.ListBuffer[String]
+    val hktzxxList = new mutable.ListBuffer[String]
     var fs:FileSystem = null
     try {
       val config:Configuration = new Configuration()
-      config.set("fs.default.name", "hdfs://192.168.102.120:8020")
-      fs = FileSystem.get(new URI("hdfs://192.168.102.120:8020"),config,"hadoop")
+      config.set("fs.default.name", hadoopRpcPath)
+      fs = FileSystem.get(new URI(hadoopRpcPath),config,"hadoop")
 
       //会递归找到所有的文件
-      val listFiles: RemoteIterator[LocatedFileStatus]  = fs.listFiles(new Path(path), true)
+      val listFiles: RemoteIterator[LocatedFileStatus]  = fs.listFiles(new Path(filePath), true)
 
       while(listFiles.hasNext()){
         val fileStatus:LocatedFileStatus = listFiles.next()
-        if (fileStatus.getPath.getName.contains(filterStr)) {
-          list += fileStatus.getPath.toString
+        if (fileStatus.getPath.getName.contains(jxms)) {
+          jxmslist += fileStatus.getPath.toString
+        }
+        if (fileStatus.getPath.getName.contains(tzxx)) {
+          hktzxxList += fileStatus.getPath.toString
         }
       }
-      list
+      (jxmslist,hktzxxList)
     }catch {
       case e1:Exception => throw new Exception("读取hadoop文件出错")
     }
