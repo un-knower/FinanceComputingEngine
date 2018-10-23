@@ -1,6 +1,6 @@
 package com.yss.test.scala
 
-import com.yss.scala.guzhi.SHTransfer.{doETL, doExec, loadLvarlist}
+import com.yss.scala.core.SHTransfer.{doETL, doExec, loadLvarlist}
 import com.yss.scala.util.Util
 import org.apache.spark.sql.SparkSession
 
