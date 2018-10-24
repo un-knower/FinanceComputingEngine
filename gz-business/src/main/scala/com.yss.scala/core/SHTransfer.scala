@@ -30,7 +30,7 @@ object SHTransfer {
   def doExec(fileName:String,tableName:String) = {
     val spark = SparkSession.builder()
       .appName("SHTransfer")
-      .master("local[*]")
+//      .master("local[*]")
       .getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     val df = doETL(spark, broadcastLvarList,fileName)
