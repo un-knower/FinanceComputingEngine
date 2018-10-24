@@ -2,29 +2,21 @@ package com.spark
 
 import java.io.File
 
-import com.spark.Util
 import com.yss.spark.KafkaUtilsSpark
-import org.apache.spark
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import org.apache.kafka.common.serialization.StringDeserializer
-import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
-import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
-import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
-import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
-import org.apache.spark.streaming.kafka010.KafkaUtils
 
 /**
-  *   created by zhangkai
-  *   测试上海过户
+  * created by zhangkai
+  * 测试上海过户
   */
 
 object SHGHTest {
   val SEPARATE1 = "@"
   val SEPARATE2 = ","
+  val SEPARATE3 = "-"
+  val PREFIX = "/yss/guzhi/interface/"
 
   def main(args: Array[String]): Unit = {
 
@@ -37,6 +29,7 @@ object SHGHTest {
 
     val sc = spark.sparkContext
     val ssc = new StreamingContext(sc, Seconds(5))
+
 
     /**
       * 读取基金信息表
@@ -374,7 +367,40 @@ object SHGHTest {
         throw new Exception("未找到对应的套账号：" + gddm)
       }
       maybe.get
+    }    /**
+      * 进行日期的格式化，基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd
+      * 这里将原始数据转换成yyyy-MM-dd的格式
+      * @param bcrq
+      * @return yyyy-MM-dd
+      */
+    def convertDate(bcrq:String) = {
+      val yyyy = bcrq.substring(0,4)
+      val mm = bcrq.substring(4,6)
+      val dd = bcrq.substring(6)
+      yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
     }
+
+    /**
+      * ETF基金需要获取文件的中sqbh,在计算业务标识时候需要用到
+      */
+      val fileName ="shghtest.csv"
+    val sourcePath = Util.getInputFilePath(fileName,PREFIX)
+    val df = Util.readCSV(sourcePath,spark)
+    val sqbhs = df.rdd.filter(row => {
+      var bcrq = row.getAs[String](2)
+      bcrq = convertDate(bcrq)
+      var zqdm = row.getAs[String](7)
+      val cjjg = row.getAs[String](10)
+      if (zqdm.startsWith("5")) {
+        if (cjjg.equals("0")) {
+          if (jjxxbwh("ETF", zqdm, bcrq, 0))  true
+          else false
+        }else false
+      }else false
+    }).map(row => {
+      row.getAs[String](12)
+    })collect()
+    val sqbhValues =  sc.broadcast(sqbhs)
 
     /**
       * 一、获取证券标志
@@ -418,16 +444,17 @@ object SHGHTest {
 
     /**
       * 二、获取业务标志
-      * @param tzh 套账号
+      *
+      * @param tzh  套账号
       * @param zqbz 证券标志
       * @param zqdm 证券代码
       * @param cjjg 成交价格
-      * @param bs  买卖
+      * @param bs   买卖
       * @param gsdm 公司代码
-      * @param bcrq  本次日期
+      * @param bcrq 本次日期
       * @return
       */
-    def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String): String = {
+    def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String,sqbh:String): String = {
       if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
         val condition = csTsKmValue.value.get(tzh + "指数、指标股票按特殊科目设置页面处理")
         if (condition.isDefined && "1".equals(condition.get)) {
@@ -477,6 +504,7 @@ object SHGHTest {
         if ("B".equals(bs)) return "ETFSG"
         else return "ETFSH"
       }
+
       if ("JJ".equals(zqbz)) {
         if (zqdm.startsWith("501") || zqdm.startsWith("502")) return "LOF"
         if (zqdm.startsWith("518")) return "HJETF"
@@ -484,7 +512,7 @@ object SHGHTest {
           if ("B".equals(bs)) return "ETFSG"
           else return "ETFSH"
         }
-        if (jjxxbwh("ETF", zqdm, bcrq, 2) || jjxxbwh("ETF", zqdm, bcrq, 5)) {
+        if (sqbhValues.value.contains(sqbh) && (jjxxbwh("ETF", zqdm, bcrq, 2) || jjxxbwh("ETF", zqdm, bcrq, 5))) {
           if ("B".equals(bs)) return "ETFSG"
           else return "ETFSH"
         }
@@ -500,7 +528,8 @@ object SHGHTest {
         }
         if (jjxxbwh("ETF", zqdm, bcrq, 0)) {
           return "ETF"
-        } else return "FBS"
+        }
+        return "FBS"
       }
       if ("ZQ".equals(zqbz)) {
         if (zqlx(tzh, bcrq, zqdm)) {
@@ -635,37 +664,40 @@ object SHGHTest {
       throw new Exception("")
     }
 
-    val rdd = KafkaUtilsSpark.getStream(ssc)
+    val Dstream = KafkaUtilsSpark.getStream(ssc)
 
-    rdd.filter(x => x.currentRecord != 1).filter(f => { //过滤表头
+    Dstream.filter(x => x.currentRecord != 1).filter(x=>x.currentRecord !=0).filter(f => { //过滤表头
       //      println(f.rowValue) //D890026748,,20180809,2116746,23341,5700,0,600271,100151,100151,26.930,153501.00,0000001149,B,00001
       new File(f.fileName).getName.equalsIgnoreCase("shghtest")
     }).foreachRDD(rdd => {
-      rdd.foreach(record => {
-        val str = record.rowValue.split(",")
-        val gddm = str(0)
-        val gdxm = str(1)
-        val bcrq = str(2) //本次日期
-        val cjbh = str(3)
-        val gsdm = str(4) // 公司代码
-        val cjsl = str(5)
-        val bcye = str(6)
-        val zqdm = str(7) //证券代码
-        val sbsj = str(8)
-        val cjsj = str(9)
-        val cjjg = str(10) //成交价格
-        val cjje = str(11)
-        val sqbh = str(12)
-        val bs = str(13)
-        val mjbh = str(14)
-        val zqbz = getZqbz(zqdm, cjjg, bcrq)
-        val tzh = getTzh(gddm)
-        val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq)
-        println(SHGHTag(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz))
+      rdd.foreach(f => {
+        val v =f.rowValue.split("\n")
+          v.foreach(record => {
+            val str = record.split(",")
+            val gddm = str(0)
+            val gdxm = str(1)
+            val bcrq = str(2) //本次日期
+            val cjbh = str(3)
+            val gsdm = str(4) // 公司代码
+            val cjsl = str(5)
+            val bcye = str(6)
+            val zqdm = str(7) //证券代码
+            val sbsj = str(8)
+            val cjsj = str(9)
+            val cjjg = str(10) //成交价格
+            val cjje = str(11)
+            val sqbh = str(12)
+            val bs = str(13)
+            val mjbh = str(14)
+            val zqbz = getZqbz(zqdm, cjjg, bcrq)
+            val tzh = getTzh(gddm)
+            val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq, sqbh)
+            println(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz)
+          })
+
       })
 
     })
-
 
 
     ssc.start()
