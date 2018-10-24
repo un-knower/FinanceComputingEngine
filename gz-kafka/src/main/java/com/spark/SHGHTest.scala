@@ -504,31 +504,7 @@ object SHGHTest {
         if ("B".equals(bs)) return "ETFSG"
         else return "ETFSH"
       }
-//      if ("JJ".equals(zqbz)) {
-//        if (zqdm.startsWith("501") || zqdm.startsWith("502")) return "LOF"
-//        if (zqdm.startsWith("518")) return "HJETF"
-//        if ("0".equals(cjjg) && (jjxxbwh("ETF", zqdm, bcrq, 0) || jjxxbwh("ETF", zqdm, bcrq, 1))) {
-//          if ("B".equals(bs)) return "ETFSG"
-//          else return "ETFSH"
-//        }
-//        if (jjxxbwh("ETF", zqdm, bcrq, 2) || jjxxbwh("ETF", zqdm, bcrq, 5)) {
-//          if ("B".equals(bs)) return "ETFSG"
-//          else return "ETFSH"
-//        }
-//        if (jjxxbwh("ETF", zqdm, bcrq, 3)) {
-//          if ("B".equals(bs)) return "ETFRG"
-//          else return "ETFFK"
-//        }
-//        if (jjxxbwh("ETF", zqdm, bcrq, 4)) {
-//          if ("B".equals(bs)) return "ETFRGZQ"
-//        }
-//        if (jjxxbwh("HB", zqdm, bcrq, 6)) {
-//          return "HBETF"
-//        }
-//        if (jjxxbwh("ETF", zqdm, bcrq, 0)) {
-//          return "ETF"
-//        } else return "FBS"
-//      }
+
       if ("JJ".equals(zqbz)) {
         if (zqdm.startsWith("501") || zqdm.startsWith("502")) return "LOF"
         if (zqdm.startsWith("518")) return "HJETF"
