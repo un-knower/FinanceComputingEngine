@@ -20,6 +20,7 @@
 package com.yss.source.taildir;
 
 import com.google.common.collect.Lists;
+import com.yss.source.utils.FilterFile;
 import com.yss.source.utils.ReadDbf;
 import com.yss.source.utils.ReadXlsx;
 import com.yss.source.utils.ReadXml;
@@ -75,12 +76,14 @@ public class TailFile {
     private String parentDir;
     private final String csvSeparator;
     private final Boolean renameFlie;
+    private List<String> prefixList;
 
     /*-------------------------*/
 
 
     public TailFile(File file, Map<String, String> headers, long inode, long pos, String parentDir,
-                    String xmlNode, String currentRecord, String csvSeparator, boolean renameFlie, Integer eventLines, boolean headFile)
+                    String xmlNode, String currentRecord, String csvSeparator,
+                    boolean renameFlie, Integer eventLines, boolean headFile, String prefixStr)
             throws IOException {
         this.raf = new RandomAccessFile(file, "r");
         if (pos > 0) {
@@ -101,9 +104,10 @@ public class TailFile {
         this.renameFlie = renameFlie;
         this.csvSeparator = csvSeparator;
         this.currentRecord = currentRecord;
+        this.prefixList = FilterFile.assemblePrefix(prefixStr);
         fileName = file.getName().toLowerCase();
         System.out.println(LocalDateTime.now() + "    Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
-        if (fileName.endsWith(".dbf")) {
+        if (fileName.endsWith(".dbf") || FilterFile.filtration(fileName, prefixList)) {
             readDbf = new ReadDbf(this.fileInputStream, currentRecord, csvSeparator, eventLines, headFile);
         } else if (fileName.endsWith(".xml")) {
             readXml = new ReadXml(xmlNode, this.raf, this.pos, currentRecord, csvSeparator, eventLines, headFile);

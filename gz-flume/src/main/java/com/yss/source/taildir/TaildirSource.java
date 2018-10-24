@@ -84,6 +84,7 @@ public class TaildirSource extends AbstractSource implements
     private Boolean renameFlie;
     private Integer eventLines;
     private Boolean headFile;
+    private String prefixStr;
 
     @Override
     public synchronized void start() {
@@ -105,6 +106,7 @@ public class TaildirSource extends AbstractSource implements
                     .renameFlie(renameFlie)
                     .eventLines(eventLines)
                     .head(headFile)
+                    .prefixStr(prefixStr)
                     .build();
         } catch (IOException e) {
             throw new FlumeException("Error instantiating ReliableTaildirEventReader", e);
@@ -198,6 +200,7 @@ public class TaildirSource extends AbstractSource implements
         renameFlie = context.getBoolean(RENAME_FLIE, DEFAULT_RENAME_FLIE);
         eventLines = context.getInteger(EVENT_LINES, DEFAULT_EVENT_LINES);
         headFile = context.getBoolean(HEAD, DEFAULT_HEAD);
+        prefixStr = context.getString(PREFIXSTR, DEFAULT_PREFIXSTR);
 
 
         if (sourceCounter == null) {

@@ -131,4 +131,11 @@ public class TaildirSourceConfigurationConstants {
     public static final boolean DEFAULT_HEAD = true;
 
 
+    /**
+     * 按文件名的前缀过滤文件,默认值必须有,但是可以是任意值最好是永远不会出现的值
+     */
+    public static final String PREFIXSTR = "prefixStr";
+    public static final String DEFAULT_PREFIXSTR = "doesntfdjfskfksdfkjsfsfskjkfsjdfsj";
+
+
 }
