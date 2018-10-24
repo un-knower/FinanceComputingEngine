@@ -62,6 +62,8 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private final String xmlNode;
     private final String currentRecord;
     private final String csvSeparator;
+    private Boolean renameFlie;
+    private int eventLines;
 
     /**
      * Create a ReliableTaildirEventReader to watch the given directory.
@@ -70,7 +72,8 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                                        Table<String, String, String> headerTable, String positionFilePath,
                                        boolean skipToEnd, boolean addByteOffset, boolean cachePatternMatching,
                                        boolean annotateFileName, String fileNameHeader, String xmlNode,
-                                       String currentRecord, String csvSeparator) throws IOException {
+                                       String currentRecord, String csvSeparator, Boolean directoryDate,
+                                       Boolean renameFlie, int eventLines) throws IOException {
         // Sanity checks
         Preconditions.checkNotNull(filePaths);
         Preconditions.checkNotNull(positionFilePath);
@@ -82,7 +85,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
 
         List<TaildirMatcher> taildirCache = Lists.newArrayList();
         for (Entry<String, String> e : filePaths.entrySet()) {
-            taildirCache.add(new TaildirMatcher(e.getKey(), e.getValue(), cachePatternMatching));
+            taildirCache.add(new TaildirMatcher(e.getKey(), e.getValue(), cachePatternMatching, directoryDate));
         }
         logger.info("taildirCache: " + taildirCache.toString());
         logger.info("headerTable: " + headerTable.toString());
@@ -96,6 +99,8 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         this.xmlNode = xmlNode;
         this.currentRecord = currentRecord;
         this.csvSeparator = csvSeparator;
+        this.renameFlie = renameFlie;
+        this.eventLines = eventLines;
         updateTailFiles(skipToEnd);
 
         logger.info("Updating position from position file: " + positionFilePath);
@@ -297,7 +302,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private TailFile openFile(File file, Map<String, String> headers, long inode, long pos, String parentDir) {
         try {
             logger.info("Opening file: " + file + ", inode: " + inode + ", pos: " + pos + ", parentDir: " + parentDir);
-            return new TailFile(file, headers, inode, pos, parentDir, xmlNode, currentRecord, csvSeparator);
+            return new TailFile(file, headers, inode, pos, parentDir, xmlNode, currentRecord, csvSeparator, renameFlie, eventLines);
         } catch (IOException e) {
             throw new FlumeException("Failed opening file: " + file, e);
         }
@@ -323,6 +328,27 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 TaildirSourceConfigurationConstants.DEFAULT_CURRENT_RECORD;
         private String setCsvSeparator =
                 TaildirSourceConfigurationConstants.DEFAULT_SEPARATOR;
+        private boolean setDirectoryDate =
+                TaildirSourceConfigurationConstants.DEFAULT_DIRECTORY_DATE;
+        private boolean setRenameFlie =
+                TaildirSourceConfigurationConstants.DEFAULT_RENAME_FLIE;
+        private Integer setEventLines =
+                TaildirSourceConfigurationConstants.DEFAULT_EVENT_LINES;
+
+        public Builder eventLines(int setEventLines) {
+            this.setEventLines = setEventLines;
+            return this;
+        }
+
+        public Builder directoryDate(boolean setDirectoryDate) {
+            this.setDirectoryDate = setDirectoryDate;
+            return this;
+        }
+
+        public Builder renameFlie(boolean setRenameFlie) {
+            this.setRenameFlie = setRenameFlie;
+            return this;
+        }
 
         public Builder xmlNode(String xmlNode) {
             this.setXmlNode = xmlNode;
@@ -383,7 +409,8 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         public ReliableTaildirEventReader build() throws IOException {
             return new ReliableTaildirEventReader(filePaths, headerTable, positionFilePath, skipToEnd,
                     addByteOffset, cachePatternMatching,
-                    annotateFileName, fileNameHeader, setXmlNode, setCurrentRecord, setCsvSeparator);
+                    annotateFileName, fileNameHeader, setXmlNode,
+                    setCurrentRecord, setCsvSeparator, setDirectoryDate, setRenameFlie, setEventLines);
         }
     }
 

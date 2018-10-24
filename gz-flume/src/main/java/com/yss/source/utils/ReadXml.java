@@ -11,6 +11,7 @@ import org.json.XML;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
+import java.time.LocalDateTime;
 
 /**
  * @author wangshuai
@@ -20,16 +21,10 @@ import java.nio.charset.Charset;
  * 目标表：
  */
 public class ReadXml {
-    public ReadXml(String startLabel, RandomAccessFile raf,long startPos, String currentRecord, String csvSeparator) throws IOException {
-        this.startTag = ("<" + startLabel + ">").getBytes(Charset.forName("utf-8"));
-        this.endTag = ("</" + startLabel + ">").getBytes(Charset.forName("utf-8"));
-        this.raf = raf;
-        this.start = startPos;
-        this.startLabel = startLabel;
-        this.currentRecord = currentRecord;
-        this.csvSeparator = csvSeparator;
-    }
 
+
+    private int eventLines;
+    private StringBuffer bodyBuffer = new StringBuffer();
     private String csvSeparator;
     private String startLabel;
     private String currentRecord;
@@ -44,13 +39,34 @@ public class ReadXml {
     private DataOutputBuffer databuffer = new DataOutputBuffer();
     private RandomAccessFile raf;
 
+    public ReadXml(String startLabel, RandomAccessFile raf, long startPos, String currentRecord, String csvSeparator, int eventLines) {
+        this.startTag = ("<" + startLabel + ">").getBytes(Charset.forName("utf-8"));
+        this.endTag = ("</" + startLabel + ">").getBytes(Charset.forName("utf-8"));
+        this.raf = raf;
+        this.start = startPos;
+        this.startLabel = startLabel;
+        this.currentRecord = currentRecord;
+        this.csvSeparator = csvSeparator;
+        this.eventLines = eventLines;
+    }
+
     public String read() throws IOException {
         if (readUntilStartElement()) {
             try {
                 databuffer.write(currentStartTag);
                 if (readUntilEndElement()) {
                     JSONObject nObject = XML.toJSONObject(new String(databuffer.getData(), 0, databuffer.getLength()));
-                    return nObject.get(startLabel).toString();
+                    String data = nObject.get(startLabel).toString();
+                    if (data != null) {
+                        JSONArray jsonArray = new JSONArray("[" + data + "]");
+                        String csv = CDL.toString(jsonArray);
+                        if (!csvSeparator.equals(",")) {
+                            csv = csv.replaceAll(",", csvSeparator);
+                        }
+                        return csv;
+                    } else {
+                        return null;
+                    }
                 } else {
                     return null;
                 }
@@ -182,27 +198,39 @@ public class ReadXml {
 
 
     public Event readNode() throws IOException {
-        String xmlNext = read();
-        if (xmlNext != null) {
-            JSONArray jsonArray = new JSONArray("[" + xmlNext + "]");
-            String csv = CDL.toString(jsonArray);
-            if (!csvSeparator.equals(",")) {
-                csv = csv.replaceAll(",", csvSeparator);
-            }
-            if (ROW == 1) {
-                Event event = EventBuilder.withBody(csv.split("\n")[0], Charset.forName("utf-8"));
+
+        if (ROW == 1) {
+            String xmlNext = read();
+            if (xmlNext != null) {
+                Event event = EventBuilder.withBody(xmlNext.split("\n")[0], Charset.forName("utf-8"));
                 event.getHeaders().put(currentRecord, String.valueOf(ROW));
                 ROW++;
                 raf.seek(start);
                 return event;
             } else {
-                Event event = EventBuilder.withBody(csv.split("\n")[1], Charset.forName("utf-8"));
-                event.getHeaders().put(currentRecord, String.valueOf(ROW));
-                ROW++;
-                return event;
+                System.out.println(LocalDateTime.now() + "    XMl空白文件!");
+                return null;
             }
         } else {
-            return null;
+            for (int a = 0; a < 10; a++) {
+                String data = read();
+                if (data != null) {
+                    bodyBuffer.append(data.split("\n")[1]);
+                    bodyBuffer.append("\n");
+                } else {
+                    break;
+                }
+            }
+            if (bodyBuffer.length() > 1) {
+                bodyBuffer.delete(bodyBuffer.length() - 1, bodyBuffer.length());
+            } else {
+                return null;
+            }
+            Event event = EventBuilder.withBody(bodyBuffer.toString(), Charset.forName("utf-8"));
+            event.getHeaders().put(currentRecord, String.valueOf(ROW));
+            ROW++;
+            bodyBuffer.setLength(0);
+            return event;
         }
     }
 

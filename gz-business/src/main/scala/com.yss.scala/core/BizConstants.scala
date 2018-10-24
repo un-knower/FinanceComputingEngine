@@ -1,4 +1,4 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 /**
   *  *@author  gonghailiang
@@ -7,6 +7,6 @@ package com.yss.scala.guzhi
   *  * 目标文件：
   *  * 目标表：
   *  */
-private object  Constants {
+private object  BizConstants {
 
 }

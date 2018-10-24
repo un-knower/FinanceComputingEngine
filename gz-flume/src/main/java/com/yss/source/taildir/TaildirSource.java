@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 
-import static com.yss.source.spooldir.SpoolDirectorySourceConfigurationConstants.*;
+import static com.yss.source.taildir.TaildirSourceConfigurationConstants.*;
 
 public class TaildirSource extends AbstractSource implements
         PollableSource, Configurable {
@@ -80,6 +80,9 @@ public class TaildirSource extends AbstractSource implements
     private String xmlNode;
     private String currentRecord;
     private String csvSeparator;
+    private Boolean directoryDate;
+    private Boolean renameFlie;
+    private Integer eventLines;
 
     @Override
     public synchronized void start() {
@@ -97,6 +100,9 @@ public class TaildirSource extends AbstractSource implements
                     .xmlNode(xmlNode)
                     .currentRecord(currentRecord)
                     .csvSeparator(csvSeparator)
+                    .directoryDate(directoryDate)
+                    .renameFlie(renameFlie)
+                    .eventLines(eventLines)
                     .build();
         } catch (IOException e) {
             throw new FlumeException("Error instantiating ReliableTaildirEventReader", e);
@@ -183,11 +189,12 @@ public class TaildirSource extends AbstractSource implements
                 TaildirSourceConfigurationConstants.DEFAULT_FILENAME_HEADER_KEY);
 
 
-
         xmlNode = context.getString(XML_NODE, DEFAULT_XML_NODE);
         currentRecord = context.getString(CURRENT_RECORD, DEFAULT_CURRENT_RECORD);
         csvSeparator = context.getString(SEPARATOR, DEFAULT_SEPARATOR);
-
+        directoryDate = context.getBoolean(DIRECTORY_DATE, DEFAULT_DIRECTORY_DATE);
+        renameFlie = context.getBoolean(RENAME_FLIE, DEFAULT_RENAME_FLIE);
+        eventLines = context.getInteger(EVENT_LINES, DEFAULT_EVENT_LINES);
 
 
         if (sourceCounter == null) {

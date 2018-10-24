@@ -6,7 +6,7 @@ META-INF/
 build.properties
 .idea/
 src/target/
-/GuZhi.iml
+/FinanceComputingEngine.iml
 gz-business/target
 gz-business/gz-business.iml
 gz-flume/target

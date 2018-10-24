@@ -11,7 +11,7 @@ hadoop fs -put /data/temp/zl/ooize/workflow-job /tmp/zl/apps
 corn-create-dir
 
 
-oozie job -oozie http://bj-rack001-hadoop004:11000/oozie -config /data/temp/zl/ooize/workflow-job/corn-create-dir.properties -run
+oozie job -oozie http://bj-rack001-hadoop004:11000/oozie -config /data/temp/zl/ooize/workflow-job/job-corn-create-dir.properties -run
 
 ========================================================
 

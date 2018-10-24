@@ -1,10 +1,10 @@
-package com.yss.scala.guzhi
+package com.yss.scala.core
 
 import java.text.SimpleDateFormat
 
 import com.yss.scala.dto._
-import com.yss.scala.guzhi.SZStockExchangeContants._
-import com.yss.scala.guzhi.ShghContants.{SEPARATE2, TABLE_NAME_JJXX}
+import com.yss.scala.core.SZStockExchangeContants._
+import com.yss.scala.core.ShghContants.{SEPARATE2, TABLE_NAME_JJXX}
 import com.yss.scala.util.Util
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.broadcast.Broadcast

@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.security.PrivilegedExceptionAction;
+import java.time.LocalDateTime;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -471,7 +472,6 @@ class BucketWriter {
 
     //运行关闭删除hashMap表中的数据
     private void runCloseAction() {
-        System.out.println("文件上传HDFS完成当前时间是:" + System.currentTimeMillis());
         try {
             if (onCloseCallback != null) {
                 onCloseCallback.run(onCloseCallbackPath);
@@ -572,14 +572,17 @@ class BucketWriter {
                 open();
             }
         }
-
+        String body = new String(event.getBody());
         // 写事件
         try {
             sinkCounter.incrementEventDrainAttemptCount();
             callWithTimeout(new CallRunner<Void>() {
                 @Override
                 public Void call() throws Exception {
-                    writer.append(event); // could block
+
+                    if (!body.equals("fileEnd")) {
+                        writer.append(event); // could block
+                    }
                     return null;
                 }
             });
@@ -603,6 +606,12 @@ class BucketWriter {
 
         if (batchCounter == batchSize) {
             flush();
+        }
+        if (body.equals("fileEnd")) {
+
+            System.out.println(LocalDateTime.now()+"    HDFS文件上传完毕:" + fileName);
+            flush();
+            close(true);//关闭hdfs流,并修改为永久名字
         }
     }
 
