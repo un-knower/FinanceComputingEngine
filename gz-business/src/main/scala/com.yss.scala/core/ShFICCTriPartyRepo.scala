@@ -428,7 +428,7 @@ object ShFICCTriPartyRepo {
       val xwh = getRowFieldAsString(row, "FQSXW")
       val tzh = getRowFieldAsString(row, "FSETCODE")
       val FSTARTDATE = getRowFieldAsString(row, "FSTARTDATE")
-      (xwh, (tzh, DateUtils.formattedDate2Long(FSTARTDATE, DateUtils.yyyy_MM_dd)))
+      (xwh, (tzh, DateUtils.formattedDate2Long(FSTARTDATE, DateUtils.YYYY_MM_DD)))
     }).groupByKey().map(item => {
       //由于席位号和套账号相同的情况会有多个,得根据日期来取最大值
       (item._1, item._2.toList.sortBy(tup => tup._2).reverse.head)

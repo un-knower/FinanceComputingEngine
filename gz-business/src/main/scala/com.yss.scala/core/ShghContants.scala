@@ -82,8 +82,14 @@ object ShghContants {
   val ETF_ZQBZ_OR_YWZ = "ZQETFJY"
   /** 券商过户费 CSQSFYLV*/
   val TABLE_NAME_CSQSFYLV = "CSQSFYLV"
+  /** 回购业务标志 MRHG*/
+  val MRHG = "MRHG"
+  /** 回购业务标志 MCHG*/
+  val MCHG = "MCHG"
   /** 回购业务HG */
-  val HG = "HG"
+  val HG  = "HG"
+  /** 回购业务取回购天数的*/
+  val SXF = "SXF"
   /** 券商过户费 QSGHF */
   val QSGHF = "QSGHF"
   /** 券商过户费的ffyfs标识 0 */
@@ -97,6 +103,8 @@ object ShghContants {
   val DEFAULT_DIGIT = 2
   /** 默认值 空串*/
   val DEFAULT_VALUE = ""
+  /** 默认值 "0"*/
+  val DEFAULT_VALUE_0 = "0"
   /** 默认值 -1*/
   val DEFORT_VALUE1 = "-1"
   /** 佣金的默认值 0@0@0@0*/

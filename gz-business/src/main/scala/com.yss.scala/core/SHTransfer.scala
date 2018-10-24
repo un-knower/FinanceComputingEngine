@@ -7,6 +7,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.math.BigDecimal.RoundingMode
 
 /**
@@ -19,13 +20,17 @@ import scala.math.BigDecimal.RoundingMode
 object SHTransfer {
 
   def main(args: Array[String]): Unit = {
+    if(args.size < 2){
+      args(0) = DateUtils.getToday(DateUtils.YYYYMMDD)+"/gh.csv"
+      args(1) = "SHTransfer"
+    }
     doExec(args(0),args(1))
   }
 
   def doExec(fileName:String,tableName:String) = {
     val spark = SparkSession.builder()
       .appName("SHTransfer")
-//      .master("local[*]")
+      .master("local[*]")
       .getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     val df = doETL(spark, broadcastLvarList,fileName)
@@ -76,7 +81,7 @@ object SHTransfer {
         .groupByKey()
         .mapValues(rows => {
           //  fetftype='0'
-          val filteredRows = rows.filter(str => str.split(",")(17).equals("0"))
+          val filteredRows = rows.filter(str => str.split(",")(17).equals(DEFAULT_VALUE_0))
           val ele1 =
             if (filteredRows.size == 0) DEFAULT_VALUE
             else filteredRows.toArray.sortWith((str1, str2) => {
@@ -309,7 +314,7 @@ object SHTransfer {
           val fdate = fields(0)
           val fbz = fields(1)
           val fsh = fields(3)
-          if ("0".equals(fbz) && FSH.equals(fsh) && fdate.compareTo(today) >= 0) true
+          if (DEFAULT_VALUE_0.equals(fbz) && FSH.equals(fsh) && fdate.compareTo(today) >= 0) true
           else false
         })
         .map(str => {
@@ -329,7 +334,7 @@ object SHTransfer {
 
     val sourcePath = Util.getInputFilePath(fileName,PREFIX)
     val df = Util.readCSV(sourcePath,spark)
-    val today = DateUtils.getToday(DateUtils.yyyy_MM_dd)
+    val today = DateUtils.getToday(DateUtils.YYYY_MM_DD)
     val broadcaseValues = loadTables(spark, today)
     val csbValues = csb
     val csjjxxValues = broadcaseValues._1
@@ -381,7 +386,7 @@ object SHTransfer {
       var zqdm = row.getAs[String](7)
       val cjjg = row.getAs[String](10)
       if (zqdm.startsWith("5")) {
-        if (cjjg.equals("0")) {
+        if (cjjg.equals(DEFAULT_VALUE_0)) {
           if (jjxxbwh("ETF", zqdm, bcrq, 0))  true
           else false
         }else false
@@ -402,7 +407,7 @@ object SHTransfer {
       * @return
       */
     def gzlx(zqbz: String, zqdm: String, bcrq: String, cjsl: String): String = {
-      var gzlx = "0"
+      var gzlx = DEFAULT_VALUE_0
       if ("ZQ".equals(zqbz)) {
         val may = gzlxValues.value.get(zqdm + SEPARATE1 + bcrq)
         if (may.isDefined) {
@@ -855,7 +860,7 @@ object SHTransfer {
       //gsdm不够5位补0
       var length = gsdm.length
       while (length < 5) {
-        gsdm = "0" + gsdm
+        gsdm = DEFAULT_VALUE_0 + gsdm
         length += 1
       }
       ShghYssj(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, findate)
@@ -1018,20 +1023,20 @@ object SHTransfer {
           ywbz = ETF_ZQBZ_OR_YWZ
           zqbz = ETF_ZQBZ_OR_YWZ
       }
-
+      /**回购业务 要计算经手费和回购收益 这里取经手费率和回购天数*/
       if(zqbz.startsWith(HG)){
         zqbz = HG + zqdm
         ywbz = HG + zqdm
-        jsf = "SXF"
+        jsf = SXF
       }
 
       /**
         * 获取公共的费率
         * key = 证券类别+市场+资产号+利率类别
         * value = 启用日期+利率+折扣
-        * 获取费率时默认的资产为117如果没有则资产改为0，还没有则费率就取0
+        * 获取费率时先按照专用资产号取再用公用资产号取，先按照ywbz取再按照zqbz取
         */
-      def getCommonFee(fllb: String,zqbz:String,ywbz:String,sh:String,zyzch:String,gyzch:String) = {
+      def getCommonFee(fllb: String,zqbz:String,ywbz:String,sh:String,zyzch:String,gyzch:String) =   {
         var rateStr = DEFORT_VALUE3
         var maybeRateStr = flbMap.get(ywbz + SEPARATE1 + sh + SEPARATE1 + zyzch + SEPARATE1 + fllb)
         if (maybeRateStr.isEmpty) {
@@ -1218,7 +1223,6 @@ object SHTransfer {
           val cjjg = BigDecimal(row.getAs[String]("CJJG"))
           val cjsl = BigDecimal(row.getAs[String]("CJSL"))
           val gzlx = BigDecimal(row.getAs[String]("FGZLX"))
-//          val hgsy = BigDecimal(row.getAs[String]("FHGGAIN"))
           // 经手费的计算
           val jsf = cjje.*(BigDecimal(rateJS)).*(BigDecimal(rateJszk)).setScale(cs6, RoundingMode.HALF_UP)
           var yhs = BigDecimal(0)
@@ -1227,15 +1231,15 @@ object SHTransfer {
             //印花税的计算
             yhs = cjje.*(BigDecimal(rateYH)).*(BigDecimal(rateYhzk)).setScale(cs6, RoundingMode.HALF_UP)
           }
-          //征管费的计算
+          // 征管费的计算
           val zgf = cjje.*(BigDecimal(rateZG)).*(BigDecimal(rateZgzk)).setScale(cs6, RoundingMode.HALF_UP)
-          //风险金的计算
+          // 风险金的计算
           val fx = cjje.*(BigDecimal(rateFXJ)).*(BigDecimal(rateFxjzk)).setScale(cs6, RoundingMode.HALF_UP)
-          //过户费的计算
+          // 过户费的计算
           var ghf = BigDecimal(0)
-
+          // 回购收益
           var hgsy = getHgsy(cjjg,cjsl,zqdm,hgts)
-          //券商过户费的计算
+          // 券商过户费的计算
           var qsghf  = cjsl.*(BigDecimal(rateQsghf)).*(BigDecimal(rateQSghfZk)).setScale(cs6, RoundingMode.HALF_UP)
           if(qsghf < BigDecimal(minQsghf)) qsghf = BigDecimal(minQsghf)
 
@@ -1308,11 +1312,11 @@ object SHTransfer {
         }
 
         (key, ShghFee(DEFAULT_VALUE, sumCjje, sumCjsl, sumYj, sumJsf, sumYhs, sumZgf,
-          sumGhf, sumFxj, sumGzlx, sumHgsy))
+          sumGhf, sumFxj, sumGzlx, sumHgsy,hgts))
     }
 
     //最终结果
-    val result = fee.map {
+    val result = fee.flatMap{
       case (key, fee) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
@@ -1337,6 +1341,7 @@ object SHTransfer {
         val realGhf = fee.sumGhf
         val realFxj = fee.sumFxj
 
+
         val con8 = getJsgz(tzh)
         var fsfje = BigDecimal(0)
         if(SALE.equals(bs)){
@@ -1351,7 +1356,8 @@ object SHTransfer {
             fsfje += realYj
           }
         }
-        Hzjkqs(bcrq,
+        val arrs = new ArrayBuffer[Hzjkqs]()
+        val ele = Hzjkqs(bcrq,
           findate, zqdm, SH, gsdm, bs,
           totalCjje.formatted(DEFAULT_DIGIT_FORMAT),
           totalCjsl.formatted(DEFAULT_DIGIT_FORMAT),
@@ -1361,15 +1367,33 @@ object SHTransfer {
           realZgf.formatted(DEFAULT_DIGIT_FORMAT),
           realGhf.formatted(DEFAULT_DIGIT_FORMAT),
           realFxj.formatted(DEFAULT_DIGIT_FORMAT),
-          "0",
+          DEFAULT_VALUE_0,
           fgzlx.formatted(DEFAULT_DIGIT_FORMAT),
           fhggain.formatted(DEFAULT_DIGIT_FORMAT),
           fsfje.formatted(DEFAULT_DIGIT_FORMAT),
           zqbz, ywbz,
-          DEFAULT_VALUE, "N", zqdm, "PT", "1", DEFAULT_VALUE, DEFAULT_VALUE, "0", DEFAULT_VALUE, "0",
+          DEFAULT_VALUE, "N", zqdm, "PT", "1", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE_0, DEFAULT_VALUE, DEFAULT_VALUE_0,
           gddm, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE,
           DEFAULT_VALUE, DEFAULT_VALUE, "shgh", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE
         )
+        arrs.append(ele)
+        // 回购业务要生成一条回购的数据
+        if(HG.equals(zqbz) && (MRHG.equals(ywbz)||MCHG.equals(ywbz))){
+          val ele2 = Hzjkqs(DateUtils.addDays(bcrq,fee.hgts.toInt,DateUtils.YYYY_MM_DD),
+            findate, zqdm, SH, gsdm, bs,
+            totalCjje.formatted(DEFAULT_DIGIT_FORMAT),
+            totalCjsl.formatted(DEFAULT_DIGIT_FORMAT),
+            DEFAULT_VALUE_0,DEFAULT_VALUE_0,DEFAULT_VALUE_0, DEFAULT_VALUE_0,
+            DEFAULT_VALUE_0,DEFAULT_VALUE_0, DEFAULT_VALUE_0,DEFAULT_VALUE_0,
+            fhggain.formatted(DEFAULT_DIGIT_FORMAT),
+            fsfje.formatted(DEFAULT_DIGIT_FORMAT),zqbz, ywbz+"dq",
+            DEFAULT_VALUE, "N", zqdm, "PT", "1", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE_0, DEFAULT_VALUE, DEFAULT_VALUE_0,
+            gddm, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE,
+            DEFAULT_VALUE, DEFAULT_VALUE, "shgh", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE
+          )
+          arrs.append(ele2)
+        }
+        arrs
     }
     //将结果输出
     import spark.implicits._
