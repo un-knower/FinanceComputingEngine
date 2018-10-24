@@ -21,9 +21,13 @@ package com.yss.source.taildir;
 
 import com.google.common.collect.Lists;
 import com.yss.source.utils.ReadDbf;
+import com.yss.source.utils.ReadXlsx;
 import com.yss.source.utils.ReadXml;
 import org.apache.flume.Event;
 import org.apache.flume.event.EventBuilder;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,9 +67,10 @@ public class TailFile {
     private int endRow = 0;
     private ReadDbf readDbf;
     private ReadXml readXml;
+    private ReadXlsx readXlsx;
     private FileInputStream fileInputStream;
 
-    private String fileSuffixes;
+    private String fileName;
     private String currentRecord;
     private String parentDir;
     private final String csvSeparator;
@@ -75,7 +80,7 @@ public class TailFile {
 
 
     public TailFile(File file, Map<String, String> headers, long inode, long pos, String parentDir,
-                    String xmlNode, String currentRecord, String csvSeparator, boolean renameFlie, Integer eventLines)
+                    String xmlNode, String currentRecord, String csvSeparator, boolean renameFlie, Integer eventLines, boolean headFile)
             throws IOException {
         this.raf = new RandomAccessFile(file, "r");
         if (pos > 0) {
@@ -96,13 +101,16 @@ public class TailFile {
         this.renameFlie = renameFlie;
         this.csvSeparator = csvSeparator;
         this.currentRecord = currentRecord;
-        String fileName = file.getName();
-        fileSuffixes = fileName.substring(fileName.length() - 4);
-        System.out.println(LocalDateTime.now()+"    Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
-        if (fileSuffixes.equalsIgnoreCase(".dbf")) {
-            readDbf = new ReadDbf(this.fileInputStream, currentRecord, csvSeparator, eventLines);
-        } else if (fileSuffixes.equalsIgnoreCase(".xml")) {
-            readXml = new ReadXml(xmlNode, this.raf, this.pos, currentRecord, csvSeparator, eventLines);
+        fileName = file.getName().toLowerCase();
+        System.out.println(LocalDateTime.now() + "    Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
+        if (fileName.endsWith(".dbf")) {
+            readDbf = new ReadDbf(this.fileInputStream, currentRecord, csvSeparator, eventLines, headFile);
+        } else if (fileName.endsWith(".xml")) {
+            readXml = new ReadXml(xmlNode, this.raf, this.pos, currentRecord, csvSeparator, eventLines, headFile);
+        } else if (fileName.endsWith(".xls")) {
+            readXlsx = new ReadXlsx(new HSSFWorkbook(this.fileInputStream), currentRecord, csvSeparator, eventLines, headFile);
+        } else if (fileName.endsWith(".xlsx")) {
+            readXlsx = new ReadXlsx(new XSSFWorkbook(this.fileInputStream), currentRecord, csvSeparator, eventLines, headFile);
         }
         /*---------------------------------------------------------------*/
     }
@@ -199,16 +207,19 @@ public class TailFile {
 
     private Event readEvent(boolean backoffWithoutNL, boolean addByteOffset) throws IOException {
         Event event;
-        if (fileSuffixes.equalsIgnoreCase(".dbf")) {
+        if (fileName.endsWith(".dbf")) {
             event = readDbf.readDBFFile();
             //更新pos,从而更新posJson文件
             setPos(fileInputStream.getChannel().position());
 
-        } else if (fileSuffixes.equalsIgnoreCase(".xml")) {
+        } else if (fileName.endsWith(".xml")) {
             event = readXml.readNode();
             if (event == null) {
                 setPos(raf.length());
             }
+        } else if (fileName.endsWith(".xls") || fileName.endsWith(".xlsx")) {
+            event = readXlsx.readRows();
+            setPos(fileInputStream.getChannel().position());
         } else {
             Long posTmp = getLineReadPos();
             LineResult line = readLine();
@@ -221,7 +232,7 @@ public class TailFile {
                 updateFilePos(posTmp);
                 return null;
             }
-            if (fileSuffixes.equalsIgnoreCase(".tsv")) {
+            if (fileName.endsWith(".tsv")) {
                 event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
                         .replaceAll("\t", csvSeparator).getBytes(Charset.forName("utf-8")));
             } else {
