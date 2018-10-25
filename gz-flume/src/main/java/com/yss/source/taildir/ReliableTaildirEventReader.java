@@ -221,9 +221,10 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 }
                 //添加文件的相对路径信息
                 String filename = currentFile.getPath().replace(currentFile.getParentDir(), "");
-                if (filename.length() > 4) {
-                    filename = filename.substring(0, filename.length() - 4);
-                }
+                //去掉文件的原有后缀名
+//                if (filename.length() > 4) {
+//                    filename = filename.substring(0, filename.length() - 4);
+//                }
                 if (annotateFileName) {
                     event.getHeaders().put(fileNameHeader, filename);
                 }
