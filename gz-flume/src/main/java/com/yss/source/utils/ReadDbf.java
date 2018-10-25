@@ -16,18 +16,24 @@ import java.time.LocalDateTime;
  * 目标表：
  */
 public class ReadDbf {
-    private long ROW = 1;
+    private long ROW;
     private DBFReader reader;
     private String currentRecord;
     private String csvSeparator;
     private int eventLines;
     private StringBuffer bodyBuffer = new StringBuffer();
 
-    public ReadDbf(FileInputStream fileInputStream, String currentRecord, String csvSeparator, int eventLines) {
+    public ReadDbf(FileInputStream fileInputStream, String currentRecord, String csvSeparator, int eventLines, boolean head) {
         this.reader = new DBFReader(fileInputStream);
         this.currentRecord = currentRecord;
         this.csvSeparator = csvSeparator;
         this.eventLines = eventLines;
+        //ture取头数据   false 不取头数据
+        if (head) {
+            this.ROW = 1;
+        } else {
+            this.ROW = 2;
+        }
     }
 
     public Event readDBFFile() {
@@ -64,6 +70,7 @@ public class ReadDbf {
                 } else {
                     break;
                 }
+                ROW++;
             }
             if (bodyBuffer.length() > 1) {
                 bodyBuffer.delete(bodyBuffer.length() - 1, bodyBuffer.length());
@@ -72,7 +79,6 @@ public class ReadDbf {
             }
             Event event = EventBuilder.withBody(bodyBuffer.toString(), Charset.forName("utf-8"));
             event.getHeaders().put(currentRecord, String.valueOf(ROW));
-            ROW++;
             bodyBuffer.setLength(0);
             return event;
         }

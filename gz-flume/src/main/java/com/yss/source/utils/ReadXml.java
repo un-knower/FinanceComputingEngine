@@ -35,11 +35,11 @@ public class ReadXml {
     private byte[] space = " ".getBytes(Charset.defaultCharset());
     private byte[] angleBracket = ">".getBytes(Charset.defaultCharset());
     private Long start;
-    private long ROW = 1;
+    private long ROW;
     private DataOutputBuffer databuffer = new DataOutputBuffer();
     private RandomAccessFile raf;
 
-    public ReadXml(String startLabel, RandomAccessFile raf, long startPos, String currentRecord, String csvSeparator, int eventLines) {
+    public ReadXml(String startLabel, RandomAccessFile raf, long startPos, String currentRecord, String csvSeparator, int eventLines, Boolean head) {
         this.startTag = ("<" + startLabel + ">").getBytes(Charset.forName("utf-8"));
         this.endTag = ("</" + startLabel + ">").getBytes(Charset.forName("utf-8"));
         this.raf = raf;
@@ -48,6 +48,12 @@ public class ReadXml {
         this.currentRecord = currentRecord;
         this.csvSeparator = csvSeparator;
         this.eventLines = eventLines;
+        //ture取头数据   false 不取头数据
+        if (head) {
+            this.ROW = 1;
+        } else {
+            this.ROW = 2;
+        }
     }
 
     public String read() throws IOException {
@@ -212,7 +218,7 @@ public class ReadXml {
                 return null;
             }
         } else {
-            for (int a = 0; a < 10; a++) {
+            for (int a = 0; a < eventLines; a++) {
                 String data = read();
                 if (data != null) {
                     bodyBuffer.append(data.split("\n")[1]);
@@ -220,6 +226,7 @@ public class ReadXml {
                 } else {
                     break;
                 }
+                ROW++;
             }
             if (bodyBuffer.length() > 1) {
                 bodyBuffer.delete(bodyBuffer.length() - 1, bodyBuffer.length());
@@ -228,7 +235,6 @@ public class ReadXml {
             }
             Event event = EventBuilder.withBody(bodyBuffer.toString(), Charset.forName("utf-8"));
             event.getHeaders().put(currentRecord, String.valueOf(ROW));
-            ROW++;
             bodyBuffer.setLength(0);
             return event;
         }

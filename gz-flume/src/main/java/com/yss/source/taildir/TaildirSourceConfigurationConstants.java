@@ -102,7 +102,7 @@ public class TaildirSourceConfigurationConstants {
      * 在Event的Headers头中每行记录对应的key值
      */
     public static final String SEPARATOR = "csvSeparator";
-    public static final String DEFAULT_SEPARATOR = ",";
+    public static final String DEFAULT_SEPARATOR = "\t";
 
     /**
      * 在监控的目录里是否根据时间排除过期的目录
@@ -122,6 +122,20 @@ public class TaildirSourceConfigurationConstants {
      */
     public static final String EVENT_LINES = "eventLines";
     public static final int DEFAULT_EVENT_LINES = 50;
+
+
+    /**
+     * 是否发送头文件HEAD
+     */
+    public static final String HEAD = "headFile";
+    public static final boolean DEFAULT_HEAD = true;
+
+
+    /**
+     * 按文件名的前缀过滤文件,默认值必须有,但是可以是任意值最好是永远不会出现的值
+     */
+    public static final String PREFIXSTR = "prefixStr";
+    public static final String DEFAULT_PREFIXSTR = "doesntfdjfskfksdfkjsfsfskjkfsjdfsj";
 
 
 }

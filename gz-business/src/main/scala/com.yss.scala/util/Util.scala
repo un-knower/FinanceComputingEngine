@@ -33,7 +33,7 @@ object Util {
     */
   def readCSV(path: String, sparkSession: SparkSession, header: Boolean = true) = {
     sparkSession.read.format("csv")
-      .option("sep", ",")
+      .option("sep", "\t")
       .option("inferSchema", "false")
       .option("header", header)
       .load(path)
@@ -59,7 +59,7 @@ object Util {
     * @return
     */
   def getDailyInputFilePath(fileName: String,prefix:String = "/yss/guzhi/basic_list/") = {
-    val today = DateUtils.getToday(DateUtils.yyyyMMdd)
+    val today = DateUtils.getToday(DateUtils.YYYYMMDD)
     val hdfsFile = "hdfs://192.168.102.120:8020"+ prefix + today + "/"+fileName
     hdfsFile
   }

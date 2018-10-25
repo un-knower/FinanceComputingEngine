@@ -18,7 +18,7 @@ object DateUtils {
     * @return
     */
   def absDays(date1: String, date2: String): Long = {
-    val DATEKEY_FORMAT = new SimpleDateFormat("yyyyMMdd")
+    val DATEKEY_FORMAT = new SimpleDateFormat(YYYYMMDD)
     val d1 = DATEKEY_FORMAT.parse(date1).getTime
     val d2 = DATEKEY_FORMAT.parse(date2).getTime
     Math.abs(d1 - d2) / (24 * 60 * 60 * 1000)
@@ -30,10 +30,11 @@ object DateUtils {
     *
     * @param dateStr 格式为yyyyMMdd eg:20180528
     * @param days    天数
-    * @return 格式为yyyyMMdd
+    * @param format    日期格式
+    * @return 指定日期格式为字符串
     */
-  def addDays(dateStr: String, days: Int): String = {
-    val DATEKEY_FORMAT = new SimpleDateFormat("yyyyMMdd")
+  def addDays(dateStr: String, days: Int,format:String = YYYYMMDD): String = {
+    val DATEKEY_FORMAT = new SimpleDateFormat(format)
     val date = DATEKEY_FORMAT.parse(dateStr)
     val calender = Calendar.getInstance()
     calender.setTime(date)
@@ -45,12 +46,12 @@ object DateUtils {
 
 
   /** 日期格式：yyyyMMdd */
-  val yyyyMMdd = "yyyyMMdd"
+  val YYYYMMDD = "yyyyMMdd"
 
   /** 日期格式：yyyy-MM-dd HH:mm:ss */
-  val yyyyMMddHHmmss = "yyyy-MM-dd HH:mm:ss"
+  val YYYY_MM_DD_HH_MM_SS = "yyyy-MM-dd HH:mm:ss"
 
-  val yyyy_MM_dd = "yyyy-MM-dd"
+  val YYYY_MM_DD = "yyyy-MM-dd"
 
   /** 获取当天的日期 */
   def getToday(pattern: String) = {
@@ -64,7 +65,7 @@ object DateUtils {
     * @param dateLong :时间戳
     * @return 返回格式:格式为yyyyMMdd
     */
-  def formatDate(dateLong: Long, pattern: String = yyyyMMdd): String = {
+  def formatDate(dateLong: Long, pattern: String = YYYYMMDD): String = {
     val date = new Date(dateLong)
     val DATEKEY_FORMAT = new SimpleDateFormat(pattern)
     DATEKEY_FORMAT.format(date)

@@ -614,11 +614,11 @@ object SZSETriPartyRepo {
       val FBS = "" // 买卖方向
 
 
-      val time = DateUtils.formattedDate2Long(FDate, DateUtils.yyyyMMdd)
+      val time = DateUtils.formattedDate2Long(FDate, DateUtils.YYYYMMDD)
 
       val sjsmxSFCSArr: Array[Row] = sjsmxDFArrBroadCast.value.filter(row1 => {
 
-        val ntime = DateUtils.formattedDate2Long(row1.getAs("MXCJRQ"), DateUtils.yyyyMMdd)
+        val ntime = DateUtils.formattedDate2Long(row1.getAs("MXCJRQ"), DateUtils.YYYYMMDD)
 
         // 过滤掉ETL中自己本身数据，和符"合同初始合同序号"的数据
         (ntime < time) && FCSHTXH.equals(row1.getAs[String]("MXFJSM"))
@@ -630,7 +630,7 @@ object SZSETriPartyRepo {
         val FHggaina = BigDecimal(row1.getAs[String]("FHggain"))
         val FRZLVa = BigDecimal(row1.getAs[String]("FRZLV"))
         val MXYWLBa= row1.getAs[String]("MXYWLB")
-        val FDateTempa = DateUtils.formattedDate2Long(row1.getAs[String]("MXCJRQ"), DateUtils.yyyyMMdd)
+        val FDateTempa = DateUtils.formattedDate2Long(row1.getAs[String]("MXCJRQ"), DateUtils.YYYYMMDD)
 
         //((FDateTemp, JGYWLB), Fje + "_" + FHggain + "_" + FRZLV + "_" + JGYWLB)
         (MXYWLBa, FDateTempa, Fjea, FHggaina, FRZLVa,row1.getAs[String]("MXCJRQ"))
@@ -651,7 +651,7 @@ object SZSETriPartyRepo {
         val Fje_SFXZ = BigDecimal(item.getAs[String]("FJETemp"))
         val FHggain_SFXZ = BigDecimal(item.getAs[String]("FHggain"))
         val FRZLV_SFXZ = BigDecimal(item.getAs[String]("FRZLV"))
-        val FDateTemp_SFXZ = DateUtils.formattedDate2Long(item.getAs[String]("MXCJRQ"), DateUtils.yyyyMMdd)
+        val FDateTemp_SFXZ = DateUtils.formattedDate2Long(item.getAs[String]("MXCJRQ"), DateUtils.YYYYMMDD)
         (FDateTemp_SFXZ, Fje_SFXZ, FHggain_SFXZ, FRZLV_SFXZ,item.getAs[String]("MXCJRQ"))
       }).sortBy(item => item._1)
 
@@ -668,7 +668,7 @@ object SZSETriPartyRepo {
           val Fje_SFCS = BigDecimal(item.getAs[String]("FJETemp"))
           val FHggain_SFCS = BigDecimal(item.getAs[String]("FHggain"))
           val FRZLV_SFCS = BigDecimal(item.getAs[String]("FRZLV"))
-          val FDateTemp_SFCS = DateUtils.formattedDate2Long(item.getAs[String]("MXCJRQ"), DateUtils.yyyyMMdd)
+          val FDateTemp_SFCS = DateUtils.formattedDate2Long(item.getAs[String]("MXCJRQ"), DateUtils.YYYYMMDD)
           (FDateTemp_SFCS, Fje_SFCS, FHggain_SFCS, FRZLV_SFCS,item.getAs[String]("MXCJRQ"))
         }).sortBy(item => item._1)
 
@@ -996,11 +996,11 @@ object SZSETriPartyRepo {
       val ZqDm = "" //证券代码
       val FBS = "" // 买卖方向
 
-      val time = DateUtils.formattedDate2Long(FDate, DateUtils.yyyyMMdd)
+      val time = DateUtils.formattedDate2Long(FDate, DateUtils.YYYYMMDD)
 
       val sjsjgSFCSArr: Array[Row] = sjsjgDFArrBroadCast.value.filter(row1 => {
 
-        val ntime = DateUtils.formattedDate2Long(row1.getAs("JGCJRQ"), DateUtils.yyyyMMdd)
+        val ntime = DateUtils.formattedDate2Long(row1.getAs("JGCJRQ"), DateUtils.YYYYMMDD)
 
         (ntime < time) && FCSHTXH.equals(row1.getAs[String]("JGFJSM"))
       })
@@ -1026,7 +1026,7 @@ object SZSETriPartyRepo {
         val FHggaina = BigDecimal(row1.getAs[String]("FHggain"))
         val FRZLVa = BigDecimal(row1.getAs[String]("FRZLV"))
         val JGYWLBa= row1.getAs[String]("JGYWLB")
-        val FDateTempa = DateUtils.formattedDate2Long(row1.getAs[String]("JGCJRQ"), DateUtils.yyyyMMdd)
+        val FDateTempa = DateUtils.formattedDate2Long(row1.getAs[String]("JGCJRQ"), DateUtils.YYYYMMDD)
 
         //((FDateTemp, JGYWLB), Fje + "_" + FHggain + "_" + FRZLV + "_" + JGYWLB)
         (JGYWLBa, FDateTempa, Fjea, FHggaina, FRZLVa,row1.getAs[String]("JGCJRQ"))
@@ -1049,7 +1049,7 @@ object SZSETriPartyRepo {
         val Fje_SFXZ = BigDecimal(item.getAs[String]("FJETemp"))
         val FHggain_SFXZ = BigDecimal(item.getAs[String]("FHggain"))
         val FRZLV_SFXZ = BigDecimal(item.getAs[String]("FRZLV"))
-        val FDateTemp_SFXZ = DateUtils.formattedDate2Long(item.getAs[String]("JGCJRQ"), DateUtils.yyyyMMdd)
+        val FDateTemp_SFXZ = DateUtils.formattedDate2Long(item.getAs[String]("JGCJRQ"), DateUtils.YYYYMMDD)
         (FDateTemp_SFXZ, Fje_SFXZ, FHggain_SFXZ, FRZLV_SFXZ,item.getAs[String]("JGCJRQ"))
       }).sortBy(item => item._1)
 
@@ -1066,7 +1066,7 @@ object SZSETriPartyRepo {
           val Fje_SFCS = BigDecimal(item.getAs[String]("FJETemp"))
           val FHggain_SFCS = BigDecimal(item.getAs[String]("FHggain"))
           val FRZLV_SFCS = BigDecimal(item.getAs[String]("FRZLV"))
-          val FDateTemp_SFCS = DateUtils.formattedDate2Long(item.getAs[String]("JGCJRQ"), DateUtils.yyyyMMdd)
+          val FDateTemp_SFCS = DateUtils.formattedDate2Long(item.getAs[String]("JGCJRQ"), DateUtils.YYYYMMDD)
           (FDateTemp_SFCS, Fje_SFCS, FHggain_SFCS, FRZLV_SFCS,item.getAs[String]("JGCJRQ"))
         }).sortBy(item => item._1)
 

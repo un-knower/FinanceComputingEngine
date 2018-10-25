@@ -29,7 +29,7 @@ object SZStockExchange extends Serializable {
   }
 
   def getResult() = {
-    val spark = SparkSession.builder().appName("SJSV5").getOrCreate() //.master("local[*]")
+    val spark = SparkSession.builder().appName("SJSV5").master("local[*]").getOrCreate() //.master("local[*]")
 
     /*   val df = spark.read.format("jdbc").option("url", "jdbc:mysql://192.168.102.120:3306/JJCWGZ")
          .option("user", "root")
@@ -56,8 +56,8 @@ object SZStockExchange extends Serializable {
     val dateTime1 = parseDate1.getTime
 
     //val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_F000995F0401_1_20180808(2).tsv")
-    //val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_1_20180124(1).tsv") //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
-    val exe = sc.textFile("hdfs://192.168.102.120/yss/guzhi/execution_aggr_tgwid_1_20180124.tsv")
+    val exe = sc.textFile("C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_1_20180124(1).tsv") //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
+   // val exe = sc.textFile("hdfs://192.168.102.120/yss/guzhi/execution_aggr_tgwid_1_20180124.tsv")
     //val exe = sc.textFile("C:/Users/hgd/Desktop/回购/execution_aggr_tgwid_1_20180124.tsv")
 
     /**
@@ -197,10 +197,11 @@ object SZStockExchange extends Serializable {
     val fzqlbValues = sc.broadcast(fzqlb)
 
     //将原始数据,进行map,将key进行判断
-    val result = exeDF.flatMap {
-      case (key1, iterable) => {
+    val result = exeDF.flatMap{
+      case (key1,iterable) => {
 
-        var execution = new ListBuffer[SZSEOriginalObj]()
+        var execution=new  ListBuffer[SZSEOriginalObj]()
+
 
         for (func <- iterable) {
           //定义一个map
@@ -220,10 +221,10 @@ object SZStockExchange extends Serializable {
           val Side = text(20) //买卖方向
           val sqbh = text(12) //申请编号
           val AccountID = text(21)
-          if (appId == "052" || appId == "053" || appId == "060" || appId == "061" || appId == "020" || appId == "029") {
-            if (key.substring(0, 2) == "00" || key.substring(0, 2) == "30") {
+          if (appId == "052") {
+            if (key.substring(0, 2).equals("00") || key.substring(0, 2).equals( "30")) {
               //判断fzqbz
-              if (key.substring(0, 4) == "0010" || key.substring(0, 5) == "00119") {
+              if (key.substring(0, 4).equals("0010") || key.substring(0, 5).equals("00119")) {
                 fzqbz("fzqbz") = "CDRGP"
 
               } else {
@@ -256,22 +257,25 @@ object SZStockExchange extends Serializable {
               } else {
                 fywbz("fywbz") = "PT"
               }
-            } else if (key.substring(0, 3) == "140") {
+
+            } else if (key.substring(0, 3).equals("140")) {
               fzqbz("fzqbz") = "GP"
               fywbz("fywbz") = "DZYXPT"
 
-            } else if (key.substring(0, 2) == "10") {
-              if (key.substring(0, 3) == "104" || key.substring(0, 3) == "106" || key.substring(0, 3) == "105" ||
-                key.substring(0, 3) == "107" || key.substring(0, 3) == "109") {
+            } else if (key.substring(0, 2).equals("10")) {
+
+
+              if (key.substring(0, 3).equals("104") || key.substring(0, 3) .equals( "106") || key.substring(0, 3).equals( "105") ||
+                key.substring(0, 3).equals("107") || key.substring(0, 3).equals("109")) {
 
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "DFZQ"
 
-              } else if (key.substring(0, 4) == "1016" || key.substring(0, 4) == "1017") {
+              } else if (key.substring(0, 4).equals("1016")|| key.substring(0, 4).equals("1017")) {
                 fzqbz("fzqbz") = "XZ"
                 fywbz("fywbz") = "QYZQXZ"
-              } else if (key.substring(0, 4) == "1086" || key.substring(0, 4) == "1087" || key.substring(0, 4) == "1088" ||
-                key.substring(0, 4) == "1089") {
+              } else if (key.substring(0, 4).equals("1086") || key.substring(0, 4).equals("1087") || key.substring(0, 4).equals( "1088") ||
+                key.substring(0, 4).equals("1089")) {
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "JRZQ_ZCX"
 
@@ -279,43 +283,46 @@ object SZStockExchange extends Serializable {
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "GZXQ"
               }
-            } else if (key.substring(0, 2) == "11" || key.substring(0, 3) == "133" || key.substring(0, 3) == "134" || key.substring(0, 3) == "138"
-              || key.substring(0, 3) == "148" || key.substring(0, 3) == "149") {
 
-              if (key.substring(0, 3) == "138" || key.substring(0, 3) == "139" || key.substring(0, 3) == "119") {
+
+            } else if (key.substring(0, 2).equals(  "11") || key.substring(0, 3).equals( "133") || key.substring(0, 3).equals( "134") || key.substring(0, 3).equals(  "138")
+              || key.substring(0, 3).equals( "148") || key.substring(0, 3).equals( "149")) {
+
+              if (key.substring(0, 3).equals( "138") || key.substring(0, 3).equals( "139") || key.substring(0,3).equals("119")) {
 
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "ZCZQ"
-              } else if (key.substring(0, 4) == "1189" || key.substring(0, 4) == "1151") {
+              } else if (key.substring(0, 4).equals("1189") || key.substring(0, 4).equals("1151")) {
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "CJZQ"
-              } else if (key.substring(0, 4) == "1174" || key.substring(0, 3) == "114"
-                || key.substring(0, 3) == "118" || key.substring(0, 4) == "1170" ||
-                key.substring(0, 4) == "1171" || key.substring(0, 4) == "1172" || key.substring(0, 4) == "1173") {
+              } else if (key.substring(0, 4).equals( "1174") || key.substring(0, 3).equals( "114")
+                || key.substring(0, 3).equals( "118") || key.substring(0, 4).equals( "1170") ||
+                key.substring(0, 4).equals("1171") || key.substring(0, 4).equals( "1172") || key.substring(0, 4).equals( "1173")) {
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "SMZQ"
 
-              } else if ((key.substring(0, 3) == "112" || key.substring(0, 4) == "1175"
-                || key.substring(0, 4) == "1176" || key.substring(0, 4) == "1177" ||
-                key.substring(0, 4) == "1178" || key.substring(0, 4) == "1179" || key.substring(0, 3) == "148"
+              } else if ((key.substring(0, 3).equals( "112" )|| key.substring(0, 4).equals( "1175")
+                || key.substring(0, 4).equals( "1176") || key.substring(0, 4).equals( "1177") ||
+                key.substring(0, 4).equals( "1178") || key.substring(0, 4).equals( "1179") || key.substring(0, 3).equals( "148")
                 ||
-                key.substring(0, 3) == "149" || key.substring(0, 3) == "133" || key.substring(0, 3) == "134") && fzqlbValues.value.getOrElse(key, "-1") != "可分离债券" && key.substring(0, 3) != "119") {
+                key.substring(0, 3).equals( "149" )|| key.substring(0, 3).equals( "133") || key.substring(0, 3).equals( "134")) && fzqlbValues.value.getOrElse(key,"-1")!="可分离债券" && key.substring(0, 3) != "119"){
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "QYZQ"
-              } else if (fzqlbValues.value.getOrElse(key, "-1") == "可分离债券") {
+              }else if(fzqlbValues.value.getOrElse(key,"-1").equals("可分离债券")){
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "FLKZZ"
               } else {
                 fzqbz("fzqbz") = "ZQ"
                 fywbz("fywbz") = "KZZ"
               }
-            } else if (key.substring(0, 2) == "12") {
+
+            } else if (key.substring(0, 2).equals( "12")) {
               fzqbz("fzqbz") = "ZQ"
               fywbz("fywbz") = "KZZ"
-            } else if (key.substring(0, 2) == "13") {
+            } else if (key.substring(0, 2).equals( "13")) {
 
-              if (appId.substring(0, 3) == "010" || appId.substring(0, 3) == "020" || appId.substring(0, 3) == "050" ||
-                appId.substring(0, 3) == "060") {
+              if (appId.substring(0, 3).equals( "010") || appId.substring(0, 3).equals( "020") || appId.substring(0, 3).equals( "050") ||
+                appId.substring(0, 3).equals( "060")) {
                 if (Side == "1") {
                   fzqbz("fzqbz") = "HG"
                   fywbz("fywbz") = "MRHG"
@@ -324,13 +331,14 @@ object SZStockExchange extends Serializable {
                   fywbz("fywbz") = "MCHG"
                 }
               }
-            } else if (key.substring(0, 2) == "16") {
+
+            } else if (key.substring(0, 2).equals( "16")) {
               fzqbz("fzqbz") = "JJ"
               fywbz("fywbz") = "LOF"
-            } else if (key.substring(0, 2) == "18") {
+            } else if (key.substring(0, 2) .equals("18")) {
               fzqbz("fzqbz") = "JJ"
               fywbz("fywbz") = "FBS"
-            } else if (key.substring(0, 2) == "03") {
+            } else if (key.substring(0, 2).equals("03")) {
               if (key.substring(0, 3).toInt >= 30 && key.substring(0, 3).toInt <= 32) {
                 //RGQZ
                 fzqbz("fzqbz") = "QZ"
@@ -339,20 +347,19 @@ object SZStockExchange extends Serializable {
                 fzqbz("fzqbz") = "QZ"
                 fywbz("fywbz") = "RZQZ"
               }
-            } else if (key.substring(0, 2) == "15") {
-
+            } else if (key.substring(0, 2).equals( "15")) {
 
               val dateLong = CSJJXXValues.value.get(key + "_" + "HB")
 
               if (dateLong.isDefined) {
                 val jjDate = dateLong.get(0)
 
-                if (key.substring(0, 3) == "159" && jjDate != "0" && dateTime1.toString >= jjDate.toString) {
+                if (key.substring(0, 3) .equals("159") && jjDate!=0 && dateTime1.toString >= jjDate.toString) {
                   fzqbz("fzqbz") = "JJ"
                   fywbz("fywbz") = "HBETF"
                 }
               }
-              if (key.substring(0, 4) == "1599") {
+              if (key.substring(0, 4) .equals("1599")) {
                 fzqbz("fzqbz") = "JJ"
                 fywbz("fywbz") = "ETF"
               } else {
@@ -360,8 +367,10 @@ object SZStockExchange extends Serializable {
                 fywbz("fywbz") = "LOF"
               }
             }
+
             val setCodeValue = setCodeValues.value.getOrElse(AccountID, "-1")
-            if (setCodeValue != "-1") {
+            if (!setCodeValue .equals( "-1")) {
+
               setCode("setCode") = setCodeValue
             }
             //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
