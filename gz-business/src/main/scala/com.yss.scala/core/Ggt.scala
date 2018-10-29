@@ -553,8 +553,7 @@ object Ggt {
     //资产代码
     val FSETID:String=""
     //日期
-    val Fdate:String = item.getAs[String]("qsrq")
-
+    val Fdate:String = getFdate(item)
     //日期
     val FinDate:String = item.getAs[String]("qsrq")
     //证券代码
@@ -785,6 +784,21 @@ object Ggt {
   def getFzqdm(item:Row, zqdm1Map:scala.collection.Map[String,String]):String={
     val zqdm1 = trim(item.getAs[String]("zqdm1"))
     zqdm1Map.getOrElse(zqdm1, "")
+  }
+
+
+  /**
+    * 获取日期
+    * @param item
+    * @return
+    */
+  def getFdate(item:Row): String = {
+    val ywlx:String = item.getAs[String]("ywlx")
+    var qsrq = item.getAs[String]("qsrq")
+    if (ywlx.equals("H54") || ywlx.equals("H55")) {
+      qsrq = item.getAs[String]("jsrq")
+    }
+    qsrq
   }
 
   /**
@@ -1371,7 +1385,6 @@ object Ggt {
       Fsssje = BigDecimal(0)
       FQTF = BigDecimal(0)
     }
-
 
     if (blnGgtCbXqr.equals("0")) {
       if (fbs.equals("B")) {
