@@ -211,7 +211,7 @@ public class TailFile {
 
     private Event readEvent(boolean backoffWithoutNL, boolean addByteOffset) throws IOException {
         Event event;
-        if (fileName.endsWith(".dbf")) {
+        if (fileName.endsWith(".dbf") || FilterFile.filtration(fileName, prefixList)) {
             event = readDbf.readDBFFile();
             //更新pos,从而更新posJson文件
             setPos(fileInputStream.getChannel().position());
@@ -223,7 +223,12 @@ public class TailFile {
             }
         } else if (fileName.endsWith(".xls") || fileName.endsWith(".xlsx")) {
             event = readXlsx.readRows();
-            setPos(fileInputStream.getChannel().position());
+            if (event != null) {
+                int length = new String(event.getBody(), Charset.forName("utf-8")).length();
+                setPos(length);
+            } else {
+                setPos(new File(path).length());
+            }
         } else {
             Long posTmp = getLineReadPos();
             LineResult line = readLine();

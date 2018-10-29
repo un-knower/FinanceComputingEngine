@@ -29,18 +29,49 @@
 	
 	
 5.开发中对集群Flume下添加的jar文件
-
-		<dependency>
-           <groupId>com.github.albfernandez</groupId>
-            <artifactId>javadbf</artifactId>
-           <version>1.9.2</version>
-        </dependency>
-		
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20180813</version>
-        </dependency>
+        5.1
+		 <!--解析DBF文件-->
+                <dependency>
+                    <groupId>com.github.albfernandez</groupId>
+                    <artifactId>javadbf</artifactId>
+                    <version>1.9.2</version>
+                </dependency>
+                <!--解析Xml文件-->
+                <dependency>
+                    <groupId>org.json</groupId>
+                    <artifactId>json</artifactId>
+                    <version>20180813</version>
+                </dependency>
+                <!--解析xls文件-->
+                <dependency>
+                    <groupId>org.apache.poi</groupId>
+                    <artifactId>poi</artifactId>
+                    <version>4.0.0</version>
+                </dependency>
+                <!--解析xlsx文件-->
+                <dependency>
+                    <groupId>org.apache.poi</groupId>
+                    <artifactId>poi-ooxml</artifactId>
+                    <version>4.0.0</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                    <version>1.18</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.poi</groupId>
+                    <artifactId>poi-ooxml-schemas</artifactId>
+                    <version>4.0.0</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.xmlbeans</groupId>
+                    <artifactId>xmlbeans</artifactId>
+                    <version>3.0.1</version>
+                </dependency>
+                
+      5.2        
+       114机器Flume的lib下的commons-compress-1.4.1 替换了新版本 commons-compress-1.18.jar,在读xlsx文件时找不到对应的类
 
 6.自定义的FlumeSource
 
