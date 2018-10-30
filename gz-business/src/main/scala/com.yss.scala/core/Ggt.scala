@@ -553,7 +553,7 @@ object Ggt {
     //资产代码
     val FSETID:String=""
     //日期
-    val Fdate:String = item.getAs[String]("qsrq")
+    val Fdate:String = getFdate(item)
     //日期
     val FinDate:String = item.getAs[String]("qsrq")
     //证券代码
@@ -624,6 +624,7 @@ object Ggt {
     val FSJLY = ""
     //币种
     val Fbz = "RMB"
+
     //金额、佣金、卖实收金额、其他费用
     val (fje,fyj,fsssje,fQTF) = buildFje(item,fbs,FeeTemp,Fghf,Fjsf,Fzgf,Fyhs,Ffxj,FZqbz,FSzsh,gddmParamMap,yjlvMap,ffyffsMap)
 
@@ -783,6 +784,21 @@ object Ggt {
   def getFzqdm(item:Row, zqdm1Map:scala.collection.Map[String,String]):String={
     val zqdm1 = trim(item.getAs[String]("zqdm1"))
     zqdm1Map.getOrElse(zqdm1, "")
+  }
+
+
+  /**
+    * 获取日期
+    * @param item
+    * @return
+    */
+  def getFdate(item:Row): String = {
+    val ywlx:String = item.getAs[String]("ywlx")
+    var qsrq = item.getAs[String]("qsrq")
+    if (ywlx.equals("H54") || ywlx.equals("H55")) {
+      qsrq = item.getAs[String]("jsrq")
+    }
+    qsrq
   }
 
   /**
@@ -1201,12 +1217,11 @@ object Ggt {
     var fyhs = BigDecimal(0)
 
     if (ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")
-      || ywlx.equals("H64") || item.equals("H65") || item.equals("H67")) {
+      || ywlx.equals("H64") || ywlx.equals("H65") || ywlx.equals("H67")  || ywlx.equals("H63")) {
       fyhs = round(abs(yhs)*BigDecimal(wbhl),2)
-    } else if (ywlx.equals("H60") || ywlx.equals("H63")) {
+    } else if (ywlx.equals("H60")) {
       fyhs = BigDecimal(0)
     }
-
     fyhs
   }
 
@@ -1222,7 +1237,7 @@ object Ggt {
     var fzgf = BigDecimal(0)
 
     if (ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")
-      || ywlx.equals("H64") || item.equals("H65") || item.equals("H67")) {
+      || ywlx.equals("H64") || ywlx.equals("H65") || ywlx.equals("H67")) {
       fzgf = round(abs(jyzf)*BigDecimal(wbhl),2)
     } else if (ywlx.equals("H60") || ywlx.equals("H63")) {
       fzgf = BigDecimal(0)
@@ -1242,7 +1257,7 @@ object Ggt {
     var fghf = BigDecimal(0)
 
     if (ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")
-      || ywlx.equals("H64") || item.equals("H65") || item.equals("H67")) {
+      || ywlx.equals("H64") || ywlx.equals("H65") || ywlx.equals("H67")) {
       fghf = round(abs(syf)*BigDecimal(wbhl),2)
     } else if (ywlx.equals("H60") || ywlx.equals("H63")) {
       fghf = BigDecimal(0)
@@ -1262,7 +1277,7 @@ object Ggt {
     val jsf:String = item.getAs[Double]("jsf").doubleValue().toString
 
     if (ywlx.equals("H01") || ywlx.equals("H02") || ywlx.equals("H54") || ywlx.equals("H55")
-      || ywlx.equals("H64") || item.equals("H65") || item.equals("H67")) {
+      || ywlx.equals("H64") || ywlx.equals("H65") || ywlx.equals("H67")) {
       ffxj = round(abs(jsf)*BigDecimal(wbhl),2)
     } else if (ywlx.equals("H60") || ywlx.equals("H63")) {
       ffxj = BigDecimal(0)
@@ -1310,6 +1325,7 @@ object Ggt {
                gddmParamMap:scala.collection.Map[String,String],
                yjlvMap:scala.collection.Map[String,String],
                ffyffsMap:scala.collection.Map[String,String]):(BigDecimal,BigDecimal,BigDecimal,BigDecimal)= {
+    val ywlx:String = item.getAs[String]("ywlx")
     val wbhl: String = trim(item.getAs[String]("wbhl"))
     val ysfje: String = item.getAs[Double]("ysfje").doubleValue().toString
     val wbje: String = item.getAs[Double]("wbje").doubleValue().toString
@@ -1369,7 +1385,6 @@ object Ggt {
       Fsssje = BigDecimal(0)
       FQTF = BigDecimal(0)
     }
-
 
     if (blnGgtCbXqr.equals("0")) {
       if (fbs.equals("B")) {
@@ -1458,6 +1473,11 @@ object Ggt {
       }
     }
     Fsssje = fsssfje
+
+    if(ywlx.equals("H54") || ywlx.equals("H55")|| ywlx.equals("H60")|| ywlx.equals("H63")
+      || ywlx.equals("H64")|| ywlx.equals("H65")|| ywlx.equals("H67")) {
+      Fyj = BigDecimal(0)
+    }
 
     (Fje,Fyj,Fsssje,FQTF)
   }
@@ -1556,13 +1576,6 @@ object Ggt {
   def getHktzxxDF(spark: SparkSession, listFiles:ListBuffer[String]) = {
 
     mergeFileDF(spark,listFiles).createOrReplaceTempView("hk_tzxx_table")
-
-//    import spark.implicits._
-//    val tzxxRDD = spark.sparkContext.textFile(commonUrl + date + "/" + fileName)
-//      .map{ item =>
-//        val items = item.split(",")
-//        (items(1),items(28), items(29), items(12), items(13), items(4))
-//      }.toDF("TZLB", "FZDM1","FZDM2", "RQ1", "RQ2", "ZQDM").createOrReplaceTempView("hk_tzxx_table")
 
     spark.sql("select FZDM1,FZDM2,RQ1,RQ2,ZQDM from hk_tzxx_table where TZLB='H10'")
   }
@@ -1689,12 +1702,6 @@ object Ggt {
       return true
     }
     return false
-  }
-
-  def testparam(args: Array[String]) ={
-    args(0) = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
-    args(1) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\2"
-    args(2) = "C:\\Users\\yelin\\Desktop\\dbf\\test\\hk_jsmxjs844.425.DBF"
   }
 
   def getDirFileNames(filepath:File):ListBuffer[String] = {

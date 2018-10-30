@@ -20,6 +20,7 @@
 package com.yss.source.taildir;
 
 import com.google.common.collect.Lists;
+import com.yss.source.utils.FilterFile;
 import com.yss.source.utils.ReadDbf;
 import com.yss.source.utils.ReadXlsx;
 import com.yss.source.utils.ReadXml;
@@ -75,12 +76,14 @@ public class TailFile {
     private String parentDir;
     private final String csvSeparator;
     private final Boolean renameFlie;
+    private List<String> prefixList;
 
     /*-------------------------*/
 
 
     public TailFile(File file, Map<String, String> headers, long inode, long pos, String parentDir,
-                    String xmlNode, String currentRecord, String csvSeparator, boolean renameFlie, Integer eventLines, boolean headFile)
+                    String xmlNode, String currentRecord, String csvSeparator,
+                    boolean renameFlie, Integer eventLines, boolean headFile, String prefixStr)
             throws IOException {
         this.raf = new RandomAccessFile(file, "r");
         if (pos > 0) {
@@ -101,9 +104,10 @@ public class TailFile {
         this.renameFlie = renameFlie;
         this.csvSeparator = csvSeparator;
         this.currentRecord = currentRecord;
+        this.prefixList = FilterFile.assemblePrefix(prefixStr);
         fileName = file.getName().toLowerCase();
         System.out.println(LocalDateTime.now() + "    Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
-        if (fileName.endsWith(".dbf")) {
+        if (fileName.endsWith(".dbf") || FilterFile.filtrationDbf(fileName, prefixList)) {
             readDbf = new ReadDbf(this.fileInputStream, currentRecord, csvSeparator, eventLines, headFile);
         } else if (fileName.endsWith(".xml")) {
             readXml = new ReadXml(xmlNode, this.raf, this.pos, currentRecord, csvSeparator, eventLines, headFile);
@@ -207,7 +211,7 @@ public class TailFile {
 
     private Event readEvent(boolean backoffWithoutNL, boolean addByteOffset) throws IOException {
         Event event;
-        if (fileName.endsWith(".dbf")) {
+        if (fileName.endsWith(".dbf") || FilterFile.filtrationDbf(fileName, prefixList)) {
             event = readDbf.readDBFFile();
             //更新pos,从而更新posJson文件
             setPos(fileInputStream.getChannel().position());
@@ -219,7 +223,12 @@ public class TailFile {
             }
         } else if (fileName.endsWith(".xls") || fileName.endsWith(".xlsx")) {
             event = readXlsx.readRows();
-            setPos(fileInputStream.getChannel().position());
+            if (event != null) {
+                int length = new String(event.getBody(), Charset.forName("utf-8")).length();
+                setPos(length);
+            } else {
+                setPos(new File(path).length());
+            }
         } else {
             Long posTmp = getLineReadPos();
             LineResult line = readLine();
@@ -235,6 +244,14 @@ public class TailFile {
             if (fileName.endsWith(".tsv")) {
                 event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
                         .replaceAll("\t", csvSeparator).getBytes(Charset.forName("utf-8")));
+            } else if (FilterFile.filtrationTxt(fileName, "")) {
+                //分隔符是竖线
+                event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
+                        .replaceAll("\\|", csvSeparator).getBytes(Charset.forName("utf-8")));
+            } else if (FilterFile.filtrationTxt(fileName, "")) {
+                //分隔符是@
+                event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
+                        .replaceAll("\\@", csvSeparator).getBytes(Charset.forName("utf-8")));
             } else {
                 event = EventBuilder.withBody(line.line);
                 if (addByteOffset == true) {

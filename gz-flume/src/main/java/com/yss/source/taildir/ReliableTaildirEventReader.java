@@ -65,6 +65,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private Boolean renameFlie;
     private Boolean headFile;
     private int eventLines;
+    private String prefixStr;
 
     /**
      * Create a ReliableTaildirEventReader to watch the given directory.
@@ -74,7 +75,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                                        boolean skipToEnd, boolean addByteOffset, boolean cachePatternMatching,
                                        boolean annotateFileName, String fileNameHeader, String xmlNode,
                                        String currentRecord, String csvSeparator, Boolean directoryDate,
-                                       Boolean renameFlie, int eventLines, boolean headFile) throws IOException {
+                                       Boolean renameFlie, int eventLines, boolean headFile, String prefixStr) throws IOException {
         // Sanity checks
         Preconditions.checkNotNull(filePaths);
         Preconditions.checkNotNull(positionFilePath);
@@ -86,7 +87,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
 
         List<TaildirMatcher> taildirCache = Lists.newArrayList();
         for (Entry<String, String> e : filePaths.entrySet()) {
-            taildirCache.add(new TaildirMatcher(e.getKey(), e.getValue(), cachePatternMatching, directoryDate));
+            taildirCache.add(new TaildirMatcher(e.getKey(), e.getValue(), cachePatternMatching, directoryDate, prefixStr));
         }
         logger.info("taildirCache: " + taildirCache.toString());
         logger.info("headerTable: " + headerTable.toString());
@@ -103,6 +104,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         this.renameFlie = renameFlie;
         this.eventLines = eventLines;
         this.headFile = headFile;
+        this.prefixStr = prefixStr;
         updateTailFiles(skipToEnd);
 
         logger.info("Updating position from position file: " + positionFilePath);
@@ -219,9 +221,10 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 }
                 //添加文件的相对路径信息
                 String filename = currentFile.getPath().replace(currentFile.getParentDir(), "");
-                if (filename.length() > 4) {
-                    filename = filename.substring(0, filename.length() - 4);
-                }
+                //去掉文件的原有后缀名
+//                if (filename.length() > 4) {
+//                    filename = filename.substring(0, filename.length() - 4);
+//                }
                 if (annotateFileName) {
                     event.getHeaders().put(fileNameHeader, filename);
                 }
@@ -304,7 +307,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private TailFile openFile(File file, Map<String, String> headers, long inode, long pos, String parentDir) {
         try {
             logger.info("Opening file: " + file + ", inode: " + inode + ", pos: " + pos + ", parentDir: " + parentDir);
-            return new TailFile(file, headers, inode, pos, parentDir, xmlNode, currentRecord, csvSeparator, renameFlie, eventLines, headFile);
+            return new TailFile(file, headers, inode, pos, parentDir, xmlNode, currentRecord, csvSeparator, renameFlie, eventLines, headFile, prefixStr);
         } catch (IOException e) {
             throw new FlumeException("Failed opening file: " + file, e);
         }
@@ -338,6 +341,13 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 TaildirSourceConfigurationConstants.DEFAULT_EVENT_LINES;
         private Boolean setHead =
                 TaildirSourceConfigurationConstants.DEFAULT_HEAD;
+        private String setPrefixStr =
+                TaildirSourceConfigurationConstants.DEFAULT_PREFIXSTR;
+
+        public Builder prefixStr(String prefixStr) {
+            this.setPrefixStr = prefixStr;
+            return this;
+        }
 
         public Builder head(boolean setHead) {
             this.setHead = setHead;
@@ -419,7 +429,7 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
             return new ReliableTaildirEventReader(filePaths, headerTable, positionFilePath, skipToEnd,
                     addByteOffset, cachePatternMatching,
                     annotateFileName, fileNameHeader, setXmlNode,
-                    setCurrentRecord, setCsvSeparator, setDirectoryDate, setRenameFlie, setEventLines, setHead);
+                    setCurrentRecord, setCsvSeparator, setDirectoryDate, setRenameFlie, setEventLines, setHead, setPrefixStr);
         }
     }
 

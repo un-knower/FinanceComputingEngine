@@ -50,7 +50,8 @@ public class ReadDbf {
                 System.out.println(LocalDateTime.now() + "    空白文件!");
                 return null;
             }
-            Event event = EventBuilder.withBody(rowFirst.toString(), Charset.forName("utf-8"));
+
+            Event event = EventBuilder.withBody(Transcoding.transcodByte(rowFirst.toString()));
             event.getHeaders().put(currentRecord, String.valueOf(ROW));
             ROW++;
             return event;
@@ -60,7 +61,7 @@ public class ReadDbf {
                 if (rowValues != null && rowValues.length > 0) {
                     for (int i = 0; i < rowValues.length; i++) {
                         if (rowValues[i] != null) {
-                            bodyBuffer.append(new String(rowValues[i].toString().getBytes(Charset.forName("8859_1")), Charset.forName("GBK")));
+                            bodyBuffer.append(rowValues[i].toString());
                             bodyBuffer.append(csvSeparator);
                         } else {
                             bodyBuffer.append(csvSeparator);
@@ -77,7 +78,7 @@ public class ReadDbf {
             } else {
                 return null;
             }
-            Event event = EventBuilder.withBody(bodyBuffer.toString(), Charset.forName("utf-8"));
+            Event event = EventBuilder.withBody(Transcoding.transcodByte(bodyBuffer.toString()));
             event.getHeaders().put(currentRecord, String.valueOf(ROW));
             bodyBuffer.setLength(0);
             return event;

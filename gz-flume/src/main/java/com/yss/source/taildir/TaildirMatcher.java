@@ -21,6 +21,7 @@ package com.yss.source.taildir;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.yss.source.utils.FilterFile;
 import org.apache.flume.annotations.InterfaceAudience;
 import org.apache.flume.annotations.InterfaceStability;
 import org.slf4j.Logger;
@@ -99,6 +100,7 @@ public class TaildirMatcher {
     //正则匹配
     private Pattern fileNamePattern;
     private Boolean directoryDate;
+    private List<String> prefixList;
 
     public String getParentDir() {
         return parentDir.getAbsolutePath();
@@ -122,7 +124,7 @@ public class TaildirMatcher {
      *                             for stamping mtime (eg: remote filesystems)
      * @see TaildirSourceConfigurationConstants
      */
-    TaildirMatcher(String fileGroup, String filePattern, boolean cachePatternMatching, boolean directoryDate) {
+    TaildirMatcher(String fileGroup, String filePattern, boolean cachePatternMatching, boolean directoryDate, String prefixStr) {
         // store whatever came from configuration
         this.fileGroup = fileGroup;
         this.filePattern = filePattern;
@@ -134,7 +136,7 @@ public class TaildirMatcher {
         String regex = f.getName();
         this.fileNamePattern = Pattern.compile(regex);
         this.directoryDate = directoryDate;
-
+        this.prefixList = FilterFile.assemblePrefix(prefixStr);
         final PathMatcher matcher = FS.getPathMatcher("regex:" + regex);
 //        this.fileFilter = new DirectoryStream.Filter<Path>() {
 //            @Override
@@ -153,7 +155,7 @@ public class TaildirMatcher {
                     return true;
                 } else {
                     String fileName = candidate.getName();
-                    if (!fileNamePattern.matcher(fileName).matches()) {
+                    if (!fileNamePattern.matcher(fileName).matches() && !FilterFile.filtrationDbf(fileName, prefixList)) {
                         return false;
                     }
                 }
@@ -329,7 +331,7 @@ public class TaildirMatcher {
         for (File file : directory.listFiles(filter)) {
             if (file.isDirectory()) {
                 if (directoryDate) {
-                    System.out.println(LocalDateTime.now()+"    监控目录下的所有子目录 "+file.getName());
+                    System.out.println(LocalDateTime.now() + "    监控目录下的所有子目录 " + file.getName());
                     if (file.getName().equals(date)) {
                         candidateFiles.addAll(getChildDirectoryFiles(file, filter));
                     }
@@ -351,7 +353,7 @@ public class TaildirMatcher {
         }
         for (File file : directory.listFiles(filter)) {
             if (file.isDirectory()) {
-                System.out.println(LocalDateTime.now()+ "    符合当前日期的所有目录及其子目录    "+file.getName() );
+                System.out.println(LocalDateTime.now() + "    符合当前日期的所有目录及其子目录    " + file.getName());
                 candidateFiles.addAll(getChildDirectoryFiles(file, filter));
             } else {
                 candidateFiles.add(file);
