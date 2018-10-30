@@ -34,13 +34,16 @@ object ShFICCTriPartyRepoETL {
 
     val spark = SparkSession.builder()
       .appName(ShFICCTriPartyRepoETL.getClass.getSimpleName)
-      //.master("local[*]")
+      .master("local[*]")
       //.config("user", "hadoop")
       .getOrCreate()
 
+    //目录路径: hdfs://192.168.102.120:8020/yss/guzhi/interface/20181024/shsfhg-gdsy
     val day = DateUtils.formatDate(System.currentTimeMillis())
-    var jsmxpath = DATA_FILE_PATH + day + File.separator + "shsfhg-gdsy/2018-08-02/" + JSMXFILENAME_PRE + "*"
-    var wdqpath = DATA_FILE_PATH + day + File.separator + "shsfhg-gdsy/2018-08-02/" + WDQFILENAME_PRE + "*"
+    //var jsmxpath = DATA_FILE_PATH + day + File.separator + "shsfhg-gdsy/2018-08-02/" + JSMXFILENAME_PRE + "*"
+    var jsmxpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/20181024/shsfhg-gdsy/jsmxjs614.*"
+    //var wdqpath = DATA_FILE_PATH + day + File.separator + "shsfhg-gdsy/2018-08-02/" + WDQFILENAME_PRE + "*"
+    var wdqpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/20181024/shsfhg-gdsy/emmjsmxjs614.*"
 
     if (args != null && args.length == 2) {
       jsmxpath = args(0)
@@ -73,12 +76,12 @@ object ShFICCTriPartyRepoETL {
     //      fs.delete(new Path(path), true)
     //    }
 
-    //res.collect().foreach(println(_))
+    res.collect().foreach(println(_))
     //saveAsCSV(spark, res, path)
-    //saveMySQL(spark, res, path)
+    saveMySQL(spark, res, path)
 
     import spark.implicits._
-    ShFICCTriPartyRepo.exec(spark,res.toDF())
+    ShFICCTriPartyRepo.exec(spark, res.toDF())
     spark.stop()
   }
 
@@ -203,7 +206,7 @@ object ShFICCTriPartyRepoETL {
     val properties = new Properties()
     properties.put("user", "root")
     properties.put("password", "root1234")
-    properties.put("driver","com.mysql.jdbc.Driver")
+    properties.put("driver", "com.mysql.jdbc.Driver")
     resDF.toDF().write.mode(SaveMode.Overwrite).jdbc("jdbc:mysql://192.168.102.120:3306/JJCWGZ", "JSMX03_WDQ_ETL", properties)
 
   }
@@ -226,12 +229,13 @@ object ShFICCTriPartyRepoETL {
       (CJXLH + ZQZH + ZQDM + XWH1, row)
     })
 
-    val jsmxAndWdqRDD: RDD[(String, (Row, Row))] = keyJSMXRDD.join(keyWDQRDD)
+    val jsmxAndWdqRDD: RDD[(String, (Row, Option[Row]))] = keyJSMXRDD.leftOuterJoin(keyWDQRDD)
     jsmxAndWdqRDD.persist()
 
     val xzljRDD = jsmxAndWdqRDD.map(row => {
       val jsmxRow = row._2._1
-      val wdqRow = row._2._2
+
+      val wdqRow = row._2._2.orNull
       val SCDM = getRowFieldAsString(jsmxRow, "SCDM")
       val JLLX = getRowFieldAsString(jsmxRow, "JLLX")
       val JYFS = getRowFieldAsString(jsmxRow, "JYFS")
@@ -284,13 +288,15 @@ object ShFICCTriPartyRepoETL {
       //证券标识
       val FZQBZ = "ZQ"
       //交易类别
-      var FJYBZ = "XZLJ_SFHG"
-
-      val QTRQ2 = getRowFieldAsString(wdqRow, "QTRQ")
-      val CJRQ2 = getRowFieldAsString(wdqRow, "CJRQ")
-      val days: Long = DateUtils.absDays(QTRQ2, CJRQ2)
-      //qtrq-cjrq
-      var QTRQCJRQ = days.toString
+      val FJYBZ = "XZLJ_SFHG"
+      var QTRQCJRQ = "0"
+      if (wdqRow != null) {
+        val QTRQ2 = getRowFieldAsString(wdqRow, "QTRQ")
+        val CJRQ2 = getRowFieldAsString(wdqRow, "CJRQ")
+        val days: Long = DateUtils.absDays(QTRQ2, CJRQ2)
+        //qtrq-cjrq
+        QTRQCJRQ = days.toString
+      }
 
       val sfhgetl: SHFICCTriPartyRepoETLDto = SHFICCTriPartyRepoETLDto(SCDM, JLLX, JYFS, JSFS, YWLX, QSBZ, GHLX, JSBH, CJBH, SQBH, WTBH,
         JYRQ, QSRQ, JSRQ, QTRQ, WTSJ, CJSJ, XWH1, XWH2, XWHY, JSHY, TGHY, ZQZH, ZQDM1,

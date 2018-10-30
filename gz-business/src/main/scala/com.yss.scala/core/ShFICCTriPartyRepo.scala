@@ -39,6 +39,9 @@ object ShFICCTriPartyRepo {
   //席位号表
   private val XHW_TABLE = "CSQSXW"
 
+  //股东代码表
+  private val GUDM_TABLE = "CSGDZH"
+
   //要使用的表在hdfs中的路径
   private val TABLE_HDFS_PATH = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
 
@@ -61,12 +64,13 @@ object ShFICCTriPartyRepo {
 
   def exec(spark: SparkSession, dataDF: DataFrame): Unit = {
     val sfhgDataRDD = /*Util.readCSV(path, spark)*/ dataDF.rdd.map(row => {
-      val xwh = getRowFieldAsString(row, "XWH1")
-      (xwh, row)
+      //val xwh = getRowFieldAsString(row, "XWH1")
+      val fgddm = getRowFieldAsString(row, "ZQZH")
+      (fgddm, row)
     })
 
-    // 读取csqsxw,并得到<席位号,套账号>的RDD
-    val xwhAndTzhRDD: RDD[(String, String)] = readCSQSXW(spark)
+    // 读取csqsxw,并得到<席位号or股东代码,套账号>的RDD
+    val xwhAndTzhRDD: RDD[(String, String)] = readCSGDZH(spark) //readCSQSXW(spark)
 
     //得到<席位号,<dataRow,Option(套账号)>>
     val xwh2DataAndTZH: RDD[(String, (Row, Option[String]))] = sfhgDataRDD.leftOuterJoin(xwhAndTzhRDD)
@@ -103,7 +107,7 @@ object ShFICCTriPartyRepo {
     //开始计算
     val resSFHGRDD: RDD[SHFICCTriPartyRepoDto] = calculate(rowDataAndTzhAndSelectedAndYjFV)
 
-    // import spark.implicits._
+    import spark.implicits._
 
     // val properties = new Properties()
     // properties.put("user", MYSQL_USER)
@@ -111,19 +115,19 @@ object ShFICCTriPartyRepo {
     // properties.setProperty("driver", DRIVER_CLASS)
     // resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(MYSQL_JDBC_URL, MYSQL_RESULT_TABLE_NAME, properties)
     //
-    // resSFHGRDD.toDF().show()
+    resSFHGRDD.toDF().show()
 
     saveToMySQL(spark, resSFHGRDD)
   }
 
-  def saveToMySQL(spark: SparkSession, resSFHGRDD:RDD[SHFICCTriPartyRepoDto]): Unit ={
+  def saveToMySQL(spark: SparkSession, resSFHGRDD: RDD[SHFICCTriPartyRepoDto]): Unit = {
     import spark.implicits._
     val properties = new Properties()
     properties.put("user", "root")
     properties.put("password", "root1234")
-    properties.put("driver","com.mysql.jdbc.Driver")
+    properties.put("driver", "com.mysql.jdbc.Driver")
     val url = "jdbc:mysql://192.168.102.120:3306/JJCWGZ"
-    resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(url,"SHFICCTriPartyRepo",properties)
+    resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(url, "ShFICCTriPartyRepo", properties)
   }
 
   /**
@@ -154,7 +158,7 @@ object ShFICCTriPartyRepo {
 
       val FDate = getRowFieldAsString(row, "JYRQ")
 
-      val FZqdm = " "
+      val FZqdm = getRowFieldAsString(row, "ZQDM1")
 
       val FSzsh = "G"
 
@@ -192,11 +196,11 @@ object ShFICCTriPartyRepo {
 
       val FSL = BigDecimal(0.00)
 
-      val Fyhs = BigDecimal(getRowFieldAsString(row, "YHS"))
+      val Fyhs = BigDecimal(getRowFieldAsString(row, "YHS")).abs
 
-      val Fzgf = BigDecimal(getRowFieldAsString(row, "ZGF"))
+      val Fzgf = BigDecimal(getRowFieldAsString(row, "ZGF")).abs
 
-      val Fghf = BigDecimal(getRowFieldAsString(row, "GHF"))
+      val Fghf = BigDecimal(getRowFieldAsString(row, "GHF")).abs
 
       val FFxj = BigDecimal(0.00)
 
@@ -211,7 +215,7 @@ object ShFICCTriPartyRepo {
 
       val FQsghf = BigDecimal(0.00)
 
-      val FGddm = " "
+      val FGddm = getRowFieldAsString(row, "ZQZH")
 
       val fzlh = " "
 
@@ -291,7 +295,7 @@ object ShFICCTriPartyRepo {
           Fje = BigDecimal(getRowFieldAsString(row, "QTJE1")).abs / (1 + FRZLV.setScale(4, BigDecimal.RoundingMode.HALF_UP) / 100 * FCSGHQX / 365)
           Fyj = BigDecimal(0.00).setScale(2, BigDecimal.RoundingMode.HALF_UP)
           Fjsf = BigDecimal(0.00).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-          FSSSFJE = BigDecimal(getRowFieldAsString(row, "QTJE1")).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+          FSSSFJE = BigDecimal(getRowFieldAsString(row, "QTJE1")).setScale(2, BigDecimal.RoundingMode.HALF_UP).abs
         }
 
       }
@@ -351,7 +355,7 @@ object ShFICCTriPartyRepo {
     * @return <证券类别|席位号|市场号,佣金>
     */
   def readA117CSYJLV(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(YJLL_TABLE), spark, header = false).toDF(
+    Util.readCSV(getTableDataPath(YJLL_TABLE), spark, header = false, ",").toDF(
       "FID",
       "FZQLB",
       "FSZSH",
@@ -388,7 +392,7 @@ object ShFICCTriPartyRepo {
     * @return <选项名称,是否选中(true/false)>
     */
   def readLVARLIST(spark: SparkSession): RDD[(String, Boolean)] = {
-    Util.readCSV(getTableDataPath(PARAMS_LIST_TABLE), spark, header = false).toDF(
+    Util.readCSV(getTableDataPath(PARAMS_LIST_TABLE), spark, header = false, ",").toDF(
       "FVARNAME",
       "FVARVALUE",
       "FSH",
@@ -413,7 +417,7 @@ object ShFICCTriPartyRepo {
     * @return 返回<席位号,套账号>
     */
   def readCSQSXW(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(XHW_TABLE), spark, header = false).toDF(
+    Util.readCSV(getTableDataPath(XHW_TABLE), spark, header = false, ",").toDF(
       "FQSDM",
       "FQSMC",
       "FSZSH",
@@ -431,6 +435,37 @@ object ShFICCTriPartyRepo {
       (xwh, (tzh, DateUtils.formattedDate2Long(FSTARTDATE, DateUtils.YYYY_MM_DD)))
     }).groupByKey().map(item => {
       //由于席位号和套账号相同的情况会有多个,得根据日期来取最大值
+      (item._1, item._2.toList.sortBy(tup => tup._2).reverse.head)
+    }).map(item => {
+      (item._1, item._2._1)
+    })
+  }
+
+
+  /**
+    * 读取 CSGDZH 股东代码表
+    *
+    * @param spark SparkSession
+    * @return 放回<股东代码,套账号>
+    */
+  def readCSGDZH(spark: SparkSession): RDD[(String, String)] = {
+    Util.readCSV(getTableDataPath(GUDM_TABLE), spark, header = false, ",").toDF(
+      "FGDDM",
+      "FGDXM",
+      "FSZSH",
+      "FSH",
+      "FZZR",
+      "FSETCODE",
+      "FCHK",
+      "FSTARTDATE",
+      "FACCOUNTTYPT"
+    ).rdd.map(row => {
+      val gddm = getRowFieldAsString(row, "FGDDM")
+      val tzh = getRowFieldAsString(row, "FSETCODE")
+      val FSTARTDATE = getRowFieldAsString(row, "FSTARTDATE")
+      (gddm, (tzh, DateUtils.formattedDate2Long(FSTARTDATE, DateUtils.YYYY_MM_DD_HH_MM_SS)))
+    }).groupByKey().map(item => {
+      //由于席股东代码和套账号相同的情况会有多个,得根据日期来取最大值
       (item._1, item._2.toList.sortBy(tup => tup._2).reverse.head)
     }).map(item => {
       (item._1, item._2._1)

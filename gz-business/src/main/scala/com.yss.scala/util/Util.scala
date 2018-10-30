@@ -31,9 +31,9 @@ object Util {
     * @param sparkSession
     * @return
     */
-  def readCSV(path: String, sparkSession: SparkSession, header: Boolean = true) = {
+  def readCSV(path: String, sparkSession: SparkSession, header: Boolean = true, sep:String = "\t") = {
     sparkSession.read.format("csv")
-      .option("sep", "\t")
+      .option("sep", sep)
       .option("inferSchema", "false")
       .option("header", header)
       .load(path)

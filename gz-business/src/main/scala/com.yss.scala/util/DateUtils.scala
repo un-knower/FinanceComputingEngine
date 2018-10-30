@@ -30,10 +30,10 @@ object DateUtils {
     *
     * @param dateStr 格式为yyyyMMdd eg:20180528
     * @param days    天数
-    * @param format    日期格式
+    * @param format  日期格式
     * @return 指定日期格式为字符串
     */
-  def addDays(dateStr: String, days: Int,format:String = YYYYMMDD): String = {
+  def addDays(dateStr: String, days: Int, format: String = YYYYMMDD): String = {
     val DATEKEY_FORMAT = new SimpleDateFormat(format)
     val date = DATEKEY_FORMAT.parse(dateStr)
     val calender = Calendar.getInstance()
@@ -78,7 +78,7 @@ object DateUtils {
     * @param pattern       时间格式
     * @return
     */
-  def formattedDate2Long(formattedDate: String, pattern: String): Long = {
+  def formattedDate2Long(formattedDate: String, pattern: String = YYYY_MM_DD): Long = {
     new SimpleDateFormat(pattern).parse(formattedDate).getTime
   }
 
