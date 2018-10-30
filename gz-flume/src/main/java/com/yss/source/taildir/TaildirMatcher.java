@@ -155,7 +155,7 @@ public class TaildirMatcher {
                     return true;
                 } else {
                     String fileName = candidate.getName();
-                    if (!fileNamePattern.matcher(fileName).matches() && !FilterFile.filtration(fileName, prefixList)) {
+                    if (!fileNamePattern.matcher(fileName).matches() && !FilterFile.filtrationDbf(fileName, prefixList)) {
                         return false;
                     }
                 }

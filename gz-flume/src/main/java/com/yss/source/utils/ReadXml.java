@@ -208,7 +208,7 @@ public class ReadXml {
         if (ROW == 1) {
             String xmlNext = read();
             if (xmlNext != null) {
-                Event event = EventBuilder.withBody(xmlNext.split("\n")[0], Charset.forName("utf-8"));
+                Event event = EventBuilder.withBody(Transcoding.transcodByte(xmlNext.split("\n")[0]));
                 event.getHeaders().put(currentRecord, String.valueOf(ROW));
                 ROW++;
                 raf.seek(start);
@@ -233,7 +233,7 @@ public class ReadXml {
             } else {
                 return null;
             }
-            Event event = EventBuilder.withBody(bodyBuffer.toString(), Charset.forName("utf-8"));
+            Event event = EventBuilder.withBody(Transcoding.transcodByte(bodyBuffer.toString()));
             event.getHeaders().put(currentRecord, String.valueOf(ROW));
             bodyBuffer.setLength(0);
             return event;
