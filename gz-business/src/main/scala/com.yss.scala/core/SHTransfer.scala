@@ -1377,7 +1377,7 @@ object SHTransfer {
           DEFAULT_VALUE, DEFAULT_VALUE, "shgh", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE
         )
         arrs.append(ele)
-        // 回购业务要生成一条回购的数据
+        // 回购业务要生成一条到期的数据
         if(HG.equals(zqbz) && (MRHG.equals(ywbz)||MCHG.equals(ywbz))){
           val ele2 = Hzjkqs(DateUtils.addDays(bcrq,fee.hgts.toInt,DateUtils.YYYY_MM_DD),
             findate, zqdm, SH, gsdm, bs,
