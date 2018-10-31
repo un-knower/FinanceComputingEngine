@@ -41,7 +41,7 @@ public class Transcoding {
 
     public static byte[] gbkToUTF(String data) {
         try {
-            return new String(data.getBytes("utf-8"), Charset.forName("utf-8")).replaceAll("\\s", "").getBytes("utf-8");
+            return new String(data.getBytes("utf-8"), Charset.forName("utf-8")).replaceAll(" ", "").getBytes("utf-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
             System.out.println("转码出现异常!");

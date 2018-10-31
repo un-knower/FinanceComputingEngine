@@ -85,7 +85,8 @@ public class ReadFsdTxt {
                 rowData = new String(rowData.getBytes("iso-8859-1"), Charset.forName("gbk"));
                 byte[] gbks = rowData.getBytes("gbk");
                 if (gbks.length == 8) {
-                    Event event = EventBuilder.withBody(Transcoding.gbkToUTF(rowData));
+//                    contentData.append(rowData);
+                    Event event = EventBuilder.withBody(Transcoding.gbkToUTF(contentData.toString()));
                     event.getHeaders().put(currentRecord, String.valueOf(ROW));
                     contentData.setLength(0);
                     return event;
