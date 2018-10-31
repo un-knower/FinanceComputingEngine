@@ -1438,7 +1438,9 @@ object Ggt {
     }
 
     if (!strIsNull(yjstr)) {
-        Fyj = round(fmax(round(Fje * fjlv, 2), YjMin) * YjZk, 2)
+        //计算佣金时 不区分blnGgtCbXqr==0 和blnGgtCbXqr==1， 公式均为：round(ABS(WBJE)*WBHL,2)
+        val reFje = round(abs(wbje) * BigDecimal(wbhl), yjblws.toInt)
+        Fyj = round(fmax(round(reFje * fjlv, 2), YjMin) * YjZk, 2)
 
         if (FFYFS) {
           Fyj = Fyj - FeeTemp - FQTF
