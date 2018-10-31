@@ -123,7 +123,7 @@ public class ReadFsdTxt {
         return event;
     }
 
-    public Event readFSDFour(List<String> fieldByteList) throws IOException {
+    public Event readFSD(List<String> fieldByteList) throws IOException {
         if (ROW == 0) {
             if (head) {
                 Event event = EventBuilder.withBody(Transcoding.gbkToUTF(readHead()));
@@ -142,4 +142,26 @@ public class ReadFsdTxt {
             return readContent(fieldByteList);
         }
     }
+
+    public Event readTxt(String defaultSeparator) throws IOException {
+        for (int a = 0; a < eventLines; a++) {
+            String data = randomAccessFile.readLine();
+            if (data != null) {
+                contentData.append(data);
+                contentData.append("\n");
+            } else {
+                break;
+            }
+        }
+        if (contentData.length() > 1) {
+            contentData.delete(contentData.length() - 1, contentData.length());
+        } else {
+            return null;
+        }
+        Event event = EventBuilder.withBody(Transcoding.transcodByte(contentData.toString().replaceAll(defaultSeparator, csvSeparator)));
+        event.getHeaders().put(currentRecord, String.valueOf(ROW));
+        contentData.setLength(0);
+        return event;
+    }
+
 }

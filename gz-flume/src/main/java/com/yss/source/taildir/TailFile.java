@@ -251,22 +251,27 @@ public class TailFile {
             }
         } else if (FilterFile.filtrationTxt(fileName, regexFsdFour)) {
             //FSD 04
-            event = readFsdTxt.readFSDFour(Arrays.asList(fsdFourBytes.split(",")));
-            if (event == null) {
-                setPos(raf.length());
-            }
+            event = readFsdTxt.readFSD(Arrays.asList(fsdFourBytes.split(",")));
+            setPos(raf.length());
         } else if (FilterFile.filtrationTxt(fileName, regexFsdSix)) {
             //FSD 06
-            event = readFsdTxt.readFSDFour(Arrays.asList(fsdSixBytes.split(",")));
-            if (event == null) {
-                setPos(raf.length());
-            }
+            event = readFsdTxt.readFSD(Arrays.asList(fsdSixBytes.split(",")));
+            setPos(raf.length());
         } else if (FilterFile.filtrationTxt(fileName, regexFsdJY)) {
             //FSD JY
-            event = readFsdTxt.readFSDFour(Arrays.asList(fsdJYBytes.split(",")));
-            if (event == null) {
-                setPos(raf.length());
-            }
+            event = readFsdTxt.readFSD(Arrays.asList(fsdJYBytes.split(",")));
+            setPos(raf.length());
+        } else if (fileName.endsWith(".tsv")) {
+            event = readFsdTxt.readTxt("\t");
+            setPos(raf.length());
+        } else if (FilterFile.filtrationTxt(fileName, regexB)) {
+            //分隔符是竖线
+            event = readFsdTxt.readTxt(sourceB);
+            setPos(raf.length());
+        } else if (FilterFile.filtrationTxt(fileName, regexA)) {
+            //分隔符是@
+            event = readFsdTxt.readTxt(sourceA);
+            setPos(raf.length());
         } else {
             Long posTmp = getLineReadPos();
             LineResult line = readLine();
@@ -279,22 +284,10 @@ public class TailFile {
                 updateFilePos(posTmp);
                 return null;
             }
-            if (fileName.endsWith(".tsv")) {
-                event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
-                        .replaceAll("\t", csvSeparator).getBytes(Charset.forName("utf-8")));
-            } else if (FilterFile.filtrationTxt(fileName, regexB)) {
-                //分隔符是竖线
-                event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
-                        .replaceAll(sourceB, csvSeparator).getBytes(Charset.forName("utf-8")));
-            } else if (FilterFile.filtrationTxt(fileName, regexA)) {
-                //分隔符是@
-                event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
-                        .replaceAll(sourceA, csvSeparator).getBytes(Charset.forName("utf-8")));
-            } else {
-                event = EventBuilder.withBody(line.line);
-                if (addByteOffset == true) {
-                    event.getHeaders().put(TaildirSourceConfigurationConstants.BYTE_OFFSET_HEADER_KEY, posTmp.toString());
-                }
+            event = EventBuilder.withBody(line.line);
+            if (addByteOffset == true) {
+                event.getHeaders().put(TaildirSourceConfigurationConstants.BYTE_OFFSET_HEADER_KEY, posTmp.toString());
+
             }
         }
         return event;
