@@ -107,7 +107,7 @@ public class TailFile {
         this.prefixList = FilterFile.assemblePrefix(prefixStr);
         fileName = file.getName().toLowerCase();
         System.out.println(LocalDateTime.now() + "    Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
-        if (fileName.endsWith(".dbf") || FilterFile.filtration(fileName, prefixList)) {
+        if (fileName.endsWith(".dbf") || FilterFile.filtrationDbf(fileName, prefixList)) {
             readDbf = new ReadDbf(this.fileInputStream, currentRecord, csvSeparator, eventLines, headFile);
         } else if (fileName.endsWith(".xml")) {
             readXml = new ReadXml(xmlNode, this.raf, this.pos, currentRecord, csvSeparator, eventLines, headFile);
@@ -211,7 +211,7 @@ public class TailFile {
 
     private Event readEvent(boolean backoffWithoutNL, boolean addByteOffset) throws IOException {
         Event event;
-        if (fileName.endsWith(".dbf") || FilterFile.filtration(fileName, prefixList)) {
+        if (fileName.endsWith(".dbf") || FilterFile.filtrationDbf(fileName, prefixList)) {
             event = readDbf.readDBFFile();
             //更新pos,从而更新posJson文件
             setPos(fileInputStream.getChannel().position());
@@ -244,6 +244,14 @@ public class TailFile {
             if (fileName.endsWith(".tsv")) {
                 event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
                         .replaceAll("\t", csvSeparator).getBytes(Charset.forName("utf-8")));
+            } else if (FilterFile.filtrationTxt(fileName, "")) {
+                //分隔符是竖线
+                event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
+                        .replaceAll("\\|", csvSeparator).getBytes(Charset.forName("utf-8")));
+            } else if (FilterFile.filtrationTxt(fileName, "")) {
+                //分隔符是@
+                event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
+                        .replaceAll("\\@", csvSeparator).getBytes(Charset.forName("utf-8")));
             } else {
                 event = EventBuilder.withBody(line.line);
                 if (addByteOffset == true) {
