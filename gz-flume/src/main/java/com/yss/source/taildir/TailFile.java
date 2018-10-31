@@ -20,14 +20,10 @@
 package com.yss.source.taildir;
 
 import com.google.common.collect.Lists;
-import com.yss.source.utils.FilterFile;
-import com.yss.source.utils.ReadDbf;
-import com.yss.source.utils.ReadXlsx;
-import com.yss.source.utils.ReadXml;
+import com.yss.source.utils.*;
 import org.apache.flume.Event;
 import org.apache.flume.event.EventBuilder;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +32,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.lang.reflect.Method;
 import java.nio.charset.Charset;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +64,7 @@ public class TailFile {
     private ReadDbf readDbf;
     private ReadXml readXml;
     private ReadXlsx readXlsx;
+    private ReadFsdTxt readFsdTxt;
     private FileInputStream fileInputStream;
 
     private String fileName;
@@ -77,13 +73,25 @@ public class TailFile {
     private final String csvSeparator;
     private final Boolean renameFlie;
     private List<String> prefixList;
+    private String sourceA;
+    private String sourceB;
+    private String regexA;
+    private String regexB;
+    private String regexFsdFour;
+    private String fsdFourBytes;
+    private String regexFsdSix;
+    private String fsdSixBytes;
+    private String regexFsdJY;
+    private String fsdJYBytes;
 
     /*-------------------------*/
 
 
     public TailFile(File file, Map<String, String> headers, long inode, long pos, String parentDir,
                     String xmlNode, String currentRecord, String csvSeparator,
-                    boolean renameFlie, Integer eventLines, boolean headFile, String prefixStr)
+                    boolean renameFlie, Integer eventLines, boolean headFile, String prefixStr,
+                    String sourceA, String sourceB, String regexA, String regexB, String regexFsdFour,
+                    String fsdFourBytes, String regexFsdSix, String fsdSixBytes, String regexFsdJY, String fsdJYBytes)
             throws IOException {
         this.raf = new RandomAccessFile(file, "r");
         if (pos > 0) {
@@ -105,6 +113,16 @@ public class TailFile {
         this.csvSeparator = csvSeparator;
         this.currentRecord = currentRecord;
         this.prefixList = FilterFile.assemblePrefix(prefixStr);
+        this.sourceA = sourceA;
+        this.sourceB = sourceB;
+        this.regexA = regexA;
+        this.regexB = regexB;
+        this.regexFsdFour = regexFsdFour;
+        this.fsdFourBytes = fsdFourBytes;
+        this.regexFsdSix = regexFsdSix;
+        this.fsdSixBytes = fsdSixBytes;
+        this.regexFsdJY = regexFsdJY;
+        this.fsdJYBytes = fsdJYBytes;
         fileName = file.getName().toLowerCase();
         System.out.println(LocalDateTime.now() + "    Tail创建文件的对象准备开始读取文件:" + file.getAbsolutePath());
         if (fileName.endsWith(".dbf") || FilterFile.filtrationDbf(fileName, prefixList)) {
@@ -115,6 +133,8 @@ public class TailFile {
             readXlsx = new ReadXlsx(new HSSFWorkbook(this.fileInputStream), currentRecord, csvSeparator, eventLines, headFile);
         } else if (fileName.endsWith(".xlsx")) {
             readXlsx = new ReadXlsx(new XSSFWorkbook(this.fileInputStream), currentRecord, csvSeparator, eventLines, headFile);
+        } else if (fileName.endsWith(".txt")) {
+            readFsdTxt = new ReadFsdTxt(this.raf, currentRecord, csvSeparator, eventLines, headFile);
         }
         /*---------------------------------------------------------------*/
     }
@@ -197,7 +217,7 @@ public class TailFile {
             if (event == null) {
                 if (endRow == 0) {
                     System.out.println(LocalDateTime.now() + "    监控文件已读到最后,发送标识位!");
-                    Event eventBody = EventBuilder.withBody("fileEnd".getBytes("utf-8"));
+                    Event eventBody = EventBuilder.withBody("OFDCFEND".getBytes("utf-8"));
                     eventBody.getHeaders().put(currentRecord, String.valueOf(1));
                     events.add(eventBody);
                     endRow++;
@@ -229,6 +249,24 @@ public class TailFile {
             } else {
                 setPos(new File(path).length());
             }
+        } else if (FilterFile.filtrationTxt(fileName, regexFsdFour)) {
+            //FSD 04
+            event = readFsdTxt.readFSDFour(Arrays.asList(fsdFourBytes.split(",")));
+            if (event == null) {
+                setPos(raf.length());
+            }
+        } else if (FilterFile.filtrationTxt(fileName, regexFsdSix)) {
+            //FSD 06
+            event = readFsdTxt.readFSDFour(Arrays.asList(fsdSixBytes.split(",")));
+            if (event == null) {
+                setPos(raf.length());
+            }
+        } else if (FilterFile.filtrationTxt(fileName, regexFsdJY)) {
+            //FSD JY
+            event = readFsdTxt.readFSDFour(Arrays.asList(fsdJYBytes.split(",")));
+            if (event == null) {
+                setPos(raf.length());
+            }
         } else {
             Long posTmp = getLineReadPos();
             LineResult line = readLine();
@@ -244,21 +282,20 @@ public class TailFile {
             if (fileName.endsWith(".tsv")) {
                 event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
                         .replaceAll("\t", csvSeparator).getBytes(Charset.forName("utf-8")));
-            } else if (FilterFile.filtrationTxt(fileName, "")) {
+            } else if (FilterFile.filtrationTxt(fileName, regexB)) {
                 //分隔符是竖线
                 event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
-                        .replaceAll("\\|", csvSeparator).getBytes(Charset.forName("utf-8")));
-            } else if (FilterFile.filtrationTxt(fileName, "")) {
+                        .replaceAll(sourceB, csvSeparator).getBytes(Charset.forName("utf-8")));
+            } else if (FilterFile.filtrationTxt(fileName, regexA)) {
                 //分隔符是@
                 event = EventBuilder.withBody(new String(line.line, Charset.forName("utf-8"))
-                        .replaceAll("\\@", csvSeparator).getBytes(Charset.forName("utf-8")));
+                        .replaceAll(sourceA, csvSeparator).getBytes(Charset.forName("utf-8")));
             } else {
                 event = EventBuilder.withBody(line.line);
                 if (addByteOffset == true) {
                     event.getHeaders().put(TaildirSourceConfigurationConstants.BYTE_OFFSET_HEADER_KEY, posTmp.toString());
                 }
             }
-
         }
         return event;
     }
