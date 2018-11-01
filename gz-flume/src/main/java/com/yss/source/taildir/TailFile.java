@@ -133,7 +133,7 @@ public class TailFile {
             readXlsx = new ReadXlsx(new HSSFWorkbook(this.fileInputStream), currentRecord, csvSeparator, eventLines, headFile);
         } else if (fileName.endsWith(".xlsx")) {
             readXlsx = new ReadXlsx(new XSSFWorkbook(this.fileInputStream), currentRecord, csvSeparator, eventLines, headFile);
-        } else if (fileName.endsWith(".txt")) {
+        } else if (fileName.endsWith(".txt")||fileName.endsWith(".tsv")) {
             readFsdTxt = new ReadFsdTxt(this.raf, currentRecord, csvSeparator, eventLines, headFile);
         }
         /*---------------------------------------------------------------*/
