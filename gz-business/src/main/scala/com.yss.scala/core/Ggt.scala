@@ -26,7 +26,7 @@ object Ggt {
 
   def main(args: Array[String]): Unit = {
 
-    val conf = new SparkConf().setAppName("Hgt")
+    val conf = new SparkConf().setAppName("Ggt")
     val spark = SparkSession.builder().config(conf).getOrCreate()
 
     //获取配置参数
