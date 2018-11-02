@@ -42,6 +42,9 @@ object ShFICCTriPartyRepo {
   //股东代码表
   private val GUDM_TABLE = "CSGDZH"
 
+  //资产代码表
+  private val ZC_TABLE = "LSETLIST"
+
   //要使用的表在hdfs中的路径
   private val TABLE_HDFS_PATH = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
 
@@ -99,13 +102,22 @@ object ShFICCTriPartyRepo {
       /*("GP|" + "000001" + "|S", item)*/
     })
 
-    //<数据,套账号,选项结果,佣金利率>
-    val rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String)] = zqlbAndXwhAndSC2RowDataAndTzhAndSelected.leftOuterJoin(zqlbAndXwhAndSC2YjFV).map(item => {
-      (item._2._1._1, item._2._1._2, item._2._1._3, item._2._2.getOrElse("0"))
+    //<套账号,数据,选项结果,佣金利率>
+    val rowDataAndTzhAndSelectedAndYjFV: RDD[(String, (Row, Boolean, String))] = zqlbAndXwhAndSC2RowDataAndTzhAndSelected.leftOuterJoin(zqlbAndXwhAndSC2YjFV).map(item => {
+      //(item._2._1._1, item._2._1._2, item._2._1._3, item._2._2.getOrElse("0"))
+      (item._2._1._2,(item._2._1._1, item._2._1._3, item._2._2.getOrElse("0")))
     })
 
+    //读取资产表 得到<套账号,资产id>
+    val tzhAndZCID: RDD[(String, String)] = readLSETLIST(spark)
+
+    val rowDataAndTzhAndSelectedAndYjFVAndZCId: RDD[(Row, String, Boolean, String, String)] = rowDataAndTzhAndSelectedAndYjFV.leftOuterJoin(tzhAndZCID).map(item => {
+      (item._2._1._1, item._1, item._2._1._2, item._2._1._3, item._2._2.getOrElse(""))
+    })
+
+
     //开始计算
-    val resSFHGRDD: RDD[SHFICCTriPartyRepoDto] = calculate(rowDataAndTzhAndSelectedAndYjFV)
+    val resSFHGRDD: RDD[SHFICCTriPartyRepoDto] = calculate(rowDataAndTzhAndSelectedAndYjFVAndZCId)
 
     import spark.implicits._
 
@@ -149,13 +161,14 @@ object ShFICCTriPartyRepo {
     * @return
     *
     */
-  def calculate(rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String)]): RDD[SHFICCTriPartyRepoDto] = {
+  def calculate(rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String,String)]): RDD[SHFICCTriPartyRepoDto] = {
     rowDataAndTzhAndSelectedAndYjFV.map(item => {
       val row = item._1
       val tzh = item._2
       val isSelected = item._3
       val fv = item._4
-
+      //资产ID
+      val zcID = item._5
       val FDate = getRowFieldAsString(row, "JYRQ")
 
       val FZqdm = getRowFieldAsString(row, "ZQDM1")
@@ -186,7 +199,7 @@ object ShFICCTriPartyRepo {
 
       val FHTXH = getRowFieldAsString(row, "CJBH")
 
-      val FSETCODE = tzh
+      val FSETID = zcID
 
       val FRZLV = BigDecimal(getRowFieldAsString(row, "JG1"))
 
@@ -321,7 +334,7 @@ object ShFICCTriPartyRepo {
         Fzzr,
         Fchk,
         FHTXH,
-        FSETCODE,
+        FSETID,
         FCSGHQX.setScale(0, BigDecimal.RoundingMode.HALF_UP).toString(),
         FRZLV.setScale(4, BigDecimal.RoundingMode.HALF_UP).toString(),
         FSJLY,
@@ -469,6 +482,42 @@ object ShFICCTriPartyRepo {
       (item._1, item._2.toList.sortBy(tup => tup._2).reverse.head)
     }).map(item => {
       (item._1, item._2._1)
+    })
+  }
+
+
+  /**
+    * 读取资产代码表
+    *
+    * @param spark SparkSession
+    * @return
+    */
+  def readLSETLIST(spark: SparkSession): RDD[(String, String)] = {
+    Util.readCSV(getTableDataPath(ZC_TABLE), spark, header = false, ",").toDF(
+      "FYEAR",
+      "FSETID",
+      "FSETCODE",
+      "FSETNAME",
+      "FMANAGER",
+      "FSTARTYEAR",
+      "FSTARTMONTH",
+      "FMONTH",
+      "FACCLEN",
+      "FSTARTED",
+      "FDJJBZ",
+      "FPSETCODE",
+      "FSETLEVEL",
+      "FTSETCODE",
+      "FSH",
+      "FZZR",
+      "FCHK",
+      "FTZJC",
+      "FZYDM",
+      "FTZZHDM"
+    ).rdd.map(row => {
+      val zhid = getRowFieldAsString(row, "FSETID")
+      val tzh = getRowFieldAsString(row, "FSETCODE")
+      (tzh, zhid)
     })
   }
 

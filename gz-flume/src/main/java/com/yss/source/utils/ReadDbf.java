@@ -5,7 +5,6 @@ import org.apache.flume.Event;
 import org.apache.flume.event.EventBuilder;
 
 import java.io.FileInputStream;
-import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 
 /**
@@ -17,14 +16,14 @@ import java.time.LocalDateTime;
  */
 public class ReadDbf {
     private long ROW;
-    private DBFReader reader;
+    private DBFReadUtil reader;
     private String currentRecord;
     private String csvSeparator;
     private int eventLines;
     private StringBuffer bodyBuffer = new StringBuffer();
 
     public ReadDbf(FileInputStream fileInputStream, String currentRecord, String csvSeparator, int eventLines, boolean head) {
-        this.reader = new DBFReader(fileInputStream);
+        this.reader = new DBFReadUtil(fileInputStream);
         this.currentRecord = currentRecord;
         this.csvSeparator = csvSeparator;
         this.eventLines = eventLines;
