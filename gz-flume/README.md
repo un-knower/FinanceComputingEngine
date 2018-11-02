@@ -25,7 +25,8 @@
 
 4.Flume后台运行指令
 
-	nohup	flume-ng agent -c conf -f testsource_1.conf --name a1
+	 nohup flume-ng agent -c conf -f gz_tailfile.conf --name a1 &
+
 	
 	
 5.开发中对集群Flume下添加的jar文件
@@ -90,9 +91,9 @@
 8.需求
 
     1、自定义source和sink
-    2、在source端解析dbf和xml以及tsv后缀的文件转换成csv中间分割符为逗号
+    2、在source端解析dbf和xml以及tsv,txt,xls,xlxs后缀的文件转换成csv中间分割符为\t
     3、sink保留原文件名字后缀名为.csv
-    4、原文件传输完成之后，文件名加一个时间戳以及.xlsd后缀
+    #4、原文件传输完成之后，文件名加一个时间戳以及.xlsd后缀(目前没有修改,功能已经实现)
     5、传到hdfs上的文件中间状态加个.TMP后缀
     6、支持监控多级目录的递归,各级目录都可以监控
 
