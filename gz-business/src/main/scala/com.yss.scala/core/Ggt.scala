@@ -1103,8 +1103,6 @@ object Ggt {
         " from xwh_gddm_table t1 left join csxwfy_filter_table t2 " +
         " on (t1.xwh = t2.fqsxw or t1.gddm = t2.fqsxw) "
     )
-    csxwfyFilterDF.show(1000, false)
-    ffyfsDF.show(1000, false)
 
     val ffyfsCostRDD = ffyfsDF.rdd.map { item =>
       val xwh = item.getAs[String]("xwh")
