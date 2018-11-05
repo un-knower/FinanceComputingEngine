@@ -137,5 +137,74 @@ public class TaildirSourceConfigurationConstants {
     public static final String PREFIXSTR = "prefixStr";
     public static final String DEFAULT_PREFIXSTR = "doesntfdjfskfksdfkjsfsfskjkfsjdfsj";
 
+    /**
+     * 原始文件内容分隔符是@
+     * <p>
+     * A  代表  @
+     * B  代表 |
+     */
+    public static final String SOURCESEPARATOR_A = "sourceA";
+    public static final String DEFAULT_SOURCESEPARATOR_A = "@";
+    /**
+     * 原始文件内容分隔符是|
+     * <p>
+     * A  代表  @
+     * B  代表 |
+     */
+    public static final String SOURCE_SEPARATOR_B = "sourceB";
+    public static final String DEFAULT_SOURCE_SEPARATOR_B = "\\|";
+
+
+    /**
+     * 原始文件名是@正则表达式
+     * <p>
+     * A  代表  @
+     * B  代表 |
+     */
+    public static final String SOURCE_REGEX_A = "regexA";
+    public static final String DEFAULT_SOURCE_REGEX_A = "^\\d*(delivdetails|holddata|trddata|otherfund|fundchg|cusfund)\\d*.txt$";
+
+    /**
+     * 原始文件名是|正则表达式
+     * <p>
+     * A  代表  @
+     * B  代表 |
+     */
+    public static final String SOURCE_REGEX_B = "regexB";
+    public static final String DEFAULT_SOURCE_REGEX_B = "(^[a-z].*\\d{6}[a-z].*\\d*00(SPOTMATCH|DEFERMATCH|DEFERDELIVERYAPPMATCH|CLIENTSTORAGEFLOW|ETFAPPLY|MEMBERSEATCAPICATL|CLIENTMISFEEDETAIL|CLIENTSTORAGE|LARGEAMOUNTMATCH)*.txt$)|(^hkex(clpr|reff)04_\\d*.txt$)|(^reff0[4|3]\\d*.txt$)|(^cpxx\\d*.txt$)";
+    /**
+     * 原始文件名是字节正则表达式
+     */
+    public static final String SOURCE_REGEX_FSD_FOUR = "regexFsdFour";
+    public static final String DEFAULT_SOURCE_REGEX_FSD_FOUR = "^FSD_\\d*_\\d*_\\d*_04_\\d*_\\d*.txt$";
+    /**
+     * 字节数组
+     */
+    public static final String SOURCE_FSD_FOUR_BYTES = "fsdFourBytes";
+    public static final String DEFAULT_SOURCE_FSD_FOUR_BYTES = "24,24,8,3,16,16,6,1,8,6,4,17,9,16,16,3,12,20,1,5,4,10,10,7,9,24,8,10,1,16,9,16,20,60,9,9,17,4,1,16,10,16,16,7,8,1,16,7,7,16,16,8,10,1,1,1,1,8,1,6,10,12,2,9,1,1,1,2,2,5,6,7,16,16,16,16,1,20,16,1,16,16,16,60,16,16,12,12,12,18,18";
+
+    /**
+     * 原始文件名是字节正则表达式
+     */
+    public static final String SOURCE_REGEX_FSD_SIX = "regexFsdSix";
+    public static final String DEFAULT_SOURCE_REGEX_FSD_SIX = "^FSD_\\d*_\\d*_\\d*_06_\\d*_\\d*.txt$";
+
+    /**
+     * 字节数组
+     */
+    public static final String SOURCE_FSD_SIX_BYTES = "fsdSixBytes";
+    public static final String DEFAULT_SOURCE_FSD_SIX_BYTES = "16,8,3,16,8,16,8,16,6,8,4,17,9,3,12,16,1,4,8,10,10,16,7,9,10,16,1,16,20,16,16,10,1,1,10,16,1,24,16,16,12,12,12,18,18";
+    /**
+     * 原始文件名是字节正则表达式
+     */
+    public static final String SOURCE_REGEX_FSD_JY = "regexFsdJY";
+    public static final String DEFAULT_SOURCE_REGEX_FSD_JY = "^FSD_\\d*_\\d*_\\d*_JY.TXT$";
+
+    /**
+     * 字节数组
+     */
+    public static final String SOURCE_FSD_JY_BYTES = "fsdJYBytes";
+    public static final String DEFAULT_SOURCE_FSD_JY_BYTES  = "64,3,24,24,12,12,12,1,8,6,1,1,80,6,16,16,3,9,9,17,12,2,60,6,1,1,1,1,1,6,120,80,30,80,20,22,24,40,24,20,30,1,8,120,6,22,24,40,24,20,30,1,8,120,6,120,80,30,60,20,22,24,40,24,20,18,17,12,8,24,8,20,1,2,40,3,4,1,60,20,20,30,16,16";
+
 
 }

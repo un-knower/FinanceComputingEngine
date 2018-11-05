@@ -1,6 +1,7 @@
-package com.yss.scala.core
+package com.yss.test.scala
 
 import java.util.Properties
+
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 import org.apache.spark.{SparkConf, SparkContext}

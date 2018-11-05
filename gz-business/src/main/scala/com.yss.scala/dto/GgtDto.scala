@@ -187,3 +187,28 @@ case class CsqsxwModel(
                         FCHK:String,
                         FSTARTDATE:String
                       )
+
+/**
+  * 佣金Model
+  * @param FDate
+  * @param FInDate
+  * @param FZqdm
+  * @param FJyxwh
+  * @param fzqbz
+  * @param Fywbz
+  * @param zqdm
+  * @param fbs
+  */
+case class YjModel(
+                    FDate: String,
+                    FInDate: String,
+                    FZqdm: String,
+                    FJyxwh: String,
+                    fzqbz: String,
+                    Fywbz: String,
+                    zqdm: String,
+                    fbs: String,
+                    fyj:String,
+                    Fsssje:String
+                  )
+

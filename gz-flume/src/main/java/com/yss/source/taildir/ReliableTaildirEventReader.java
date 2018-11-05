@@ -67,6 +67,18 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private int eventLines;
     private String prefixStr;
 
+
+    private String sourceA;
+    private String sourceB;
+    private String regexA;
+    private String regexB;
+    private String regexFsdFour;
+    private String fsdFourBytes;
+    private String regexFsdSix;
+    private String fsdSixBytes;
+    private String regexFsdJY;
+    private String fsdJYBytes;
+
     /**
      * Create a ReliableTaildirEventReader to watch the given directory.
      */
@@ -75,7 +87,9 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                                        boolean skipToEnd, boolean addByteOffset, boolean cachePatternMatching,
                                        boolean annotateFileName, String fileNameHeader, String xmlNode,
                                        String currentRecord, String csvSeparator, Boolean directoryDate,
-                                       Boolean renameFlie, int eventLines, boolean headFile, String prefixStr) throws IOException {
+                                       Boolean renameFlie, int eventLines, boolean headFile, String prefixStr,
+                                       String sourceA, String sourceB, String regexA, String regexB, String regexFsdFour,
+                                       String fsdFourBytes, String regexFsdSix, String fsdSixBytes, String regexFsdJY, String fsdJYBytes) throws IOException {
         // Sanity checks
         Preconditions.checkNotNull(filePaths);
         Preconditions.checkNotNull(positionFilePath);
@@ -105,6 +119,16 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
         this.eventLines = eventLines;
         this.headFile = headFile;
         this.prefixStr = prefixStr;
+        this.sourceA = sourceA;
+        this.sourceB = sourceB;
+        this.regexA = regexA;
+        this.regexB = regexB;
+        this.regexFsdFour = regexFsdFour;
+        this.fsdFourBytes = fsdFourBytes;
+        this.regexFsdSix = regexFsdSix;
+        this.fsdSixBytes = fsdSixBytes;
+        this.regexFsdJY = regexFsdJY;
+        this.fsdJYBytes = fsdJYBytes;
         updateTailFiles(skipToEnd);
 
         logger.info("Updating position from position file: " + positionFilePath);
@@ -221,9 +245,10 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 }
                 //添加文件的相对路径信息
                 String filename = currentFile.getPath().replace(currentFile.getParentDir(), "");
-                if (filename.length() > 4) {
-                    filename = filename.substring(0, filename.length() - 4);
-                }
+                //去掉文件的原有后缀名
+//                if (filename.length() > 4) {
+//                    filename = filename.substring(0, filename.length() - 4);
+//                }
                 if (annotateFileName) {
                     event.getHeaders().put(fileNameHeader, filename);
                 }
@@ -306,7 +331,10 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private TailFile openFile(File file, Map<String, String> headers, long inode, long pos, String parentDir) {
         try {
             logger.info("Opening file: " + file + ", inode: " + inode + ", pos: " + pos + ", parentDir: " + parentDir);
-            return new TailFile(file, headers, inode, pos, parentDir, xmlNode, currentRecord, csvSeparator, renameFlie, eventLines, headFile, prefixStr);
+            return new TailFile(file, headers, inode, pos, parentDir, xmlNode,
+                    currentRecord, csvSeparator, renameFlie, eventLines,
+                    headFile, prefixStr, sourceA, sourceB, regexA, regexB,
+                    regexFsdFour, fsdFourBytes, regexFsdSix, fsdSixBytes, regexFsdJY, fsdJYBytes);
         } catch (IOException e) {
             throw new FlumeException("Failed opening file: " + file, e);
         }
@@ -342,6 +370,77 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
                 TaildirSourceConfigurationConstants.DEFAULT_HEAD;
         private String setPrefixStr =
                 TaildirSourceConfigurationConstants.DEFAULT_PREFIXSTR;
+        private String setSourceA =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCESEPARATOR_A;
+        private String setSourceB =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_SEPARATOR_B;
+        private String setRegexA =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_REGEX_A;
+        private String setRegexB =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_REGEX_B;
+        private String setRegexFsdFour =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_REGEX_FSD_FOUR;
+        private String setFsdFourBytes =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_FSD_FOUR_BYTES;
+        private String setRegexFsdSix =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_REGEX_FSD_SIX;
+        private String setFsdSixBytes =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_FSD_SIX_BYTES;
+        private String setRegexFsdJY =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_REGEX_FSD_JY;
+        private String setFsdJYBytes =
+                TaildirSourceConfigurationConstants.DEFAULT_SOURCE_FSD_JY_BYTES;
+
+        public Builder sourceA(String setSourceA) {
+            this.setSourceA = setSourceA;
+            return this;
+        }
+
+        public Builder sourceB(String setSourceB) {
+            this.setSourceB = setSourceB;
+            return this;
+        }
+
+        public Builder regexA(String setRegexA) {
+            this.setRegexA = setRegexA;
+            return this;
+        }
+
+        public Builder regexB(String setRegexB) {
+            this.setRegexB = setRegexB;
+            return this;
+        }
+
+        public Builder regexFsdFour(String setRegexFsdFour) {
+            this.setRegexFsdFour = setRegexFsdFour;
+            return this;
+        }
+
+        public Builder fsdFourBytes(String setFsdFourBytes) {
+            this.setFsdFourBytes = setFsdFourBytes;
+            return this;
+        }
+
+        public Builder regexFsdSix(String setRegexFsdSix) {
+            this.setRegexFsdSix = setRegexFsdSix;
+            return this;
+        }
+
+        public Builder fsdSixBytes(String setFsdSixBytes) {
+            this.setFsdSixBytes = setFsdSixBytes;
+            return this;
+        }
+
+        public Builder regexFsdJY(String setRegexFsdJY) {
+            this.setRegexFsdJY = setRegexFsdJY;
+            return this;
+        }
+
+        public Builder fsdJYBytes(String setFsdJYBytes) {
+            this.setFsdJYBytes = setFsdJYBytes;
+            return this;
+        }
+
 
         public Builder prefixStr(String prefixStr) {
             this.setPrefixStr = prefixStr;
@@ -428,7 +527,9 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
             return new ReliableTaildirEventReader(filePaths, headerTable, positionFilePath, skipToEnd,
                     addByteOffset, cachePatternMatching,
                     annotateFileName, fileNameHeader, setXmlNode,
-                    setCurrentRecord, setCsvSeparator, setDirectoryDate, setRenameFlie, setEventLines, setHead, setPrefixStr);
+                    setCurrentRecord, setCsvSeparator, setDirectoryDate,
+                    setRenameFlie, setEventLines, setHead, setPrefixStr, setSourceA, setSourceB, setRegexA, setRegexB,
+                    setRegexFsdFour, setFsdFourBytes, setRegexFsdSix, setFsdSixBytes, setRegexFsdJY, setFsdJYBytes);
         }
     }
 

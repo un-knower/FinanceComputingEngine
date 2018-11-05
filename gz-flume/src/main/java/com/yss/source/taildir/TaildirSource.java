@@ -85,6 +85,16 @@ public class TaildirSource extends AbstractSource implements
     private Integer eventLines;
     private Boolean headFile;
     private String prefixStr;
+    private String sourceA;
+    private String sourceB;
+    private String regexA;
+    private String regexB;
+    private String regexFsdFour;
+    private String fsdFourBytes;
+    private String regexFsdSix;
+    private String fsdSixBytes;
+    private String regexFsdJY;
+    private String fsdJYBytes;
 
     @Override
     public synchronized void start() {
@@ -107,6 +117,16 @@ public class TaildirSource extends AbstractSource implements
                     .eventLines(eventLines)
                     .head(headFile)
                     .prefixStr(prefixStr)
+                    .sourceA(sourceA)
+                    .sourceB(sourceB)
+                    .regexA(regexA)
+                    .regexB(regexB)
+                    .regexFsdFour(regexFsdFour)
+                    .fsdFourBytes(fsdFourBytes)
+                    .regexFsdSix(regexFsdSix)
+                    .fsdSixBytes(fsdSixBytes)
+                    .regexFsdJY(regexFsdJY)
+                    .fsdJYBytes(fsdJYBytes)
                     .build();
         } catch (IOException e) {
             throw new FlumeException("Error instantiating ReliableTaildirEventReader", e);
@@ -201,8 +221,16 @@ public class TaildirSource extends AbstractSource implements
         eventLines = context.getInteger(EVENT_LINES, DEFAULT_EVENT_LINES);
         headFile = context.getBoolean(HEAD, DEFAULT_HEAD);
         prefixStr = context.getString(PREFIXSTR, DEFAULT_PREFIXSTR);
-
-
+        sourceA = context.getString(SOURCESEPARATOR_A, DEFAULT_SOURCESEPARATOR_A);
+        sourceB = context.getString(SOURCE_SEPARATOR_B, DEFAULT_SOURCE_SEPARATOR_B);
+        regexA = context.getString(SOURCE_REGEX_A, DEFAULT_SOURCE_REGEX_A);
+        regexB = context.getString(SOURCE_REGEX_B, DEFAULT_SOURCE_REGEX_B);
+        regexFsdFour = context.getString(SOURCE_REGEX_FSD_FOUR, DEFAULT_SOURCE_REGEX_FSD_FOUR);
+        fsdFourBytes = context.getString(SOURCE_FSD_FOUR_BYTES, DEFAULT_SOURCE_FSD_FOUR_BYTES);
+        regexFsdSix = context.getString(SOURCE_REGEX_FSD_SIX, DEFAULT_SOURCE_REGEX_FSD_SIX);
+        fsdSixBytes = context.getString(SOURCE_FSD_SIX_BYTES, DEFAULT_SOURCE_FSD_SIX_BYTES);
+        regexFsdJY = context.getString(SOURCE_REGEX_FSD_JY, DEFAULT_SOURCE_REGEX_FSD_JY);
+        fsdJYBytes = context.getString(SOURCE_FSD_JY_BYTES, DEFAULT_SOURCE_FSD_JY_BYTES);
         if (sourceCounter == null) {
             sourceCounter = new SourceCounter(getName());
         }

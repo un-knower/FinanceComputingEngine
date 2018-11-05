@@ -26,7 +26,7 @@ object Ggt {
 
   def main(args: Array[String]): Unit = {
 
-    val conf = new SparkConf().setAppName("ggt")
+    val conf = new SparkConf().setAppName("Ggt")
     val spark = SparkSession.builder().config(conf).getOrCreate()
 
     //获取配置参数
@@ -95,6 +95,7 @@ object Ggt {
     val calculationDF = buildCalculationDF(jsmxdbfDF, spark, gddmParamRDD)
     val basicsRDD = calculationDF.as[HkJsmxModel].rdd.persist(StorageLevel.MEMORY_ONLY)
 
+    /*-----------------计算费用开始---------------------*/
     //blnFyCjBhMx==0&&blnFySqBhMx==0
     val basics00RDD = basicsRDD.filter { item =>
       val blnFyCjBhMx = getValueFromStr(item.paraminfos, "BLNFYCJBHMX")
@@ -102,7 +103,7 @@ object Ggt {
       if (blnFyCjBhMx.equals("0") && blnFySqBhMx.equals("0")) true else false
     }
 
-    val cjBhMxSqBhMx00RDD = buildCjBhMxSqBhMx00(basics00RDD, spark,
+    val cjBhMxSqBhMx00DF = buildCjBhMxSqBhMx00(basics00RDD, spark,
       broadcastGddmParamMap, broadcastZqdm1ValueMap,
       broadcastGddmFJJLxLBMap, broadcastGddmGsdmZslMap,
       brocastZqdm1ZS2Map, broadcastYjlvMap, broadcastFFyffsMap)
@@ -113,7 +114,7 @@ object Ggt {
       if (blnFyCjBhMx.equals("1")) true else false
     }
 
-    val cjBhMx1RDD = buildCjBhMx1(basicsl0RDD, spark,
+    val cjBhMx1DF = buildCjBhMx1(basicsl0RDD, spark,
       broadcastGddmParamMap, broadcastZqdm1ValueMap,
       broadcastGddmFJJLxLBMap, broadcastGddmGsdmZslMap,
       brocastZqdm1ZS2Map, broadcastYjlvMap, broadcastFFyffsMap)
@@ -124,7 +125,7 @@ object Ggt {
       if (blnFySqBhMx.equals("1")) true else false
     }
 
-    val sqBhMx1RDD = buildSqBhMx1(basics01RDD, spark,
+    val sqBhMx1DF = buildSqBhMx1(basics01RDD, spark,
       broadcastGddmParamMap, broadcastZqdm1ValueMap,
       broadcastGddmFJJLxLBMap, broadcastGddmGsdmZslMap,
       brocastZqdm1ZS2Map, broadcastYjlvMap, broadcastFFyffsMap)
@@ -136,14 +137,122 @@ object Ggt {
       if (blnFyCjBhMx.equals("1") && blnFySqBhMx.equals("1")) true else false
     }
 
-    val cjBhMxSqBhMx11RDD = buildCjBhMxSqBhMx11(basicsl1RDD, spark,
+    val cjBhMxSqBhMx11DF = buildCjBhMxSqBhMx11(basicsl1RDD, spark,
+      broadcastGddmParamMap, broadcastZqdm1ValueMap,
+      broadcastGddmFJJLxLBMap, broadcastGddmGsdmZslMap,
+      brocastZqdm1ZS2Map, broadcastYjlvMap, broadcastFFyffsMap)
+    /*-----------------计算费用结束---------------------*/
+
+
+    /*-----------------计算佣金开始---------------------*/
+    //blnYjCjBhMx==0 & blnYjSqBhMx==0
+    val blnYj00RDD = basicsRDD.filter{ item =>
+      val blnYjCjBhMx = getValueFromStr(item.paraminfos, "BLNYJCJBHMX")
+      val blnYjSqBhMx = getValueFromStr(item.paraminfos, "BLNYJSQBHMX")
+      if (blnYjCjBhMx.equals("0") && blnYjSqBhMx.equals("0")) true else false
+    }
+
+    val blnYj00DF = buildblnYj00RDD(blnYj00RDD, spark,
       broadcastGddmParamMap, broadcastZqdm1ValueMap,
       broadcastGddmFJJLxLBMap, broadcastGddmGsdmZslMap,
       brocastZqdm1ZS2Map, broadcastYjlvMap, broadcastFFyffsMap)
 
-    val resultOutputDS = cjBhMxSqBhMx00RDD.union(cjBhMx1RDD).union(sqBhMx1RDD).union(cjBhMxSqBhMx11RDD)
+    //blnYjCjBhMx=1
+    val blnYjCjBhMx1RDD = basicsRDD.filter{ item =>
+      val blnYjCjBhMx = getValueFromStr(item.paraminfos, "BLNYJCJBHMX")
+      if (blnYjCjBhMx.equals("1")) true else false
+    }
 
-    val resultOrder = resultOutputDS.orderBy("Fdate", "FinDate", "FZqdm", "Fjyxwh", "FZqbz", "Fywbz","Zqdm")
+    val blnYjCjBhMx1DF = buildBlnYjCjBhMx1(blnYjCjBhMx1RDD, spark,
+      broadcastGddmParamMap, broadcastZqdm1ValueMap,
+      broadcastGddmFJJLxLBMap, broadcastGddmGsdmZslMap,
+      brocastZqdm1ZS2Map, broadcastYjlvMap, broadcastFFyffsMap)
+
+    //blnYjSqBhMx=1
+    val blnYjSqBhMx1RDD = basicsRDD.filter{ item =>
+      val blnYjSqBhMx = getValueFromStr(item.paraminfos, "BLNYJSQBHMX")
+      if (blnYjSqBhMx.equals("1")) true else false
+    }
+
+    val blnYjSqBhMx1DF = buildBlnYjSqBhMx1(blnYjSqBhMx1RDD, spark,
+      broadcastGddmParamMap, broadcastZqdm1ValueMap,
+      broadcastGddmFJJLxLBMap, broadcastGddmGsdmZslMap,
+      brocastZqdm1ZS2Map, broadcastYjlvMap, broadcastFFyffsMap)
+    /*-----------------计算费用结束---------------------*/
+
+    //费用汇总DF
+    val fyResultDF = cjBhMxSqBhMx00DF.union(cjBhMx1DF).union(sqBhMx1DF).union(cjBhMxSqBhMx11DF)
+    //佣金汇总DF
+    val yjResultDF = blnYj00DF.union(blnYjCjBhMx1DF).union(blnYjSqBhMx1DF)
+
+    fyResultDF.createOrReplaceTempView("fyResultDF_table")
+    yjResultDF.createOrReplaceTempView("yjResultDF_table")
+
+    val resutlDF = spark.sql(
+        " SELECT t1.FDATE, t1.FINDATE, t1.FZQDM, t1.FJYXWH, t1.FZQBZ, t1.FYWBZ, t1.ZQDM, t1.FBS, " +
+        " t1.FQTF, t1.FJE, t1.FSL, t2.fyj FYJ, t1.FJSF, t1.FYHS," +
+        " t1.FZGF, t1.FGHF, t1.FGZLX, t1.FHGGAIN, t1.FFXJ, t2.Fsssje FSFJE," +
+        " t1.FSZSH, t1.FQSBZ, t1.FJYFS," +
+        " t1.FSH, t1.FZZR, t1.FCHK, t1.FZLH, t1.FTZBZ, t1.FQSGHF," +
+        " t1.FGDDM, t1.FJYBZ, t1.ISRTGS, t1.FPARTID, t1.FHTXH," +
+        " t1.FCSHTXH, t1.FRZLV, t1.FCSGHQX, t1.FSJLY, " +
+        " t1.FBY1, t1.FBY2, t1.FBY3, t1.FBY4, t1.FBY5" +
+        " from " +
+        " fyResultDF_table t1 join yjResultDF_table t2 on " +
+        " t1.FDATE = t2.FDATE and t1.FINDATE = t2.FINDATE and t1.FZQDM =t2.FZQDM " +
+        " and t1.FJYXWH = t2.FJYXWH and t1.FZQBZ = t2.FZQBZ and t1.ZQDM = t2.ZQDM and t1.FBS = t2.FBS"
+    )
+
+
+    val format :DecimalFormat  = new DecimalFormat("0.00")
+    val resultDS = resutlDF.as[Hzjkqs].rdd.map{ item =>
+          Hzjkqs(
+            item.FDATE,
+            item.FINDATE,
+            item.FZQDM,
+            item.FSZSH,
+            item.FJYXWH,
+            item.FBS,
+            format.format(item.FJE.toDouble),
+            format.format(item.FSL.toDouble),
+            format.format(item.FYJ.toDouble),
+            format.format(item.FJSF.toDouble),
+            format.format(item.FYHS.toDouble),
+            format.format(item.FZGF.toDouble),
+            format.format(item.FGHF.toDouble),
+            format.format(item.FFXJ.toDouble),
+            format.format(item.FQTF.toDouble),
+            format.format(item.FGZLX.toDouble),
+            format.format(item.FHGGAIN.toDouble),
+            format.format(item.FSFJE.toDouble),
+            item.FZQBZ,
+            item.FYWBZ,
+            item.FJYBZ,
+            item.FQSBZ,
+            item.ZQDM,
+            item.FJYFS,
+            item.FSH,
+            item.FZZR,
+            item.FCHK,
+            item.FZLH,
+            item.FTZBZ,
+            item.FQSGHF,
+            item.FGDDM,
+            item.ISRTGS,
+            item.FPARTID,
+            item.FHTXH ,
+            item.FCSHTXH,
+            item.FRZLV,
+            item.FCSGHQX,
+            item.FSJLY,
+            item.FBY1,
+            item.FBY2,
+            item.FBY3,
+            item.FBY4,
+            item.FBY5)
+        }.toDS()
+
+    val resultOrder = resultDS.orderBy("FDATE", "FINDATE", "FZQDM", "FJYXWH", "FZQBZ", "FYWBZ","ZQDM")
 
     //输出mysql
     val properties = new Properties()
@@ -164,7 +273,7 @@ object Ggt {
                           bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
                           bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
                           bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
-                          bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]):Dataset[Hzjkqs] ={
+                          bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) ={
     import spark.implicits._
     jsmxModelRDD.toDS().createOrReplaceTempView("jsmxModels11_table")
     val cjBhMxSqBhMx11DF = spark.sql(
@@ -182,7 +291,7 @@ object Ggt {
 
     cjBhMxSqBhMx11Result.toDS().createOrReplaceTempView("CJSQ11_TALBE")
 
-    val cjsq11DF = spark.sql(
+    spark.sql(
       " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
         " SUM(FQTF) FQTF, SUM(FJE) FJE, SUM(FSL) FSL, SUM(FYJ) FYJ, SUM(FJSF) FJSF, SUM(FYHS) FYHS," +
         " SUM(FZGF) FZGF, SUM(FGHF) FGHF, SUM(FGZLX) FGZLX, SUM(FHGGAIN) FHGGAIN, SUM(FFXJ) FFXJ, SUM(FSFJE) FSFJE," +
@@ -193,53 +302,6 @@ object Ggt {
         " MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
         " FROM CJSQ11_TALBE " +
         " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
-    val format :DecimalFormat  = new DecimalFormat("0.00")
-    cjsq11DF.as[Hzjkqs].rdd.map{ item =>
-      Hzjkqs(
-        item.FDATE,
-        item.FINDATE,
-        item.FZQDM,
-        item.FSZSH,
-        item.FJYXWH,
-        item.FBS,
-        format.format(item.FJE.toDouble),
-        format.format(item.FSL.toDouble),
-        format.format(item.FYJ.toDouble),
-        format.format(item.FJSF.toDouble),
-        format.format(item.FYHS.toDouble),
-        format.format(item.FZGF.toDouble),
-        format.format(item.FGHF.toDouble),
-        format.format(item.FFXJ.toDouble),
-        format.format(item.FQTF.toDouble),
-        format.format(item.FGZLX.toDouble),
-        format.format(item.FHGGAIN.toDouble),
-        format.format(item.FSFJE.toDouble),
-        item.FZQBZ,
-        item.FYWBZ,
-        item.FJYBZ,
-        item.FQSBZ,
-        item.ZQDM,
-        item.FJYFS,
-        item.FSH,
-        item.FZZR,
-        item.FCHK,
-        item.FZLH,
-        item.FTZBZ,
-        item.FQSGHF,
-        item.FGDDM,
-        item.ISRTGS,
-        item.FPARTID,
-        item.FHTXH ,
-        item.FCSHTXH,
-        item.FRZLV,
-        item.FCSGHQX,
-        item.FSJLY,
-        item.FBY1,
-        item.FBY2,
-        item.FBY3,
-        item.FBY4,
-        item.FBY5)
-    }.toDS()
   }
 
   /**
@@ -253,26 +315,17 @@ object Ggt {
                    bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
                    bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
                    bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
-                   bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]):Dataset[Hzjkqs] ={
+                   bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) = {
     import spark.implicits._
 
-    jsmxModelRDD.toDS().createOrReplaceTempView("jsmxModels01_table")
-
-    val sqBhMx1DF = spark.sql(
-      " select ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,sqbh, "+
-        " sum(sl) sl, sum(cjsl) cjsl, sum(wbje) wbje, sum(yhs) yhs, " +
-        " sum(jyzf) jyzf,sum(jyf) jyf, sum(syf) syf, sum(jsf) jsf, " +
-        " sum(qtje) qtje, sum(wbysf) wbysf,sum(ysfje) ysfje,min(paraminfos) paraminfos"+
-        " from jsmxModels01_table "+
-        " group by ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,sqbh "
-    )
+    val sqBhMx1DF = conditionGroupBy3(jsmxModelRDD, spark)
 
     val sqBhMx1Result = sqBhMx1DF.rdd.map {
       calculationResult(_,bdGddmParamMap,bdZqdm1ValueMap,bdGddmFJJLxLBMap,bdGddmGsdmZslMap,bdZqdm1ZS2Map,bdYjlvMap,bdFFyffsMap)}
 
     sqBhMx1Result.toDS().createOrReplaceTempView("SQBH1_TALBE")
 
-    val sqBh1DF = spark.sql(
+    spark.sql(
         " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
         " SUM(FQTF) FQTF, SUM(FJE) FJE, SUM(FSL) FSL, SUM(FYJ) FYJ, SUM(FJSF) FJSF, SUM(FYHS) FYHS," +
         " SUM(FZGF) FZGF, SUM(FGHF) FGHF, SUM(FGZLX) FGZLX, SUM(FHGGAIN) FHGGAIN, SUM(FFXJ) FFXJ, SUM(FSFJE) FSFJE," +
@@ -283,53 +336,6 @@ object Ggt {
         " MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
         " FROM SQBH1_TALBE " +
         " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
-    val format :DecimalFormat  = new DecimalFormat("0.00")
-    sqBh1DF.as[Hzjkqs].rdd.map{ item =>
-      Hzjkqs(
-        item.FDATE,
-        item.FINDATE,
-        item.FZQDM,
-        item.FSZSH,
-        item.FJYXWH,
-        item.FBS,
-        format.format(item.FJE.toDouble),
-        format.format(item.FSL.toDouble),
-        format.format(item.FYJ.toDouble),
-        format.format(item.FJSF.toDouble),
-        format.format(item.FYHS.toDouble),
-        format.format(item.FZGF.toDouble),
-        format.format(item.FGHF.toDouble),
-        format.format(item.FFXJ.toDouble),
-        format.format(item.FQTF.toDouble),
-        format.format(item.FGZLX.toDouble),
-        format.format(item.FHGGAIN.toDouble),
-        format.format(item.FSFJE.toDouble),
-        item.FZQBZ,
-        item.FYWBZ,
-        item.FJYBZ,
-        item.FQSBZ,
-        item.ZQDM,
-        item.FJYFS,
-        item.FSH,
-        item.FZZR,
-        item.FCHK,
-        item.FZLH,
-        item.FTZBZ,
-        item.FQSGHF,
-        item.FGDDM,
-        item.ISRTGS,
-        item.FPARTID,
-        item.FHTXH ,
-        item.FCSHTXH,
-        item.FRZLV,
-        item.FCSGHQX,
-        item.FSJLY,
-        item.FBY1,
-        item.FBY2,
-        item.FBY3,
-        item.FBY4,
-        item.FBY5)
-    }.toDS()
   }
 
   /**
@@ -343,23 +349,16 @@ object Ggt {
                    bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
                    bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
                    bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
-                   bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]):Dataset[Hzjkqs] ={
+                   bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) = {
+
     import spark.implicits._
-    jsmxModelRDD.toDS().createOrReplaceTempView("jsmxModels10_table")
-    val cjBhMx1DF = spark.sql(
-      " select ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,cjbh, "+
-        " sum(sl) sl, sum(cjsl) cjsl, sum(wbje) wbje, sum(yhs) yhs, " +
-        " sum(jyzf) jyzf,sum(jyf) jyf, sum(syf) syf, sum(jsf) jsf, " +
-        " sum(qtje) qtje, sum(wbysf) wbysf,sum(ysfje) ysfje,min(paraminfos) paraminfos"+
-        " from jsmxModels10_table "+
-        " group by ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,cjbh "
-    )
+    val cjBhMx1DF = conditionGroupBy2(jsmxModelRDD, spark)
 
     val cjBhMx1Result = cjBhMx1DF.rdd.map {
       calculationResult(_,bdGddmParamMap,bdZqdm1ValueMap,bdGddmFJJLxLBMap,bdGddmGsdmZslMap,bdZqdm1ZS2Map,bdYjlvMap,bdFFyffsMap)}
     cjBhMx1Result.toDS().createOrReplaceTempView("CJBH1_TALBE")
 
-    val cjbh1DF = spark.sql(
+    spark.sql(
         " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS," +
         " SUM(FQTF) FQTF, SUM(FJE) FJE, SUM(FSL) FSL, SUM(FYJ) FYJ, SUM(FJSF) FJSF, SUM(FYHS) FYHS," +
         " SUM(FZGF) FZGF, SUM(FGHF) FGHF, SUM(FGZLX) FGZLX, SUM(FHGGAIN) FHGGAIN, SUM(FFXJ) FFXJ, SUM(FSFJE) FSFJE," +
@@ -370,53 +369,64 @@ object Ggt {
         " MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5 " +
         " FROM CJBH1_TALBE " +
         " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
-    val format :DecimalFormat  = new DecimalFormat("0.00")
-    cjbh1DF.as[Hzjkqs].rdd.map{ item =>
-      Hzjkqs(
-        item.FDATE,
-        item.FINDATE,
-        item.FZQDM,
-        item.FSZSH,
-        item.FJYXWH,
-        item.FBS,
-        format.format(item.FJE.toDouble),
-        format.format(item.FSL.toDouble),
-        format.format(item.FYJ.toDouble),
-        format.format(item.FJSF.toDouble),
-        format.format(item.FYHS.toDouble),
-        format.format(item.FZGF.toDouble),
-        format.format(item.FGHF.toDouble),
-        format.format(item.FFXJ.toDouble),
-        format.format(item.FQTF.toDouble),
-        format.format(item.FGZLX.toDouble),
-        format.format(item.FHGGAIN.toDouble),
-        format.format(item.FSFJE.toDouble),
-        item.FZQBZ,
-        item.FYWBZ,
-        item.FJYBZ,
-        item.FQSBZ,
-        item.ZQDM,
-        item.FJYFS,
-        item.FSH,
-        item.FZZR,
-        item.FCHK,
-        item.FZLH,
-        item.FTZBZ,
-        item.FQSGHF,
-        item.FGDDM,
-        item.ISRTGS,
-        item.FPARTID,
-        item.FHTXH ,
-        item.FCSHTXH,
-        item.FRZLV,
-        item.FCSGHQX,
-        item.FSJLY,
-        item.FBY1,
-        item.FBY2,
-        item.FBY3,
-        item.FBY4,
-        item.FBY5)
-    }.toDS()
+  }
+
+  /**
+    * sum 根据YWLX,bdlx,qsrq,JSRQ,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl 汇总
+    * @param basicsRDD
+    * @param spark
+    * @return
+    */
+  def conditionGroupBy1(basicsRDD:RDD[HkJsmxModel], spark:SparkSession) = {
+    import spark.implicits._
+    basicsRDD.toDS().createOrReplaceTempView("jsmxModels00_table")
+    spark.sql(
+    " select ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl, "+
+    " sum(sl) sl, sum(cjsl) cjsl, sum(wbje) wbje, sum(yhs) yhs, " +
+    " sum(jyzf) jyzf,sum(jyf) jyf, sum(syf) syf, sum(jsf) jsf, " +
+    " sum(qtje) qtje, sum(wbysf) wbysf,sum(ysfje) ysfje,min(paraminfos) paraminfos"+
+    " from jsmxModels00_table "+
+    " group by ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl "
+    )
+  }
+
+  /**
+    * sum 根据YWLX,bdlx,qsrq,JSRQ,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,CJBH 汇总
+    * @param basicsRDD
+    * @param spark
+    * @return
+    */
+  def conditionGroupBy2(basicsRDD:RDD[HkJsmxModel], spark:SparkSession) = {
+    import spark.implicits._
+    basicsRDD.toDS().createOrReplaceTempView("jsmxModels10_table")
+    spark.sql(
+      " select ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,cjbh, "+
+        " sum(sl) sl, sum(cjsl) cjsl, sum(wbje) wbje, sum(yhs) yhs, " +
+        " sum(jyzf) jyzf,sum(jyf) jyf, sum(syf) syf, sum(jsf) jsf, " +
+        " sum(qtje) qtje, sum(wbysf) wbysf,sum(ysfje) ysfje,min(paraminfos) paraminfos"+
+        " from jsmxModels10_table "+
+        " group by ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,cjbh "
+    )
+  }
+
+  /**
+    * sum 根据YWLX,bdlx,qsrq,JSRQ,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,SQBH 汇总
+    * @param basicsRDD
+    * @param spark
+    * @return
+    */
+  def conditionGroupBy3(basicsRDD:RDD[HkJsmxModel], spark:SparkSession)={
+    import spark.implicits._
+    basicsRDD.toDS().createOrReplaceTempView("jsmxModels01_table")
+
+    spark.sql(
+      " select ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,sqbh, "+
+        " sum(sl) sl, sum(cjsl) cjsl, sum(wbje) wbje, sum(yhs) yhs, " +
+        " sum(jyzf) jyzf,sum(jyf) jyf, sum(syf) syf, sum(jsf) jsf, " +
+        " sum(qtje) qtje, sum(wbysf) wbysf,sum(ysfje) ysfje,min(paraminfos) paraminfos"+
+        " from jsmxModels01_table "+
+        " group by ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl,sqbh "
+    )
   }
 
   /**
@@ -440,25 +450,16 @@ object Ggt {
                           bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
                           bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
                           bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
-                          bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) : Dataset[Hzjkqs] = {
+                          bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) = {
     import spark.implicits._
-    basicsRDD.toDS().createOrReplaceTempView("jsmxModels00_table")
-    val cjBhMxSqBhMx00DF = spark.sql(
-      " select ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl, "+
-        " sum(sl) sl, sum(cjsl) cjsl, sum(wbje) wbje, sum(yhs) yhs, " +
-        " sum(jyzf) jyzf,sum(jyf) jyf, sum(syf) syf, sum(jsf) jsf, " +
-        " sum(qtje) qtje, sum(wbysf) wbysf,sum(ysfje) ysfje,min(paraminfos) paraminfos"+
-        " from jsmxModels00_table "+
-        " group by ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl "
-    )
-
+    val cjBhMxSqBhMx00DF = conditionGroupBy1(basicsRDD, spark)
     val cjBhMxSqBhMx00Result = cjBhMxSqBhMx00DF.rdd.map { item=>
       calculationResult(item,bdGddmParamMap,bdZqdm1ValueMap,bdGddmFJJLxLBMap,bdGddmGsdmZslMap,bdZqdm1ZS2Map,bdYjlvMap,bdFFyffsMap)
     }
 
     cjBhMxSqBhMx00Result.toDS().createOrReplaceTempView("CJSQ_TALBE")
 
-    val cjSqDF = spark.sql(
+    spark.sql(
         " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
         " SUM(FQTF) FQTF, SUM(FJE) FJE, SUM(FSL) FSL, SUM(FYJ) FYJ, SUM(FJSF) FJSF, SUM(FYHS) FYHS," +
         " SUM(FZGF) FZGF, SUM(FGHF) FGHF, SUM(FGZLX) FGZLX, SUM(FHGGAIN) FHGGAIN, SUM(FFXJ) FFXJ, SUM(FSFJE) FSFJE," +
@@ -469,58 +470,125 @@ object Ggt {
         " MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
         " FROM CJSQ_TALBE " +
         " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
-
-    val format :DecimalFormat  = new DecimalFormat("0.00")
-    cjSqDF.as[Hzjkqs].rdd.map{ item =>
-      Hzjkqs(
-        item.FDATE,
-        item.FINDATE,
-        item.FZQDM,
-        item.FSZSH,
-        item.FJYXWH,
-        item.FBS,
-        format.format(item.FJE.toDouble),
-        format.format(item.FSL.toDouble),
-        format.format(item.FYJ.toDouble),
-        format.format(item.FJSF.toDouble),
-        format.format(item.FYHS.toDouble),
-        format.format(item.FZGF.toDouble),
-        format.format(item.FGHF.toDouble),
-        format.format(item.FFXJ.toDouble),
-        format.format(item.FQTF.toDouble),
-        format.format(item.FGZLX.toDouble),
-        format.format(item.FHGGAIN.toDouble),
-        format.format(item.FSFJE.toDouble),
-        item.FZQBZ,
-        item.FYWBZ,
-        item.FJYBZ,
-        item.FQSBZ,
-        item.ZQDM,
-        item.FJYFS,
-        item.FSH,
-        item.FZZR,
-        item.FCHK,
-        item.FZLH,
-        item.FTZBZ,
-        item.FQSGHF,
-        item.FGDDM,
-        item.ISRTGS,
-        item.FPARTID,
-        item.FHTXH ,
-        item.FCSHTXH,
-        item.FRZLV,
-        item.FCSGHQX,
-        item.FSJLY,
-        item.FBY1,
-        item.FBY2,
-        item.FBY3,
-        item.FBY4,
-        item.FBY5)
-    }.toDS()
   }
 
   /**
-    * 计算结果数据
+    * 计算佣金"blnFyCjBhMx==0&&blnFySqBhMx==0"
+
+    * @param basicsRDD
+    * @param spark
+    * @param bdGddmParamMap
+    * @param bdZqdm1ValueMap
+    * @param bdGddmFJJLxLBMap
+    * @param bdGddmGsdmZslMap
+    * @param bdZqdm1ZS2Map
+    * @param bdYjlvMap
+    * @param bdFFyffsMap
+    * @return
+    */
+  def buildblnYj00RDD(basicsRDD:RDD[HkJsmxModel], spark:SparkSession,
+                          bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
+                          bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
+                          bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
+                          bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
+                          bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
+                          bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
+                          bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) : DataFrame = {
+    import spark.implicits._
+    val blnYj00DF = conditionGroupBy1(basicsRDD, spark)
+
+    val blnYj00Result = blnYj00DF.rdd.map { item=>
+      yJcalculationResult(item,bdGddmParamMap,bdZqdm1ValueMap,bdGddmFJJLxLBMap,bdGddmGsdmZslMap,bdZqdm1ZS2Map,bdYjlvMap,bdFFyffsMap)
+    }
+
+    blnYj00Result.toDS().createOrReplaceTempView("blnYj_table1")
+
+    spark.sql(
+      " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
+        " SUM(fyj) fyj, SUM(Fsssje) Fsssje " +
+        " FROM blnYj_table1 " +
+        " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
+
+  }
+
+  /**
+    * 计算佣金"blnFyCjBhMx==1
+    * @param basicsRDD
+    * @param spark
+    * @param bdGddmParamMap
+    * @param bdZqdm1ValueMap
+    * @param bdGddmFJJLxLBMap
+    * @param bdGddmGsdmZslMap
+    * @param bdZqdm1ZS2Map
+    * @param bdYjlvMap
+    * @param bdFFyffsMap
+    * @return
+    */
+  def buildBlnYjCjBhMx1(basicsRDD:RDD[HkJsmxModel], spark:SparkSession,
+                      bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
+                      bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
+                      bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
+                      bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
+                      bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
+                      bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
+                      bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) : DataFrame = {
+    import spark.implicits._
+    val blnYj00DF = conditionGroupBy2(basicsRDD, spark)
+
+    val blnYj00Result = blnYj00DF.rdd.map { item=>
+      yJcalculationResult(item,bdGddmParamMap,bdZqdm1ValueMap,bdGddmFJJLxLBMap,bdGddmGsdmZslMap,bdZqdm1ZS2Map,bdYjlvMap,bdFFyffsMap)
+    }
+
+    blnYj00Result.toDS().createOrReplaceTempView("blnYj_table2")
+
+    spark.sql(
+      " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
+        " SUM(fyj) fyj, SUM(Fsssje) Fsssje " +
+        " FROM blnYj_table2 " +
+        " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
+
+  }
+
+  /**
+    * 计算佣金"blnYjSqBhMx==1
+    * @param basicsRDD
+    * @param spark
+    * @param bdGddmParamMap
+    * @param bdZqdm1ValueMap
+    * @param bdGddmFJJLxLBMap
+    * @param bdGddmGsdmZslMap
+    * @param bdZqdm1ZS2Map
+    * @param bdYjlvMap
+    * @param bdFFyffsMap
+    * @return
+    */
+  def buildBlnYjSqBhMx1(basicsRDD:RDD[HkJsmxModel], spark:SparkSession,
+                        bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
+                        bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
+                        bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
+                        bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
+                        bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
+                        bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
+                        bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) : DataFrame = {
+    import spark.implicits._
+    val blnYj00DF = conditionGroupBy3(basicsRDD, spark)
+
+    val blnYj00Result = blnYj00DF.rdd.map { item=>
+      yJcalculationResult(item,bdGddmParamMap,bdZqdm1ValueMap,bdGddmFJJLxLBMap,bdGddmGsdmZslMap,bdZqdm1ZS2Map,bdYjlvMap,bdFFyffsMap)
+    }
+
+    blnYj00Result.toDS().createOrReplaceTempView("blnYj_table3")
+
+    spark.sql(
+      " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
+        " SUM(fyj) fyj, SUM(Fsssje) Fsssje " +
+        " FROM blnYj_table3 " +
+        " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
+
+  }
+
+  /**
+    * 费用计算结果数据
     * @param item
     * @param bdGddmParamMap       相关参数Map[gddm, 相关参数]
     * @param bdZqdm1ValueMap      原始数据Zqdm1字段，判断证券代码 [zqdm1, 证券代码的值]
@@ -553,8 +621,7 @@ object Ggt {
     //资产代码
     val FSETID:String=""
     //日期
-    val Fdate:String = item.getAs[String]("qsrq")
-
+    val Fdate:String = getFdate(item)
     //日期
     val FinDate:String = item.getAs[String]("qsrq")
     //证券代码
@@ -627,7 +694,7 @@ object Ggt {
     val Fbz = "RMB"
 
     //金额、佣金、卖实收金额、其他费用
-    val (fje,fyj,fsssje,fQTF) = buildFje(item,fbs,FeeTemp,Fghf,Fjsf,Fzgf,Fyhs,Ffxj,FZqbz,FSzsh,gddmParamMap,yjlvMap,ffyffsMap)
+    val (fje,fsssje,fQTF) = buildFje(item,fbs,FeeTemp,Fghf,Fjsf,Fzgf,Fyhs,Ffxj,gddmParamMap,yjlvMap,ffyffsMap)
 
     Hzjkqs(Fdate,
       FinDate,
@@ -637,7 +704,7 @@ object Ggt {
       fbs,
       fje.doubleValue().toString,
       Fsl.doubleValue().toString,
-      fyj.doubleValue().toString,
+      "",//佣金
       Fjsf.doubleValue().toString,
       Fyhs.doubleValue().toString,
       Fzgf.doubleValue().toString,
@@ -672,6 +739,170 @@ object Ggt {
       "",
       "",
       "")
+  }
+
+  /**
+    * 佣金计算结果
+    * @param item
+    * @param bdGddmParamMap
+    * @param bdZqdm1ValueMap
+    * @param bdGddmFJJLxLBMap
+    * @param bdxwhZslMap
+    * @param bdZqdm1ZS2Map
+    * @param bdYjlvMap
+    * @param bdFFyffsMap
+    * @return
+    */
+  def yJcalculationResult(item: Row,
+                        bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
+                        bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
+                        bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
+                        bdxwhZslMap:Broadcast[scala.collection.Map[String,String]],
+                        bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
+                        bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
+                        bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]):YjModel = {
+
+    val gddmParamMap = bdGddmParamMap.value
+    val zqdm1Map = bdZqdm1ValueMap.value
+    val gddmfjjlxlbMap = bdGddmFJJLxLBMap.value
+    val xwhzslMap = bdxwhZslMap.value
+    val zqdm1zs2Map = bdZqdm1ZS2Map.value
+    val yjlvMap = bdYjlvMap.value
+    val ffyffsMap = bdFFyffsMap.value
+
+    val gddm = trim(item.getAs[String]("zqzh"))
+    val xwh = trim(item.getAs[String]("xwh1"))
+    val wbhl: String = trim(item.getAs[String]("wbhl"))
+    val wbje: String = item.getAs[Double]("wbje").doubleValue().toString
+    val ywlx:String = item.getAs[String]("ywlx")
+
+    //配置参数
+    val paramstr = gddmParamMap.getOrElse(gddm, "")
+    val GgTyWwCcLfS: String = getValueFromStr(paramstr, "GGTYWWCCLFS")
+    val blnGgtCbXqr: String = getValueFromStr(paramstr, "BLNGGTCBXQR")
+    val yjqsjexhvxyj: String = getValueFromStr(paramstr, "YJQSJEXHVXYJ")
+    val yjblws: String = getValueFromStr(paramstr, "YJBLWS")
+    val blnBhYj: String = getValueFromStr(paramstr, "BLNBHYJ")
+
+    //深圳上海
+    val FSzsh:String= "F"
+    //证券标志
+    val FZqbz:String = getFZqbz(item)
+
+    //港股通一级费用
+    val ffyffs = ffyffsMap.getOrElse(xwh + "_" + gddm + "_" + FZqbz, "")
+    val GGTFY: Boolean = if (getValueFromStr(ffyffs, "GGTFY").equals("0")) true else false
+    val GGTYHS: Boolean = if (getValueFromStr(ffyffs, "GGTYHS").equals("0")) true else false
+    val GGTJYZF: Boolean = if (getValueFromStr(ffyffs, "GGTJYZF").equals("0")) true else false
+    val GGTJYF: Boolean = if (getValueFromStr(ffyffs, "GGTJYF").equals("0")) true else false
+    val GGTJYXTSYF: Boolean = if (getValueFromStr(ffyffs, "GGTJYXTSYF").equals("0")) true else false
+    val GGTGFJSF: Boolean = if (getValueFromStr(ffyffs, "GGTGFJSF").equals("0")) true else false
+
+
+    //获取佣金参数信息
+    val fsetCode: String = getValueFromStr(paramstr, "FSETCODE")
+    val yjxwhkey = FZqbz + "_" + FSzsh + "_" + xwh
+    val yjgddmkey = FZqbz + "_" + FSzsh + "_" + gddm
+    var yjstr = yjlvMap.getOrElse(yjxwhkey, "")
+    if (strIsNull(yjstr)) yjstr = yjlvMap.getOrElse(yjgddmkey, "")
+
+    //佣金利率
+    var fjlv: BigDecimal = null
+    //最小佣金
+    var YjMin: BigDecimal = null
+    //折扣率
+    var YjZk: BigDecimal = null
+
+    if (!strIsNull(yjstr)) {
+      fjlv = BigDecimal(yjstr.split("_")(0))
+      YjMin = BigDecimal(yjstr.split("_")(1))
+      YjZk = BigDecimal(yjstr.split("_")(2))
+    }
+
+    //佣金
+    var Fyj: BigDecimal = null
+    //金额
+    var Fje: BigDecimal = null
+    //卖实收金额
+    var Fsssje: BigDecimal = null
+
+    if (strIsNull(yjstr)) {
+      Fyj = BigDecimal(0)
+    }
+
+    //日期
+    val Fdate:String = getFdate(item)
+    //日期
+    val FinDate:String = item.getAs[String]("qsrq")
+    //证券代码
+    val FZqdm:String = getFzqdm(item, zqdm1Map)
+    //交易席位号
+    val Fjyxwh:String = getFjyxwh(item)
+    //买卖方向
+    val fbs:String = buildFbs(item, ywlx)
+    //经手费
+    val Fjsf:BigDecimal = buildFjsf(item, ywlx)
+    //印花税
+    val Fyhs:BigDecimal = buildFyhs(item, ywlx)
+    //征管费
+    val Fzgf:BigDecimal = buildFzgf(item, ywlx)
+    //过户费
+    val Fghf:BigDecimal = buildFghf(item, ywlx)
+    //风险金
+    val Ffxj:BigDecimal = buildFfxj(item, ywlx)
+    //业务标志
+    val Fywbz:String = getFywbz(item, gddmfjjlxlbMap,xwhzslMap,zqdm1zs2Map)
+    //证券代码
+    val ZQDM:String = trim(item.getAs[String]("zqdm1"))
+    val FeeTemp:BigDecimal = buildFeeTemp(item:Row)
+
+    var (fje,fsssfje,fQTF) = buildFje(item,fbs,FeeTemp,Fghf,Fjsf,Fzgf,Fyhs,Ffxj,gddmParamMap,yjlvMap,ffyffsMap)
+
+    if (!strIsNull(yjstr)) {
+      //计算佣金时 不区分blnGgtCbXqr==0 和blnGgtCbXqr==1， 公式均为：round(ABS(WBJE)*WBHL,2)
+      val reFje = round(abs(wbje) * BigDecimal(wbhl), yjblws.toInt)
+      Fyj = round(fmax(round(reFje * fjlv, 2), YjMin) * YjZk, 2)
+
+      if (GGTFY) {
+        Fyj = Fyj - FeeTemp - fQTF
+      } else {
+        if (GGTYHS) {
+          Fyj = Fyj - Fyhs
+        }
+        if (GGTJYZF) {
+          Fyj = Fyj - Fzgf
+        }
+        if (GGTJYF) {
+          Fyj = Fyj - Fjsf
+        }
+        if (GGTJYXTSYF) {
+          Fyj = Fyj - Fghf
+        }
+        if (GGTGFJSF) {
+          Fyj = Fyj - Ffxj
+        }
+      }
+    } else {
+      //佣金参数不存在时， 佣金为0
+      Fyj = BigDecimal(0)
+    }
+
+    if(blnBhYj.equals("1")) {
+      if (fbs.equals("B")) {
+        fsssfje=fsssfje-Fyj
+      }
+      if (fbs.equals("S")) {
+        fsssfje=fsssfje+Fyj
+      }
+    }
+    Fsssje = fsssfje
+
+    if(ywlx.equals("H54") || ywlx.equals("H55")|| ywlx.equals("H60")|| ywlx.equals("H63")
+      || ywlx.equals("H64")|| ywlx.equals("H65")|| ywlx.equals("H67")) {
+      Fyj = BigDecimal(0)
+    }
+
+    YjModel(Fdate, FinDate, FZqdm,Fjyxwh,FZqbz,Fywbz,ZQDM,fbs,Fyj.doubleValue().toString,Fsssje.doubleValue().toString)
   }
 
   /**
@@ -785,6 +1016,21 @@ object Ggt {
   def getFzqdm(item:Row, zqdm1Map:scala.collection.Map[String,String]):String={
     val zqdm1 = trim(item.getAs[String]("zqdm1"))
     zqdm1Map.getOrElse(zqdm1, "")
+  }
+
+
+  /**
+    * 获取日期
+    * @param item
+    * @return
+    */
+  def getFdate(item:Row): String = {
+    val ywlx:String = item.getAs[String]("ywlx")
+    var qsrq = item.getAs[String]("qsrq")
+    if (ywlx.equals("H54") || ywlx.equals("H55")) {
+      qsrq = item.getAs[String]("jsrq")
+    }
+    qsrq
   }
 
   /**
@@ -1291,8 +1537,6 @@ object Ggt {
     * @param Fzgf   征管费
     * @param Fyhs   印花税
     * @param Ffxj   风险金
-    * @param Fzqbz  证券标志\证券类别
-    * @param FSzsh  证券市场
     * @param gddmParamMap
     * @param yjlvMap      佣金map  (套帐号_证券类别_证券市场_席位代码(股东代码), 费用费率_佣金最低值_折扣率)
     * @param ffyffsMap    各个费用map (xwh+"_"+gddm+"_"+fzqlb 费用1=0_费用2=1)
@@ -1306,27 +1550,14 @@ object Ggt {
                Fzgf:BigDecimal,
                Fyhs:BigDecimal,
                Ffxj:BigDecimal,
-               Fzqbz:String,
-               FSzsh:String,
                gddmParamMap:scala.collection.Map[String,String],
                yjlvMap:scala.collection.Map[String,String],
-               ffyffsMap:scala.collection.Map[String,String]):(BigDecimal,BigDecimal,BigDecimal,BigDecimal)= {
-    val ywlx:String = item.getAs[String]("ywlx")
+               ffyffsMap:scala.collection.Map[String,String]):(BigDecimal,BigDecimal,BigDecimal)= {
+
     val wbhl: String = trim(item.getAs[String]("wbhl"))
     val ysfje: String = item.getAs[Double]("ysfje").doubleValue().toString
     val wbje: String = item.getAs[Double]("wbje").doubleValue().toString
-    var fsssfje: BigDecimal = BigDecimal(0)
-    val xwh = trim(item.getAs[String]("xwh1"))
     val gddm = trim(item.getAs[String]("zqzh"))
-
-    //港股通一级费用
-    val ffyffs = ffyffsMap.getOrElse(xwh + "_" + gddm + "_" + Fzqbz, "")
-    val FFYFS: Boolean = if (getValueFromStr(ffyffs, "FFYFS").equals("1")) true else false
-    val GGTYHS: Boolean = if (getValueFromStr(ffyffs, "GGTYHS").equals("1")) true else false
-    val GGTJYZF: Boolean = if (getValueFromStr(ffyffs, "GGTJYZF").equals("1")) true else false
-    val GGTJYF: Boolean = if (getValueFromStr(ffyffs, "GGTJYF").equals("1")) true else false
-    val GGTJYXTSYF: Boolean = if (getValueFromStr(ffyffs, "GGTJYXTSYF").equals("1")) true else false
-    val GGTGFJSF: Boolean = if (getValueFromStr(ffyffs, "GGTGFJSF").equals("1")) true else false
 
     //配置参数
     val paramstr = gddmParamMap.getOrElse(gddm, "")
@@ -1336,42 +1567,12 @@ object Ggt {
     val yjblws: String = getValueFromStr(paramstr, "YJBLWS")
     val blnBhYj: String = getValueFromStr(paramstr, "BLNBHYJ")
 
-    //获取佣金参数信息
-    val fsetCode: String = getValueFromStr(paramstr, "FSETCODE")
-    val yjxwhkey = Fzqbz + "_" + FSzsh + "_" + xwh
-    val yjgddmkey = Fzqbz + "_" + FSzsh + "_" + gddm
-    var yjstr = yjlvMap.getOrElse(yjxwhkey, "")
-    if (strIsNull(yjstr)) yjstr = yjlvMap.getOrElse(yjgddmkey, "")
-
-    //佣金利率
-    var fjlv: BigDecimal = null
-    //最小佣金
-    var YjMin: BigDecimal = null
-    //折扣率
-    var YjZk: BigDecimal = null
-
-    if (!strIsNull(yjstr)) {
-      fjlv = BigDecimal(yjstr.split("_")(0))
-      YjMin = BigDecimal(yjstr.split("_")(1))
-      YjZk = BigDecimal(yjstr.split("_")(2))
-    }
-
     //金额
     var Fje: BigDecimal = null
-    //佣金
-    var Fyj: BigDecimal = null
     //卖实收金额
-    var Fsssje: BigDecimal = null
+    var fsssfje: BigDecimal = BigDecimal(0)
     //其他费用
     var FQTF: BigDecimal = null
-
-    if (strIsNull(yjstr)) {
-      Fje = BigDecimal(0)
-      Fyj = BigDecimal(0)
-      Fsssje = BigDecimal(0)
-      FQTF = BigDecimal(0)
-    }
-
 
     if (blnGgtCbXqr.equals("0")) {
       if (fbs.equals("B")) {
@@ -1424,49 +1625,7 @@ object Ggt {
       Fje = round(abs(wbje) * BigDecimal(wbhl), yjblws.toInt)
     }
 
-    if (!strIsNull(yjstr)) {
-        Fyj = round(fmax(round(Fje * fjlv, 2), YjMin) * YjZk, 2)
-
-        if (FFYFS) {
-          Fyj = Fyj - FeeTemp - FQTF
-        } else {
-          if (GGTYHS) {
-            Fyj = Fyj - Fyhs
-          }
-          if (GGTJYZF) {
-            Fyj = Fyj - Fzgf
-          }
-          if (GGTJYF) {
-            Fyj = Fyj - Fjsf
-          }
-          if (GGTJYXTSYF) {
-            Fyj = Fyj - Fghf
-          }
-          if (GGTGFJSF) {
-            Fyj = Fyj - Ffxj
-          }
-        }
-    } else {
-      //佣金参数不存在时， 佣金为0
-      Fyj = BigDecimal(0)
-    }
-
-    if(blnBhYj.equals("1")) {
-      if (fbs.equals("B")) {
-        fsssfje=fsssfje-Fyj
-      }
-      if (fbs.equals("S")) {
-        fsssfje=fsssfje+Fyj
-      }
-    }
-    Fsssje = fsssfje
-
-    if(ywlx.equals("H54") || ywlx.equals("H55")|| ywlx.equals("H60")|| ywlx.equals("H63")
-      || ywlx.equals("H64")|| ywlx.equals("H65")|| ywlx.equals("H67")) {
-      Fyj = BigDecimal(0)
-    }
-
-    (Fje,Fyj,Fsssje,FQTF)
+    (Fje,fsssfje,FQTF)
   }
 
   def getValueFromStr(sourceStr: String, filename:String):String={
@@ -1505,7 +1664,7 @@ object Ggt {
   }
 
   def loadInitParam():(String,String,String,String)={
-    val currentDate = getCurrentDate()
+    var currentDate = getCurrentDate()
     val hadoopRpcPath = "hdfs://192.168.102.120:8020"
     val commonUrl = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
     val ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/ggt"
@@ -1562,9 +1721,16 @@ object Ggt {
     */
   def getHktzxxDF(spark: SparkSession, listFiles:ListBuffer[String]) = {
 
-    mergeFileDF(spark,listFiles).createOrReplaceTempView("hk_tzxx_table")
+    import spark.implicits._
+    if (listFiles.length == 0) {
+      Seq(
+        ("", "", "", "", "")
+      ).toDF("FZDM1", "FZDM2", "RQ1", "RQ2", "ZQDM")
+    } else {
+      mergeFileDF(spark, listFiles).createOrReplaceTempView("hk_tzxx_table")
 
-    spark.sql("select FZDM1,FZDM2,RQ1,RQ2,ZQDM from hk_tzxx_table where TZLB='H10'")
+      spark.sql("select FZDM1,FZDM2,RQ1,RQ2,ZQDM from hk_tzxx_table where TZLB='H10'")
+    }
   }
 
   /**

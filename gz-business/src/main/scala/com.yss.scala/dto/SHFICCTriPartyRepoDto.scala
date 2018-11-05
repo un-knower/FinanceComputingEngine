@@ -24,7 +24,7 @@ case class SHFICCTriPartyRepoDto(
                                   Fzzr: String,
                                   Fchk: String,
                                   FHTXH: String,
-                                  FSETCODE: String,
+                                  FSETID: String,
                                   FCSGHQX: String,
                                   FRZLV: String,
                                   FSJLY: String,

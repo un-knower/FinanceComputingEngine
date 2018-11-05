@@ -580,7 +580,7 @@ class BucketWriter {
                 @Override
                 public Void call() throws Exception {
 
-                    if (!body.equals("fileEnd")) {
+                    if (!body.equalsIgnoreCase("OFDCFEND")) {
                         writer.append(event); // could block
                     }
                     return null;
@@ -607,9 +607,9 @@ class BucketWriter {
         if (batchCounter == batchSize) {
             flush();
         }
-        if (body.equals("fileEnd")) {
+        if (body.equalsIgnoreCase("OFDCFEND")) {
 
-            System.out.println(LocalDateTime.now()+"    HDFS文件上传完毕:" + fileName);
+            System.out.println(LocalDateTime.now() + "    HDFS文件上传完毕:" + fileName);
             flush();
             close(true);//关闭hdfs流,并修改为永久名字
         }
