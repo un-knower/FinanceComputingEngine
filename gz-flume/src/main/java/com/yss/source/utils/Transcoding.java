@@ -22,6 +22,18 @@ public class Transcoding {
         return new String(s.getBytes(), Charset.forName("utf-8"));
     }
 
+    public static byte[] transcodByte(String data, Charset fileEncode) {
+        System.out.println(fileEncode);
+        data = new String(data.getBytes(fileEncode), Charset.forName("gbk"));
+        try {
+            return data.getBytes("utf-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            System.out.println("转码出现异常!");
+        }
+        return null;
+    }
+
     public static byte[] transcodByte(String data) {
         String s = null;
         try {

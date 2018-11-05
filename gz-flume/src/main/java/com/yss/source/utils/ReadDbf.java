@@ -1,6 +1,5 @@
 package com.yss.source.utils;
 
-import com.linuxense.javadbf.DBFReader;
 import org.apache.flume.Event;
 import org.apache.flume.event.EventBuilder;
 
@@ -50,7 +49,7 @@ public class ReadDbf {
                 return null;
             }
 
-            Event event = EventBuilder.withBody(Transcoding.transcodByte(rowFirst.toString()));
+            Event event = EventBuilder.withBody(Transcoding.transcodByte(rowFirst.toString(), reader.getCharset()));
             event.getHeaders().put(currentRecord, String.valueOf(ROW));
             ROW++;
             return event;
@@ -77,7 +76,7 @@ public class ReadDbf {
             } else {
                 return null;
             }
-            Event event = EventBuilder.withBody(Transcoding.transcodByte(bodyBuffer.toString()));
+            Event event = EventBuilder.withBody(Transcoding.transcodByte(bodyBuffer.toString(), reader.getCharset()));
             event.getHeaders().put(currentRecord, String.valueOf(ROW));
             bodyBuffer.setLength(0);
             return event;
