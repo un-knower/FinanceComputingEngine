@@ -23,7 +23,6 @@ public class Transcoding {
     }
 
     public static byte[] transcodByte(String data, Charset fileEncode) {
-        System.out.println(fileEncode);
         data = new String(data.getBytes(fileEncode), Charset.forName("gbk"));
         try {
             return data.getBytes("utf-8");
