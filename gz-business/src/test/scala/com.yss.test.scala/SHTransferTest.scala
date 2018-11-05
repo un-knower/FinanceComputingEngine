@@ -1,6 +1,6 @@
 package com.yss.test.scala
 
-import com.yss.scala.core.SHTransfer.{doETL, doExec, loadLvarlist}
+import com.yss.scala.core.ShghTrade.{doETL, execute, loadLvarlist}
 import com.yss.scala.util.Util
 import org.apache.spark.sql.SparkSession
 
@@ -30,7 +30,7 @@ object SHTransferTest {
 
   /** 测试Exec */
   def testExec(fileName:String,tableName:String) = {
-    doExec(fileName,tableName)
+    execute(fileName,tableName)
   }
 
 

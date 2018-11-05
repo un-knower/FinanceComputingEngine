@@ -1,12 +1,9 @@
-package com.yss.scala.core
-
-import java.util.Properties
-
+package com.yss.test.scala
 
 import com.yss.scala.dto.QiHuoChengJiao
 import com.yss.scala.util.Util
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{Dataset, SaveMode, SparkSession}
+import org.apache.spark.sql.{Dataset, SparkSession}
 
 /**
   * @author : 张海绥
