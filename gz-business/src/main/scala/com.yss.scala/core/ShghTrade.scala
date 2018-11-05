@@ -17,20 +17,20 @@ import scala.math.BigDecimal.RoundingMode
   *          源文件：gdh.dbf
   *          结果表：SHDZGH
   */
-object SHTransfer {
+object ShghTrade {
 
   def main(args: Array[String]): Unit = {
     if(args.size < 2){
       args(0) = DateUtils.getToday(DateUtils.YYYYMMDD)+"/gh.csv"
       args(1) = "SHTransfer"
     }
-    doExec(args(0),args(1))
+    execute(args(0),args(1))
   }
 
-  def doExec(fileName:String,tableName:String) = {
+  def execute(fileName:String,tableName:String) = {
     val spark = SparkSession.builder()
       .appName("SHTransfer")
-//      .master("local[*]")
+      .master("local[*]")
       .getOrCreate()
     val broadcastLvarList = loadLvarlist(spark.sparkContext)
     val df = doETL(spark, broadcastLvarList,fileName)
@@ -205,11 +205,12 @@ object SHTransfer {
       val csTsKm = sc.textFile(csTsKmPath)
         .map(row => {
           val fields = row.split(SEPARATE2)
-          val fsh = fields(2)
-          val fbz = fields(1)
-          val fzqdm = fields(0)
-          val startdate = fields(5)
-          (fsh + SEPARATE1 + fbz + SEPARATE1 + fzqdm, startdate)
+          val fsetid = fields(1) //资产代码
+          val fsh = fields(4)  //市场
+          val fbz = fields(3)
+          val fzqdm = fields(2)
+          val startdate = fields(7)
+          (fsetid + SEPARATE1 + fsh + SEPARATE1 + fbz + SEPARATE1 + fzqdm, startdate)
         })
         .groupByKey()
         .mapValues(rows => {
@@ -324,8 +325,22 @@ object SHTransfer {
       else csholidayList(0)
     }
 
-    (loadCsjjxx(), loadCsqyxx(), loadCsqsxw(),
-      loadCsTsKm(), loadCssysjj(), loadCszqxx(), loadCsgdzh(), loadGzlx(), loadCsholiday())
+    /** 加载资产信息表 lsetlist */
+    def loadLsetlist() = {
+      val lsetlistPath = Util.getDailyInputFilePath(TABLE_NAME_ZCXX)
+      val lsetlistMap = sc.textFile(lsetlistPath)
+        .map(row => {
+          val fields = row.split(SEPARATE2)
+          val fsetid = fields(1) // 资产代码
+          val fsetcode = fields(2) //套账号
+          (fsetcode,fsetid)  //根据套账号获取资产代码
+        })
+        .collectAsMap()
+      sc.broadcast(lsetlistMap)
+    }
+
+    (loadCsjjxx(), loadCsqyxx(), loadCsqsxw(),loadCsTsKm(), loadCssysjj(),
+      loadCszqxx(), loadCsgdzh(), loadGzlx(), loadCsholiday(),loadLsetlist())
   }
 
   /** 进行原始数据的转换包括：规则1，2，3，4，5 */
@@ -346,6 +361,7 @@ object SHTransfer {
     val csgdzhValues = broadcaseValues._7
     val gzlxValues = broadcaseValues._8
     val csholiday = broadcaseValues._9
+    val lsetlistValues = broadcaseValues._10
 
     /**
       * 进行日期的格式化，基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd
@@ -534,7 +550,7 @@ object SHTransfer {
       * @param bs   买卖
       * @return
       */
-    def getYwbz(tzh: String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String,sqbh:String): String = {
+    def getYwbz(tzh: String,fsetid:String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String,sqbh:String): String = {
       if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
         val condition = csbValues.value.get(tzh + CON02_KEY)
         if (condition.isDefined && YES.equals(condition.get)) {
@@ -544,12 +560,12 @@ object SHTransfer {
             if (bcrq.compareTo(maybeString.get) >= 0) return "ZS"
           }
           //zqdm字段在CsTsKm表中有数据
-          val maybeString1 = csTsKmValue.value.get(1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
+          val maybeString1 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
           if (maybeString1.isDefined) {
             if (bcrq.compareTo(maybeString1.get) >= 0) return "ZS"
           }
           //zqdm字段在CsTsKm表中有数据
-          val maybeString2 = csTsKmValue.value.get(1 + SEPARATE1 + 2 + SEPARATE1 + zqdm)
+          val maybeString2 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 2 + SEPARATE1 + zqdm)
           if (maybeString2.isDefined) {
             if (bcrq.compareTo(maybeString2.get) >= 0) return "ZB"
           }
@@ -565,7 +581,7 @@ object SHTransfer {
               if (bcrq.compareTo(maybeString.get) >= 0) return "ZS"
             }
             //zqdm字段在CsTsKm表中有数据
-            val maybeString1 = csTsKmValue.value.get(1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
+            val maybeString1 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
             if (maybeString1.isDefined) {
               if (bcrq.compareTo(maybeString1.get) >= 0) return "ZS"
             }
@@ -573,7 +589,7 @@ object SHTransfer {
         }
         if ("0".equals(lset(0)) && "2".equals(lset(1))) {
           //zqdm字段在CsTsKm表中有数据
-          val maybeString2 = csTsKmValue.value.get(1 + SEPARATE1 + 2 + SEPARATE1 + zqdm)
+          val maybeString2 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 2 + SEPARATE1 + zqdm)
           if (maybeString2.isDefined) {
             if (bcrq.compareTo(maybeString2.get) >= 0) return "ZB"
           }
@@ -698,7 +714,7 @@ object SHTransfer {
                 if (bcrq.compareTo(maybeString.get) >= 0) return "ZSPSZFZQ"
               }
               //zqdm字段在CsTsKm表中有数据
-              val maybeString1 = csTsKmValue.value.get(1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
+              val maybeString1 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
               if (maybeString1.isDefined) {
                 if (bcrq.compareTo(maybeString1.get) >= 0) return "ZSPSZFZQ"
               }
@@ -731,7 +747,7 @@ object SHTransfer {
                 if (bcrq.compareTo(maybeString.get) >= 0) return "ZSPSZFZQ"
               }
               //zqdm字段在CsTsKm表中有数据
-              val maybeString1 = csTsKmValue.value.get(1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
+              val maybeString1 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
               if (maybeString1.isDefined) {
                 if (bcrq.compareTo(maybeString1.get) >= 0) return "ZSPSZFZQ"
               }
@@ -831,6 +847,11 @@ object SHTransfer {
       else bcrq
     }
 
+    /** 根据套账号获取资产代码 */
+    def getFsetId(fsetcode:String) = {
+      lsetlistValues.value.getOrElse(fsetcode,DEFAULT_VALUE)
+    }
+
     // 向df原始数据中添加 zqbz和ywbz 转换证券代码，转换成交金额，成交数量，也即处理规则1，2，3，4，5
     val etlRdd = df.rdd.map(row => {
       val gddm = row.getAs[String](0)
@@ -851,9 +872,11 @@ object SHTransfer {
       val mjbh = row.getAs[String](14)
       val zqbz = getZqbz(zqdm, cjjg, bcrq)
       val tzh = getTzh(gddm)
-      val ywbz = getYwbz(tzh, zqbz, zqdm, cjjg, bs, gsdm, bcrq,sqbh)
+      val fsetid = getFsetId(tzh)
+      val ywbz = getYwbz(tzh, fsetid, zqbz, zqdm, cjjg, bs, gsdm, bcrq,sqbh)
       val gzlv = gzlx(zqbz, zqdm, bcrq, cjsl)
       val findate = getFindate(bcrq, tzh)
+
       zqdm = getZqdm(zqdm, cjjg)
       cjsl = getCjsl(zqdm, cjjg, cjsl)
       cjje = getCjje(tzh, zqdm, zqbz, ywbz, cjje, cjsl, cjjg, gzlv)
@@ -863,7 +886,7 @@ object SHTransfer {
         gsdm = DEFAULT_VALUE_0 + gsdm
         length += 1
       }
-      ShghYssj(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, findate)
+      ShghYssj(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, findate,fsetid)
     })
     etlRdd
   }
@@ -907,15 +930,16 @@ object SHTransfer {
       //将佣金表转换成map结构
       val yjbMap = yjb.map(row => {
         val fields = row.split(SEPARATE2)
-        val zqlb = fields(1) //证券类别
-        val sh = fields(2) //市场
-        val lv = fields(3) //利率
-        val minLv = fields(4) //最低利率
-        val startDate = fields(14) //启用日期
+        val fsetid = fields(1) //资产代码
+        val zqlb = fields(3) //证券类别
+        val sh = fields(4) //市场
+        val lv = fields(5) //利率
+        val minLv = fields(6) //最低利率
+        val startDate = fields(16) //启用日期
         //      val zch = row.get(15).toString // 资产
-        val zk = fields(10) //折扣
-        val fstr1 = fields(6) //交易席位/公司代码
-        val key = zqlb + SEPARATE1 + sh + SEPARATE1 + fstr1 //证券类别+市场+交易席位/公司代码
+        val zk = fields(12) //折扣
+        val fstr1 = fields(8) //交易席位/公司代码
+        val key = fsetid + SEPARATE1 + zqlb + SEPARATE1 + sh + SEPARATE1 + fstr1 //资产代码+证券类别+市场+交易席位/公司代码
         val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk + SEPARATE1 + minLv //启用日期+利率+折扣+最低佣金值
         (key, value)
       })
@@ -985,8 +1009,9 @@ object SHTransfer {
       val zqbz = row.getAs[String]("FZQBZ") //证券标志
       val ywbz = row.getAs[String]("FYWBZ") //业务标志
       val findate = row.getAs[String]("FINDATE") //读入日期
+      val fsetid = row.getAs[String]("FSETID")
       val key = bcrq + SEPARATE1 + zqdm + SEPARATE1 + gsdm + SEPARATE1 + bs + SEPARATE1 +
-        gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz + SEPARATE1 + findate
+        gddm + SEPARATE1 + tzh + SEPARATE1 + zqbz + SEPARATE1 + ywbz + SEPARATE1 + findate + SEPARATE1 + fsetid
       (key, row)
     }).groupByKey()
 
@@ -1001,7 +1026,7 @@ object SHTransfer {
       * @param gyzch 公用资产号
       * @return
       */
-    def getRate( zqdm:String,gsdm: String, gddm: String, bcrq: String, ywbz1: String, zqbz1: String, zyzch: String, gyzch: String) = {
+    def getRate( zqdm:String,gsdm: String, gddm: String, bcrq: String,fsetid:String, ywbz1: String, zqbz1: String, zyzch: String, gyzch: String) = {
       //为了获取启动日期小于等于处理日期的参数
       val flbMap = flbValues.value.mapValues(items => {
         val arr = items.toArray.filter(str => (bcrq.compareTo(str.split(SEPARATE1)(0)) >= 0)).sortWith((str1, str2) => (str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0))
@@ -1065,13 +1090,13 @@ object SHTransfer {
         */
       def getYjFee() = {
         var rateYJStr = DEFORT_VALUE3
-        var maybeRateYJStr = yjMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
+        var maybeRateYJStr = yjMap.get(fsetid + SEPARATE1 + ywbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
         if (maybeRateYJStr.isEmpty) {
-           maybeRateYJStr = yjMap.get(ywbz + SEPARATE1 + SH + SEPARATE1 + gddm)
+           maybeRateYJStr = yjMap.get(fsetid + SEPARATE1 + ywbz + SEPARATE1 + SH + SEPARATE1 + gddm)
           if (maybeRateYJStr.isEmpty) {
-             maybeRateYJStr = yjMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
+             maybeRateYJStr = yjMap.get(fsetid + SEPARATE1 + zqbz + SEPARATE1 + SH + SEPARATE1 + gsdm)
             if (maybeRateYJStr.isEmpty) {
-               maybeRateYJStr = yjMap.get(zqbz + SEPARATE1 + SH + SEPARATE1 + gddm)
+               maybeRateYJStr = yjMap.get(fsetid + SEPARATE1 + zqbz + SEPARATE1 + SH + SEPARATE1 + gddm)
             }
           }
         }
@@ -1176,8 +1201,9 @@ object SHTransfer {
         val tzh = fields(5)
         val zqbz = fields(6)
         val ywbz = fields(7)
+        val fsetid = fields(9) //资产代码
 
-        val getRateResult = getRate(zqdm,gsdm, gddm, bcrq, ywbz, zqbz, tzh, GYZCH)
+        val getRateResult = getRate(zqdm,gsdm, gddm, bcrq,fsetid, ywbz, zqbz, tzh, GYZCH)
         val rateJS: String = getRateResult._1
         val rateJszk: String = getRateResult._2
         val rateYH: String = getRateResult._3
@@ -1399,4 +1425,5 @@ object SHTransfer {
     import spark.implicits._
     Util.outputMySql(result.toDF(), tableName)
   }
+
 }

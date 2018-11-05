@@ -1,4 +1,4 @@
-package com.yss.scala.core
+package com.yss.test.scala
 
 import java.util.Date
 

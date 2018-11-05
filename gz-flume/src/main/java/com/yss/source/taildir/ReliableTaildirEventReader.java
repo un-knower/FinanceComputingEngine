@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.gson.stream.JsonReader;
+import com.yss.source.utils.RenameDir;
 import org.apache.flume.Event;
 import org.apache.flume.FlumeException;
 import org.apache.flume.annotations.InterfaceAudience;
@@ -78,6 +79,8 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
     private String fsdSixBytes;
     private String regexFsdJY;
     private String fsdJYBytes;
+    private static RenameDir renameDir = new RenameDir();
+    ;
 
     /**
      * Create a ReliableTaildirEventReader to watch the given directory.
@@ -250,7 +253,10 @@ public class ReliableTaildirEventReader implements ReliableEventReader {
 //                    filename = filename.substring(0, filename.length() - 4);
 //                }
                 if (annotateFileName) {
+
                     event.getHeaders().put(fileNameHeader, filename);
+                    //添加文件夹
+                    renameDir.rename(event, filename, fileNameHeader);
                 }
             }
         }

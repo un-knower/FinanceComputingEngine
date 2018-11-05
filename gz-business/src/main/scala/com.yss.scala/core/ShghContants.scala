@@ -53,7 +53,8 @@ object ShghContants {
   /** 计算佣金保留小数位 */
   val CS8_KEY = "计算佣金保留小数位"
 
-
+  /** 资产信息表 */
+  val TABLE_NAME_ZCXX = "LSETLIST"
   /** 公共参数表 */
   val TABLE_NAME_GGCS = "LVARLIST"
   /** 基金信息表 */
@@ -63,7 +64,7 @@ object ShghContants {
   /** 席位表 */
   val TABLE_NAME_QSXW = "CSQSXW"
   /** 001套账的特殊科目设置表 */
-   val TABLE_NAME_TSKM= "A001CSTSKM"
+   val TABLE_NAME_TSKM= "CSSYSTSKM"
   /** 资产信息*/
   val TABLE_NAME_SYSJJ= "LSETCSSYSJJ"
   /** 债券信息表 */
@@ -77,7 +78,7 @@ object ShghContants {
   /** 节假日表 */
   val TABLE_NAME_HOLIDAY = "CSHOLIDAY"
   /** 001套账的佣金利率 */
-  val TABLE_NAME_A117CSJYLV = "A001CSYJLV"
+  val TABLE_NAME_A117CSJYLV = "CSSYSYJLV"
   /** 特殊处理的ETF基金的业务标志和证券标志 ZQETFJY*/
   val ETF_ZQBZ_OR_YWZ = "ZQETFJY"
   /** 券商过户费 CSQSFYLV*/
