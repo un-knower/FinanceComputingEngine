@@ -104,6 +104,8 @@ object ShghContants {
   val DEFAULT_DIGIT = 2
   /** 默认值 空串*/
   val DEFAULT_VALUE = ""
+  /** 默认值空格 */
+  val DEFAULT_VALUE_SPACE = " "
   /** 默认值 "0"*/
   val DEFAULT_VALUE_0 = "0"
   /** 默认值 -1*/

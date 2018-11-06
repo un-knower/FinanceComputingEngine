@@ -189,13 +189,13 @@ object Ggt {
     yjResultDF.createOrReplaceTempView("yjResultDF_table")
 
     val resutlDF = spark.sql(
-        " SELECT t1.FDATE, t1.FINDATE, t1.FZQDM, t1.FJYXWH, t1.FZQBZ, t1.FYWBZ, t1.ZQDM, t1.FBS, " +
+        " SELECT t1.FSETID, t1.FDATE, t1.FINDATE, t1.FZQDM, t1.FJYXWH, t1.FZQBZ, t1.FYWBZ, t1.ZQDM, t1.FBS, " +
         " t1.FQTF, t1.FJE, t1.FSL, t2.fyj FYJ, t1.FJSF, t1.FYHS," +
         " t1.FZGF, t1.FGHF, t1.FGZLX, t1.FHGGAIN, t1.FFXJ, t2.Fsssje FSFJE," +
         " t1.FSZSH, t1.FQSBZ, t1.FJYFS," +
         " t1.FSH, t1.FZZR, t1.FCHK, t1.FZLH, t1.FTZBZ, t1.FQSGHF," +
         " t1.FGDDM, t1.FJYBZ, t1.ISRTGS, t1.FPARTID, t1.FHTXH," +
-        " t1.FCSHTXH, t1.FRZLV, t1.FCSGHQX, t1.FSJLY, " +
+        " t1.FCSHTXH, t1.FRZLV, t1.FCSGHQX, t1.FSJLY, t1.FBZ," +
         " t1.FBY1, t1.FBY2, t1.FBY3, t1.FBY4, t1.FBY5" +
         " from " +
         " fyResultDF_table t1 join yjResultDF_table t2 on " +
@@ -207,6 +207,7 @@ object Ggt {
     val format :DecimalFormat  = new DecimalFormat("0.00")
     val resultDS = resutlDF.as[Hzjkqs].rdd.map{ item =>
           Hzjkqs(
+            item.FSETID,
             item.FDATE,
             item.FINDATE,
             item.FZQDM,
@@ -245,6 +246,7 @@ object Ggt {
             item.FRZLV,
             item.FCSGHQX,
             item.FSJLY,
+            item.FBZ,
             item.FBY1,
             item.FBY2,
             item.FBY3,
@@ -299,7 +301,7 @@ object Ggt {
         " MIN(FSH) FSH, MIN(FZZR) FZZR, MIN(FCHK) FCHK, MIN(FZLH) FZLH, MIN(FTZBZ) FTZBZ, MIN(FQSGHF) FQSGHF," +
         " MIN(FGDDM) FGDDM, MIN(FJYBZ) FJYBZ, MIN(ISRTGS) ISRTGS, MIN(FPARTID) FPARTID, MIN(FHTXH) FHTXH," +
         " MIN(FCSHTXH) FCSHTXH, MIN(FRZLV) FRZLV, MIN(FCSGHQX) FCSGHQX, MIN(FSJLY) FSJLY, " +
-        " MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
+        " MIN(FSETID) FSETID, MIN(FBZ) FBZ, MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
         " FROM CJSQ11_TALBE " +
         " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
   }
@@ -333,7 +335,7 @@ object Ggt {
         " MIN(FSH) FSH, MIN(FZZR) FZZR, MIN(FCHK) FCHK, MIN(FZLH) FZLH, MIN(FTZBZ) FTZBZ, MIN(FQSGHF) FQSGHF," +
         " MIN(FGDDM) FGDDM, MIN(FJYBZ) FJYBZ, MIN(ISRTGS) ISRTGS, MIN(FPARTID) FPARTID, MIN(FHTXH) FHTXH," +
         " MIN(FCSHTXH) FCSHTXH, MIN(FRZLV) FRZLV, MIN(FCSGHQX) FCSGHQX, MIN(FSJLY) FSJLY, " +
-        " MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
+        " MIN(FSETID) FSETID, MIN(FBZ) FBZ, MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
         " FROM SQBH1_TALBE " +
         " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
   }
@@ -366,7 +368,7 @@ object Ggt {
         " MIN(FSH) FSH, MIN(FZZR) FZZR, MIN(FCHK) FCHK, MIN(FZLH) FZLH, MIN(FTZBZ) FTZBZ, MIN(FQSGHF) FQSGHF," +
         " MIN(FGDDM) FGDDM, MIN(FJYBZ) FJYBZ, MIN(ISRTGS) ISRTGS, MIN(FPARTID) FPARTID, MIN(FHTXH) FHTXH," +
         " MIN(FCSHTXH) FCSHTXH, MIN(FRZLV) FRZLV, MIN(FCSGHQX) FCSGHQX, MIN(FSJLY) FSJLY, " +
-        " MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5 " +
+        " MIN(FSETID) FSETID, MIN(FBZ) FBZ, MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5 " +
         " FROM CJBH1_TALBE " +
         " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
   }
@@ -467,7 +469,7 @@ object Ggt {
         " MIN(FSH) FSH, MIN(FZZR) FZZR, MIN(FCHK) FCHK, MIN(FZLH) FZLH, MIN(FTZBZ) FTZBZ, MIN(FQSGHF) FQSGHF," +
         " MIN(FGDDM) FGDDM, MIN(FJYBZ) FJYBZ, MIN(ISRTGS) ISRTGS, MIN(FPARTID) FPARTID, MIN(FHTXH) FHTXH," +
         " MIN(FCSHTXH) FCSHTXH, MIN(FRZLV) FRZLV, MIN(FCSGHQX) FCSGHQX, MIN(FSJLY) FSJLY, " +
-        " MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
+        " MIN(FSETID) FSETID, MIN(FBZ) FBZ, MIN(FBY1) FBY1,MIN(FBY2) FBY2,MIN(FBY3) FBY3,MIN(FBY4) FBY4,MIN(FBY5) FBY5" +
         " FROM CJSQ_TALBE " +
         " GROUP BY FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS")
   }
@@ -696,7 +698,9 @@ object Ggt {
     //金额、佣金、卖实收金额、其他费用
     val (fje,fsssje,fQTF) = buildFje(item,fbs,FeeTemp,Fghf,Fjsf,Fzgf,Fyhs,Ffxj,gddmParamMap,yjlvMap,ffyffsMap)
 
-    Hzjkqs(Fdate,
+    Hzjkqs(
+      FSETID,
+      Fdate,
       FinDate,
       FZqdm,
       FSzsh,
@@ -735,6 +739,7 @@ object Ggt {
       FCSGHQX,
       FSJLY,
       Fbz,
+      "",
       "",
       "",
       "",

@@ -1354,6 +1354,7 @@ object ShghTrade {
         val zqbz = fields(6)
         val ywbz = fields(7)
         val findate = fields(8)
+        val fsetid = fields(9) //资产代码
 
         val totalCjje = fee.sumCjje
         val totalCjsl = fee.sumCjsl
@@ -1383,7 +1384,7 @@ object ShghTrade {
           }
         }
         val arrs = new ArrayBuffer[Hzjkqs]()
-        val ele = Hzjkqs(bcrq,
+        val ele = Hzjkqs(fsetid,bcrq,
           findate, zqdm, SH, gsdm, bs,
           totalCjje.formatted(DEFAULT_DIGIT_FORMAT),
           totalCjsl.formatted(DEFAULT_DIGIT_FORMAT),
@@ -1398,14 +1399,14 @@ object ShghTrade {
           fhggain.formatted(DEFAULT_DIGIT_FORMAT),
           fsfje.formatted(DEFAULT_DIGIT_FORMAT),
           zqbz, ywbz,
-          DEFAULT_VALUE, "N", zqdm, "PT", "1", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE_0, DEFAULT_VALUE, DEFAULT_VALUE_0,
-          gddm, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE,
-          DEFAULT_VALUE, DEFAULT_VALUE, "shgh", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE
+          DEFAULT_VALUE_SPACE, "N", zqdm, "PT", "1", DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE, DEFAULT_VALUE_0, DEFAULT_VALUE_SPACE, DEFAULT_VALUE_0,
+          gddm, DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE,
+          DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE, "shgh", "RMB",DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE, DEFAULT_VALUE_SPACE
         )
         arrs.append(ele)
         // 回购业务要生成一条到期的数据
         if(HG.equals(zqbz) && (MRHG.equals(ywbz)||MCHG.equals(ywbz))){
-          val ele2 = Hzjkqs(DateUtils.addDays(bcrq,fee.hgts.toInt,DateUtils.YYYY_MM_DD),
+          val ele2 = Hzjkqs(fsetid,DateUtils.addDays(bcrq,fee.hgts.toInt,DateUtils.YYYY_MM_DD),
             findate, zqdm, SH, gsdm, bs,
             totalCjje.formatted(DEFAULT_DIGIT_FORMAT),
             totalCjsl.formatted(DEFAULT_DIGIT_FORMAT),
@@ -1415,7 +1416,7 @@ object ShghTrade {
             fsfje.formatted(DEFAULT_DIGIT_FORMAT),zqbz, ywbz+"dq",
             DEFAULT_VALUE, "N", zqdm, "PT", "1", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE_0, DEFAULT_VALUE, DEFAULT_VALUE_0,
             gddm, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE,
-            DEFAULT_VALUE, DEFAULT_VALUE, "shgh", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE
+            DEFAULT_VALUE, DEFAULT_VALUE, "shgh","RMB", DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE, DEFAULT_VALUE
           )
           arrs.append(ele2)
         }

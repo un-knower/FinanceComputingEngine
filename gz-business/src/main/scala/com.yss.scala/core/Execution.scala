@@ -3,7 +3,7 @@ package com.yss.scala.core
 import java.text.SimpleDateFormat
 
 import com.yss.scala.dto._
-import com.yss.scala.core.SZStockExchangeContants._
+import com.yss.scala.core.ExecutionContaints._
 import com.yss.scala.core.ShghContants.{SEPARATE2, TABLE_NAME_JJXX}
 import com.yss.scala.util.Util
 import org.apache.spark.{SparkConf, SparkContext}
@@ -21,7 +21,7 @@ import scala.math.BigDecimal.RoundingMode
   *          原始文件：execution_aggr_tgwid_1_20180124.tsv
   *          目标数据库：SZSTOCK
   */
-object SZStockExchange extends Serializable {
+object Execution extends Serializable {
 
   def main(args: Array[String]): Unit = {
 
@@ -200,7 +200,7 @@ object SZStockExchange extends Serializable {
     val result = exeDF.flatMap{
       case (key1,iterable) => {
 
-        var execution=new  ListBuffer[SZSEOriginalObj]()
+        var execution=new  ListBuffer[ExecutionOriginalObj]()
 
 
         for (func <- iterable) {
@@ -374,7 +374,7 @@ object SZStockExchange extends Serializable {
               setCode("setCode") = setCodeValue
             }
             //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
-            val Exe = SZSEOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), setCode("setCode"))
+            val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), setCode("setCode"))
             execution.append(Exe)
           }
         }
@@ -1061,7 +1061,7 @@ object SZStockExchange extends Serializable {
           fsfje += realYj
           //          FSssje -= FByj
         }
-        SZStockExchangeObj(zcdm, bcrq,
+        ExecutionObj(zcdm, bcrq,
           bcrq, zqdm, SH, gsdm, bs,
           totalCjje.formatted("%.2f"),
           totalCjsl.formatted("%.2f"),
@@ -1077,7 +1077,7 @@ object SZStockExchange extends Serializable {
           fsfje.formatted("%.2f"),
           zqbz, ywbz,
           "N", "0", zqdm, "PT", "1", "", "", "0", "", realQsghf.formatted("%.2f"),
-          gddm, "", "", "", "", "", "", "", "", "", "", "", "", ""
+          gddm, "", "", "", "", "", "", "","", "RMB", "", "", "", "", ""
         )
     }
     //将结果输出
@@ -1085,6 +1085,4 @@ object SZStockExchange extends Serializable {
     Util.outputMySql(result.toDF(), "SZSTOCK")
     result.toDF.show(100)
   }
-
-
 }

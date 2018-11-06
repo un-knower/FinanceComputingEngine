@@ -1,6 +1,7 @@
 package com.yss.scala.dto
 
-case class Hzjkqs(FDATE: String, //日期
+case class Hzjkqs(FSETID: String, //资产代码
+                  FDATE: String, //日期
                   FINDATE: String, //读入日期
                   FZQDM: String, //证券代码
                   FSZSH: String, //市场
@@ -38,6 +39,7 @@ case class Hzjkqs(FDATE: String, //日期
                   FRZLV: String, //融资利率
                   FCSGHQX: String, //初始购回期限
                   FSJLY: String, //数据来源
+                  FBZ:String, //币种
                   FBY1: String, //备用字段1
                   FBY2: String, //备用字段2
                   FBY3: String, //备用字段3

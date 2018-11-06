@@ -30,6 +30,7 @@ public class Transcoding {
             e.printStackTrace();
             System.out.println("转码出现异常!");
         }
+
         return null;
     }
 
@@ -49,7 +50,6 @@ public class Transcoding {
         }
         return null;
     }
-
     public static byte[] gbkToUTF(String data) {
         try {
             return new String(data.getBytes("utf-8"), Charset.forName("utf-8")).replaceAll(" ", "").getBytes("utf-8");
