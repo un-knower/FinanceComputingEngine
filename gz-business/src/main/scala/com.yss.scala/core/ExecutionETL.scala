@@ -25,7 +25,7 @@ import scala.collection.mutable.ListBuffer
 
 
 
-object SZStockExchangeETL extends java.io.Serializable {
+object ExecutionETL extends java.io.Serializable {
   def getFywbzAndFzqbz() {
     val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SJSV5")
     val sc = new SparkContext(sparkConf)
