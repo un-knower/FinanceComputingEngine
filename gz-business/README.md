@@ -42,7 +42,7 @@
     ${date}格式，例如20180917
     接口文件存储规则：hdfs://hostname:9000/yss/guzhi/interface/${date}/接口名称/数据文件
     基础数据文件存储规则：hdfs://hostname:9000/yss/guzhi/base_list/${date}/表名/数据文件
-    结果文件存储规则hdfs://hostname:9000/yss/guzhi/hzjkqs/${date}/接口名称/数据文件
+    结果文件存储规则： hdfs://hostname:9000/yss/guzhi/hzjkqs/${date}/接口名称/数据文件
     
 ## 估值核算原数据
     ip:  192.168.102.68
