@@ -21,7 +21,7 @@ import scala.math.BigDecimal.RoundingMode
   *          原始文件：execution_aggr_tgwid_1_20180124.tsv
   *          目标数据库：SZSTOCK
   */
-object SZStockExchange extends Serializable {
+object Execution extends Serializable {
 
   def main(args: Array[String]): Unit = {
 
