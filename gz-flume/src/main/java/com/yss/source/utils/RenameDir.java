@@ -18,10 +18,10 @@ public class RenameDir {
         HashMap<String, String> hashMap = getFileRegexMap();
         File file = new File(filePath);
         String[] split = filePath.split("/");
-        if (split.length > 1) {
+        if (split.length > 2) {
             for (String regex : hashMap.keySet()) {
                 if (FilterFile.filtrationTxt(file.getName(), regex)) {
-                    split[0] = split[0] + "/" + hashMap.get(regex);
+                    split[1] = split[1] + "/" + hashMap.get(regex);
                     event.getHeaders().put(fileNameHeader, StringUtils.join(split, "/"));
                     break;
                 }
