@@ -1,6 +1,6 @@
 package com.yss.scala.dto
 
-case class ExecutionObj(
+case class ExecutionAggrrObj(
                                 FSETID:String,
                                 FDATE: String, //日期
                                 FINDATE: String, //读入日期
