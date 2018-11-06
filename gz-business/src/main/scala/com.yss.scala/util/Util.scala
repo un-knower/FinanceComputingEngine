@@ -40,12 +40,13 @@ object Util {
   }
 
   /**
+    * 此方法用来获取hdfs上的原始数据
     * 获取hdfs上的文件路径 prefix+fileName
     * @param fileName 文件名
-    * @param prefix 前缀
+    * @param prefix 前缀 默认是 "/yss/guzhi/interface/"
     * @return
     */
-  def getInputFilePath(fileName: String,prefix:String ="/yss/guzhi/" ) = {
+  def getInputFilePath(fileName: String,prefix:String ="/yss/guzhi/interface/" ) = {
 //    val hdfsDir = "hdfs://nscluster/yss/guzhi/"
     val hdfsDir = "hdfs://192.168.102.120:8020" + prefix
     val inputFilePath = hdfsDir + fileName
@@ -53,7 +54,19 @@ object Util {
   }
 
   /**
-    * 获取每天的hdfs的文件  prefix/today(yyyyMMdd)/filename
+    * 此方法用来将结果文件保存到hdfs上
+    * 获取hdfs上的文件路径 prefix+fileName
+    * @param fileName 文件名
+    * @param prefix 前缀 默认是 "/yss/guzhi/out/"
+    * @return
+    */
+  def getoutputFilePath(fileName: String,prefix:String ="/yss/guzhi/output/" ) = {
+    getInputFilePath(fileName,prefix)
+  }
+
+  /**
+    * 此方法来获取每天hdfs上的基础表信息
+    * 获取每天的hdfs的文件  prefix/today(20181106)/filename
     * @param fileName 文件名
     * @param prefix 默认是 /yss/guzhi/basic_list/
     * @return
@@ -92,19 +105,17 @@ object Util {
   }
 
   /**
-    * mysql数据库连接方法
-    * 通过配置文件连接数据库
+    *
+    * @param df :DataFrame
+    * @param filePath hdfs路径
+    * @param header 是否包含头信息，默认false
     */
-  def getConn(): Connection = {
-    val path = "mysqlConnectionProperties.properties"
-    val properties = new Properties()
-    properties.load(new FileInputStream(path))
-    val url = properties.getProperty("url")
-    val database = properties.getProperty("dataBase")
-    val userName = properties.getProperty("userName", "root")
-    val password = properties.getProperty("password")
-    val conn: Connection = DriverManager.getConnection(url + database, userName, password)
-    conn
+  def outputHdfs(df:DataFrame,filePath:String,header:String = "false") = {
+      df.write.format("csv")
+      .mode(SaveMode.Overwrite)
+      .option("header", header)
+      .option("inferSchema","false")
+      .option("sep", "\t")
+      .save(filePath)
   }
-
 }
