@@ -60,7 +60,7 @@ object Util {
     * @param prefix 前缀 默认是 "/yss/guzhi/out/"
     * @return
     */
-  def getoutputFilePath(fileName: String,prefix:String ="/yss/guzhi/output/" ) = {
+  def getoutputFilePath(fileName: String,prefix:String ="/yss/guzhi/hzjkqs/" ) = {
     getInputFilePath(fileName,prefix)
   }
 
