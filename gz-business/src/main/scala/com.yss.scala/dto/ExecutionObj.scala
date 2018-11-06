@@ -1,6 +1,6 @@
 package com.yss.scala.dto
 
-case class SZStockExchangeObj (
+case class ExecutionObj(
                                 FSETID:String,
                                 FDATE: String, //日期
                                 FINDATE: String, //读入日期
