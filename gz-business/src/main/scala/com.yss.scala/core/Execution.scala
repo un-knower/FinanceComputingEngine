@@ -3,7 +3,7 @@ package com.yss.scala.core
 import java.text.SimpleDateFormat
 
 import com.yss.scala.dto._
-import com.yss.scala.core.ExecutionContants._
+import com.yss.scala.core.ExecutionContaints._
 import com.yss.scala.core.ShghContants.{SEPARATE2, TABLE_NAME_JJXX}
 import com.yss.scala.util.Util
 import org.apache.spark.{SparkConf, SparkContext}
@@ -1077,7 +1077,7 @@ object Execution extends Serializable {
           fsfje.formatted("%.2f"),
           zqbz, ywbz,
           "N", "0", zqdm, "PT", "1", "", "", "0", "", realQsghf.formatted("%.2f"),
-          gddm, "", "", "", "", "", "", "", "", "", "", "", "", ""
+          gddm, "", "", "", "", "", "", "","", "RMB", "", "", "", "", ""
         )
     }
     //将结果输出
@@ -1085,6 +1085,4 @@ object Execution extends Serializable {
     Util.outputMySql(result.toDF(), "SZSTOCK")
     result.toDF.show(100)
   }
-
-
 }
