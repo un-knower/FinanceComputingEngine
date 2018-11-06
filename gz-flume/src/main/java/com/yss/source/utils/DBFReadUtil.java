@@ -215,6 +215,8 @@ public class DBFReadUtil extends DBFReader {
                 String aux = new String(t_float, StandardCharsets.US_ASCII).replace(',', '.');
                 if (".".equals(aux)) {
                     return BigDecimal.ZERO.toString();
+                }else if (aux.startsWith(".")) {
+                    return 0 + aux;
                 }
 //                return new BigDecimal(aux);
                 return aux;

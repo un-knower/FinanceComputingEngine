@@ -162,7 +162,7 @@ public class TaildirSourceConfigurationConstants {
      * B  代表 |
      */
     public static final String SOURCE_REGEX_A = "regexA";
-    public static final String DEFAULT_SOURCE_REGEX_A = "^\\d*(delivdetails|holddata|trddata|otherfund|fundchg|cusfund)\\d*.txt$";
+    public static final String DEFAULT_SOURCE_REGEX_A = "^\\d*(delivdetails|holddata|trddata|otherfund|fundchg|cusfund)\\d*\\.txt$";
 
     /**
      * 原始文件名是|正则表达式
@@ -171,12 +171,12 @@ public class TaildirSourceConfigurationConstants {
      * B  代表 |
      */
     public static final String SOURCE_REGEX_B = "regexB";
-    public static final String DEFAULT_SOURCE_REGEX_B = "(^[a-z].*\\d{6}[a-z].*\\d*00(SPOTMATCH|DEFERMATCH|DEFERDELIVERYAPPMATCH|CLIENTSTORAGEFLOW|ETFAPPLY|MEMBERSEATCAPICATL|CLIENTMISFEEDETAIL|CLIENTSTORAGE|LARGEAMOUNTMATCH)*.txt$)|(^hkex(clpr|reff)04_\\d*.txt$)|(^reff0[4|3]\\d*.txt$)|(^cpxx\\d*.txt$)";
+    public static final String DEFAULT_SOURCE_REGEX_B = "(^[a-z].*\\d{6}[a-z].*\\d*00(SPOTMATCH|DEFERMATCH|DEFERDELIVERYAPPMATCH|CLIENTSTORAGEFLOW|ETFAPPLY|MEMBERSEATCAPICATL|CLIENTMISFEEDETAIL|CLIENTSTORAGE|LARGEAMOUNTMATCH)\\.txt$)|(^hkex(clpr|reff)04_\\d*\\.txt$)|(^reff0[4|3]\\d*\\.txt$)|(^cpxx\\d*\\.txt$)";
     /**
      * 原始文件名是字节正则表达式
      */
     public static final String SOURCE_REGEX_FSD_FOUR = "regexFsdFour";
-    public static final String DEFAULT_SOURCE_REGEX_FSD_FOUR = "^FSD_\\d*_\\d*_\\d*_04_\\d*_\\d*.txt$";
+    public static final String DEFAULT_SOURCE_REGEX_FSD_FOUR = "^FSD_\\d*_\\d*_\\d*_04_\\d*_\\d*\\.txt$";
     /**
      * 字节数组
      */
@@ -187,7 +187,7 @@ public class TaildirSourceConfigurationConstants {
      * 原始文件名是字节正则表达式
      */
     public static final String SOURCE_REGEX_FSD_SIX = "regexFsdSix";
-    public static final String DEFAULT_SOURCE_REGEX_FSD_SIX = "^FSD_\\d*_\\d*_\\d*_06_\\d*_\\d*.txt$";
+    public static final String DEFAULT_SOURCE_REGEX_FSD_SIX = "^FSD_\\d*_\\d*_\\d*_06_\\d*_\\d*\\.txt$";
 
     /**
      * 字节数组
@@ -198,7 +198,7 @@ public class TaildirSourceConfigurationConstants {
      * 原始文件名是字节正则表达式
      */
     public static final String SOURCE_REGEX_FSD_JY = "regexFsdJY";
-    public static final String DEFAULT_SOURCE_REGEX_FSD_JY = "^FSD_\\d*_\\d*_\\d*_JY.TXT$";
+    public static final String DEFAULT_SOURCE_REGEX_FSD_JY = "^FSD_\\d*_\\d*_\\d*_JY\\.TXT$";
 
     /**
      * 字节数组
