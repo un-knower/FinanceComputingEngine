@@ -19,6 +19,7 @@ https://docs.qq.com/sheet/DZ3BvYkpLa1ZrUFNV?opendocxfrom=admin&tab=BB08J2
 
 # 基础信息表表信息
 
+
     CSGDZH      股东账号表
     CSHOLIDAY   节假日信息表
     CSJJXX      基金信息表
