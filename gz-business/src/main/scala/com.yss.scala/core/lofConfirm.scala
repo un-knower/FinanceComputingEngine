@@ -2,7 +2,7 @@ package com.yss.scala.core
 
 import com.yss.scala.core.ShghContants._
 import com.yss.scala.dto.Hzjkqs
-import com.yss.scala.util.Util
+import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -10,11 +10,15 @@ import org.apache.spark.sql.SparkSession
   * @date: 2018/11/5
   * @version: 1.0.0
   * @desc: 上证lof确认
+  * @目标数据: lofmxzf
   */
-class lofConfirm {
+object lofConfirm {
 
   def main(args: Array[String]): Unit = {
-
+    if(args.size < 1){
+      args(0) = DateUtils.getToday(DateUtils.YYYYMMDD)
+    }
+    execute(args(0))
   }
 
   def loadTables(spark:SparkSession,finDate:String) = {
@@ -148,7 +152,8 @@ class lofConfirm {
     import spark.implicits._
     Util.outputMySql(resultRdd.toDF(),"lofmxzf")
     // 将结果保存到hdfs上
-    val hfdsPath = Util.getoutputFilePath(finDate+"/lofmxzf")
+    val hfdsPath = Util.getOutputFilePath(finDate+"/lofmxzf")
     Util.outputHdfs(resultRdd.toDF(),hfdsPath)
+    spark.stop()
   }
 }
