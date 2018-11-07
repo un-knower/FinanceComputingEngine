@@ -2,21 +2,27 @@ package com.yss.scala.core
 
 import com.yss.scala.core.ShghContants._
 import com.yss.scala.dto.Hzjkqs
-import com.yss.scala.util.Util
+import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.sql.SparkSession
 
 /**
   * @auther: wusong
   * @date: 2018/11/5
   * @version: 1.0.0
-  * @desc:
+  * @desc: 上证lof申请
+  * @目标数据: bgh
   */
-class lofApplication {
+object lofApplication {
 
   def main(args: Array[String]): Unit = {
-
+    var findate = DateUtils.getToday(DateUtils.YYYYMMDD)
+    if(args.size > 1){
+      findate = args(0)
+    }
+    execute(findate)
   }
 
+  /** 加载基础表信息 */
   def loadTables(spark:SparkSession,finDate:String) = {
     val sc = spark.sparkContext
     /** 过滤基金信息表 */
@@ -144,8 +150,8 @@ class lofApplication {
     // 将结果保存到mysql中
     Util.outputMySql(resultRdd.toDF(),"bgh")
     // 将结果保存到hdfs上
-    val hfdsPath = Util.getoutputFilePath(finDate+"/bgh")
+    val hfdsPath = Util.getOutputFilePath(finDate+"/bgh")
     Util.outputHdfs(resultRdd.toDF(),hfdsPath)
-
+    spark.stop()
   }
 }

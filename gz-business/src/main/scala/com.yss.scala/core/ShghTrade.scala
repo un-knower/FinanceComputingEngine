@@ -15,38 +15,45 @@ import scala.math.BigDecimal.RoundingMode
   * @version 2018-08-30
   *          描述：上海过户动态获取参数
   *          源文件：gdh.dbf
-  *          结果表：SHDZGH
+  *          结果表：SHGH
   */
 object ShghTrade {
 
   def main(args: Array[String]): Unit = {
-    if(args.size < 2){
-      args(0) = DateUtils.getToday(DateUtils.YYYYMMDD)+"/gh.csv"
-      args(1) = "SHTransfer"
+    var ywrq = DateUtils.getToday(DateUtils.YYYYMMDD)
+    if(args.size > 1){
+      ywrq = args(0)
     }
-    execute(args(0),args(1))
+    execute(ywrq)
   }
 
-  def execute(fileName:String,tableName:String) = {
+  def execute(findate:String) = {
     val spark = SparkSession.builder()
       .appName("SHTransfer")
       .master("local[*]")
       .getOrCreate()
-    val broadcastLvarList = loadLvarlist(spark.sparkContext)
-    val df = doETL(spark, broadcastLvarList,fileName)
+
+    val broadcastLvarList = loadLvarlist(spark.sparkContext,findate)
+    val df = doETL(spark, broadcastLvarList,findate)
     import spark.implicits._
-    doSum(spark, df.toDF(), broadcastLvarList,tableName)
+    doSum(spark, df.toDF(), broadcastLvarList,findate)
     spark.stop()
   }
 
   /** * 加载公共参数表lvarlist */
-  def loadLvarlist(sc: SparkContext) = {
+  def loadLvarlist(sc: SparkContext, ywrq:String) = {
 
+    val convertedFindate = convertDate(ywrq)
     val csbPath = Util.getDailyInputFilePath(TABLE_NAME_GGCS)
     val csb = sc.textFile(csbPath)
 
     //将参数表转换成map结构
-    val csbMap = csb.map(row => {
+    val csbMap = csb
+      .filter(row => {
+          val fields = row.split(SEPARATE2)
+          if(fields(5).compareTo(convertedFindate)<=0) true else false
+        })
+      .map(row => {
       val fields = row.split(SEPARATE2)
       val key = fields(0)
       val value = fields(1)
@@ -57,7 +64,7 @@ object ShghTrade {
   }
 
   /** 加载各种基础信息表，并广播 */
-  def loadTables(spark: SparkSession, today: String) = {
+  def loadTables(spark: SparkSession, ywrq: String) = {
 
     val sc = spark.sparkContext
 
@@ -69,7 +76,8 @@ object ShghTrade {
           val fields = row.split(SEPARATE2)
           val fsh = fields(10)
           val fszsh = fields(8)
-          if (FSH.equals(fsh) && SH.equals(fszsh)) true
+          val fstartdate = fields(14)
+          if (FSH.equals(fsh) && SH.equals(fszsh) && fstartdate.compareTo(ywrq) <= 0) true
           else false
         })
         .map(row => {
@@ -85,59 +93,53 @@ object ShghTrade {
           val ele1 =
             if (filteredRows.size == 0) DEFAULT_VALUE
             else filteredRows.toArray.sortWith((str1, str2) => {
-              str1.split(SEPARATE2)(14).compareTo(str2.split(SEPARATE2)(14)) < 0
+              str1.split(SEPARATE2)(14).compareTo(str2.split(SEPARATE2)(14)) > 0
             })(0)
 
           (ele1, rows.toArray.sortWith((str1, str2) => {
-            str1.split(SEPARATE2)(14).compareTo(str2.split(SEPARATE2)(14)) < 0
+            str1.split(SEPARATE2)(14).compareTo(str2.split(SEPARATE2)(14)) > 0
           })(0))
         })
 
       //基金信息(CsJjXx表)中维护的FZQDMETF1=该zqdm
-      val csjjxx01Map = csjjxx.map(row => {
+      val csjjxx01List = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(3)
-        val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
-      }).collectAsMap()
-      val csjjxx02Map = csjjxx.map(row => {
+        FZQLX + SEPARATE1 + FZQDMETF0
+      }).collect()
+      val csjjxx02List = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(4)
-        val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
-      }).collectAsMap()
-      val csjjxx05Map = csjjxx.map(row => {
+        FZQLX + SEPARATE1 + FZQDMETF0
+      }).collect()
+      val csjjxx05List = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(16)
-        val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
-      }).collectAsMap()
-      val csjjxx03Map = csjjxx.map(row => {
+        FZQLX + SEPARATE1 + FZQDMETF0
+      }).collect()
+      val csjjxx03List = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(5)
-        val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
-      }).collectAsMap()
-      val csjjxx04Map = csjjxx.map(row => {
+        FZQLX + SEPARATE1 + FZQDMETF0
+      }).collect()
+      val csjjxx04List = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(6)
-        val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
-      }).collectAsMap()
-      val csjjxx00Map = csjjxx.map(row => {
+        FZQLX + SEPARATE1 + FZQDMETF0
+      }).collect()
+      val csjjxx00List = csjjxx.map(row => {
         val fields = row._2._2.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(2)
-        val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
-      }).collectAsMap()
+        FZQLX + SEPARATE1 + FZQDMETF0
+      }).collect()
       // 过滤 fetftype ='0' FZQLX='HB'的情况
-      val csjjxx01HPMap = csjjxx.filter(
+      val csjjxx01HPList = csjjxx.filter(
         row => {
           !row._2._1.equals(DEFAULT_VALUE)
         }
@@ -145,32 +147,39 @@ object ShghTrade {
         val fields = row._2._1.split(SEPARATE2)
         val FZQLX = fields(9)
         val FZQDMETF0 = fields(2)
-        val FSTARTDATE = fields(14)
-        (FZQLX + SEPARATE1 + FZQDMETF0, FSTARTDATE)
-      }).collectAsMap()
-      val csjjxxMap = Map((0, csjjxx00Map), (1, csjjxx01Map), (2, csjjxx02Map), (3, csjjxx03Map), (4, csjjxx04Map), (5, csjjxx05Map), (6, csjjxx01HPMap))
+        FZQLX + SEPARATE1 + FZQDMETF0
+      }).collect()
+      val csjjxxMap = Map((0, csjjxx00List), (1, csjjxx01List), (2, csjjxx02List), (3, csjjxx03List), (4, csjjxx04List), (5, csjjxx05List), (6, csjjxx01HPList))
       sc.broadcast(csjjxxMap)
     }
 
     /** 加载权益信息表csqyxx， */
     def loadCsqyxx() = {
       val csqyxx = Util.getDailyInputFilePath(TABLE_NAME_QYXX)
-      val csqyxMap = sc.textFile(csqyxx)
+      val condition1 = Array("银行间", "上交所", "深交所", "场外")
+      val csqyxArray = sc.textFile(csqyxx)
         .filter(row => {
           val fields = row.split(SEPARATE2)
           val fqylx = fields(1)
           val fsh = fields(7)
-          if ("PG".equals(fqylx) && FSH.equals(fsh)) true
+          val fqydjr = fields(4)
+          val fjkjzr = fields(6)
+          val fstartdate = fields(11)
+          val fqybl = fields(2)
+          if ("PG".equals(fqylx) && FSH.equals(fsh)
+            && fqydjr.compareTo(ywrq) <= 0
+            && fjkjzr.compareTo(ywrq) >= 0
+            && fstartdate.compareTo(ywrq) <= 0
+            && !condition1.contains(ywrq)
+          ) true
           else false
         })
         .map(row => {
           val fields = row.split(SEPARATE2)
           val fzqdm = fields(0)
-          (fzqdm, row)
-        })
-        .groupByKey()
-        .collectAsMap()
-      sc.broadcast(csqyxMap)
+          fzqdm
+        }).collect()
+      sc.broadcast(csqyxArray)
     }
 
     /** 读取席位表CsqsXw表 */
@@ -181,21 +190,18 @@ object ShghTrade {
           val fields = row.split(SEPARATE2)
           val fxwlb = fields(4)
           val fsh = fields(6)
-          if (FSH.equals(fsh) && ("ZS".equals(fxwlb) || "ZYZS".equals(fxwlb))) true
+          val fstartdate = fields(9)
+          if (FSH.equals(fsh) && ("ZS".equals(fxwlb) || "ZYZS".equals(fxwlb))
+            && fstartdate.compareTo(ywrq) <=0 ) true
           else false
         })
         .map(row => {
           val fields = row.split(SEPARATE2)
-          val fstartdate = fields(9)
           val fqsxw = fields(3)
           val fsetcode = fields(5)
-          (fsetcode + SEPARATE1 + fqsxw, fstartdate)
+          fsetcode + SEPARATE1 + fqsxw
         })
-        .groupByKey()
-        .mapValues(rows => {
-          rows.toArray.sortWith(_.compareTo(_) <= 0)(0)
-        })
-        .collectAsMap()
+        .collect()
       sc.broadcast(csqsxw)
     }
 
@@ -203,20 +209,20 @@ object ShghTrade {
     def loadCsTsKm() = {
       val csTsKmPath = Util.getDailyInputFilePath(TABLE_NAME_TSKM)
       val csTsKm = sc.textFile(csTsKmPath)
+          .filter(row => {
+            val fields = row.split(SEPARATE2)
+            val fsh = fields(4)
+            val startdate = fields(7)
+            if("1".equals(fsh) && startdate.compareTo(ywrq) <=0) true else false
+          })
         .map(row => {
           val fields = row.split(SEPARATE2)
           val fsetid = fields(1) //资产代码
-          val fsh = fields(4)  //市场
           val fbz = fields(3)
           val fzqdm = fields(2)
-          val startdate = fields(7)
-          (fsetid + SEPARATE1 + fsh + SEPARATE1 + fbz + SEPARATE1 + fzqdm, startdate)
+          fsetid + SEPARATE1 + fbz + SEPARATE1 + fzqdm
         })
-        .groupByKey()
-        .mapValues(rows => {
-          rows.toArray.sortWith(_.compareTo(_) <= 0)(0)
-        })
-        .collectAsMap()
+        .collect()
       sc.broadcast(csTsKm)
     }
 
@@ -247,7 +253,7 @@ object ShghTrade {
           (zqdm, fzqlx)
         }).collectAsMap()
 
-      val cszqxxMap2 = cszqxx.filter(row => {
+      val cszqxxArray = cszqxx.filter(row => {
         val fields = row.split(SEPARATE2)
         val zqdm = fields(0)
         val fzqlb = fields(11)
@@ -256,7 +262,8 @@ object ShghTrade {
         val fjjdm = fields(2)
         val fstartdate = fields(22)
         if (!"银行间".equals(fjysc) && "可分离债券".equals(fzqlb)
-          && FSH.equals(fsh)) true
+          && FSH.equals(fsh) && fstartdate.compareTo(ywrq) <= 0
+        ) true
         else false
       })
         .map(row => {
@@ -267,16 +274,10 @@ object ShghTrade {
           val fsh = fields(19)
           val fjjdm = fields(2)
           val fstartdate = fields(22)
-          (zqdm + SEPARATE1 + fjjdm, fstartdate)
+          zqdm + SEPARATE1 + fjjdm
         })
-        .groupByKey()
-        .mapValues(rows => {
-          rows.toArray.sortWith((str1, str2) => {
-            str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) < 0
-          })(0)
-        })
-        .collectAsMap()
-      (sc.broadcast(cszqxxMap1), sc.broadcast(cszqxxMap2))
+        .collect()
+      (sc.broadcast(cszqxxMap1), sc.broadcast(cszqxxArray))
     }
 
     /** 股东账号表csgdzh */
@@ -315,13 +316,13 @@ object ShghTrade {
           val fdate = fields(0)
           val fbz = fields(1)
           val fsh = fields(3)
-          if (DEFAULT_VALUE_0.equals(fbz) && FSH.equals(fsh) && fdate.compareTo(today) >= 0) true
+          if (DEFAULT_VALUE_0.equals(fbz) && FSH.equals(fsh) && fdate.compareTo(ywrq) >= 0) true
           else false
         })
         .map(str => {
           str.split(SEPARATE2)(0)
         }).takeOrdered(1)
-      if (csholidayList.length == 0) today
+      if (csholidayList.length == 0) ywrq
       else csholidayList(0)
     }
 
@@ -343,14 +344,24 @@ object ShghTrade {
       loadCszqxx(), loadCsgdzh(), loadGzlx(), loadCsholiday(),loadLsetlist())
   }
 
-  /** 进行原始数据的转换包括：规则1，2，3，4，5 */
-  def doETL(spark: SparkSession, csb: Broadcast[collection.Map[String, String]],fileName:String) = {
-    val sc = spark.sparkContext
+  /** 基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd,将原始数据转换成yyyy-MM-dd的格式 */
+  def convertDate(bcrq:String) = {
+    val yyyy = bcrq.substring(0,4)
+    val mm = bcrq.substring(4,6)
+    val dd = bcrq.substring(6)
+    yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
+  }
 
-    val sourcePath = Util.getInputFilePath(fileName,PREFIX)
+  /** 进行原始数据的转换包括：规则1，2，3，4，5 */
+  def doETL(spark: SparkSession, csb: Broadcast[collection.Map[String, String]], ywrq:String) = {
+    val sc = spark.sparkContext
+    // 读取原始数据
+    val sourcePath = Util.getInputFilePath(ywrq+"/gh")
     val df = Util.readCSV(sourcePath,spark)
-    val today = DateUtils.getToday(DateUtils.YYYY_MM_DD)
-    val broadcaseValues = loadTables(spark, today)
+    // 转换日期
+    val convertedYwrq = convertDate(ywrq)
+    // 加载基础班信息
+    val broadcaseValues = loadTables(spark, convertedYwrq)
     val csbValues = csb
     val csjjxxValues = broadcaseValues._1
     val csqyxValues = broadcaseValues._2
@@ -364,35 +375,17 @@ object ShghTrade {
     val lsetlistValues = broadcaseValues._10
 
     /**
-      * 进行日期的格式化，基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd
-      * 这里将原始数据转换成yyyy-MM-dd的格式
-      * @param bcrq
-      * @return yyyy-MM-dd
-      */
-    def convertDate(bcrq:String) = {
-      val yyyy = bcrq.substring(0,4)
-      val mm = bcrq.substring(4,6)
-      val dd = bcrq.substring(6)
-      yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
-    }
-
-    /**
       * 判断基金信息表维护 FZQDMETF0、1 、2、3、4、5=该zqdm
       * select 1 from csjjxx a,(select FZQDM, FZQLX,max(fstartdate) as fstartdate from csjjxx where fsh=1 and fstartdate<=日期 group by fzqdm,fzqlx) b where a.fsh=1 and a.fzqdm=b.fzqdm and a.fzqlx=b.fzqlx and a.fstartdate=b.fstartdate and a.FSZSH='H' and a.FZQLX='ETF' where a.FZQDMETF0=该zqdm
       *
       * @param fzqlx 基金类型ETF / HP
       * @param zqdm  证券代码
-      * @param bcrq  日期
       * @param flag  FZQDMETF0、1 、2、3、4、5
       * @return 是否维护
       */
-    def jjxxbwh(fzqlx: String, zqdm: String, bcrq: String, flag: Int): Boolean = {
-      val map = csjjxxValues.value(flag)
-      val maybeString = map.get(fzqlx + SEPARATE1 + zqdm)
-      if (maybeString.isDefined) {
-        if (bcrq.compareTo(maybeString.get) >= 0) return true
-      }
-      return false
+    def jjxxbwh(fzqlx: String, zqdm: String, flag: Int): Boolean = {
+      val arrs = csjjxxValues.value(flag)
+      if(arrs.contains(fzqlx + SEPARATE1 + zqdm)) true else false
     }
 
     //ETF基金需要获取文件的中sqbh,在计算业务标识时候需要用到
@@ -403,7 +396,7 @@ object ShghTrade {
       val cjjg = row.getAs[String](10)
       if (zqdm.startsWith("5")) {
         if (cjjg.equals(DEFAULT_VALUE_0)) {
-          if (jjxxbwh("ETF", zqdm, bcrq, 0))  true
+          if (jjxxbwh("ETF", zqdm, 0))  true
           else false
         }else false
       }else false
@@ -418,14 +411,13 @@ object ShghTrade {
       *
       * @param zqbz 证券标志
       * @param zqdm 证券代码
-      * @param bcrq 日期
       * @param cjsl 成交数量
       * @return
       */
-    def gzlx(zqbz: String, zqdm: String, bcrq: String, cjsl: String): String = {
+    def gzlx(zqbz: String, zqdm: String, cjsl: String): String = {
       var gzlx = DEFAULT_VALUE_0
       if ("ZQ".equals(zqbz)) {
-        val may = gzlxValues.value.get(zqdm + SEPARATE1 + bcrq)
+        val may = gzlxValues.value.get(zqdm + SEPARATE1 + convertedYwrq)
         if (may.isDefined) {
           gzlx = BigDecimal(may.get).*(BigDecimal(cjsl)).*(BigDecimal(10)).setScale(DEFAULT_DIGIT, RoundingMode.HALF_UP).formatted(DEFAULT_DIGIT_FORMAT)
         }
@@ -438,42 +430,25 @@ object ShghTrade {
       * select 1 from csqyxx where fqylx='PG' and fqydjr<=读数日期 and fjkjzr>=读数日期 and fstartdate<=读数日期 and fqybl not in('银行间','上交所','深交所','场外') and fsh=1 and fzqdm='gh文件中的zqdm'
       *
       * @param zqdm 证券代码
-      * @param bcrq 读数日期
       * @return 是否
       */
-    def sfspggp(zqdm: String, bcrq: String): Boolean = {
-      val maybeRows = csqyxValues.value.get(zqdm)
-      if (maybeRows.isDefined) {
-        val condition1 = Array("银行间", "上交所", "深交所", "场外")
-        for (row <- maybeRows.get) {
-          val fields = row.split(SEPARATE2)
-          val fqydjr = fields(4)
-          val fjkjzr = fields(6)
-          val fstartdate = fields(11)
-          val fqybl = fields(2)
-
-          if (bcrq.compareTo(fqydjr) >= 0
-            && bcrq.compareTo(fjkjzr) <= 0
-            && bcrq.compareTo(fstartdate) >= 0
-            && !condition1.contains(fqybl)) return true
-        }
-      }
-      return false
+    def sfspggp(zqdm: String): Boolean = {
+      val maybeRows = csqyxValues.value
+      if(maybeRows.contains(zqdm)) true else false
     }
 
     /**
       * 判断是否要查询CsZqXx中ZQ的业务类型
       *
       * @param tzh  套账号
-      * @param bcrq 日期
       * @param zqdm 证券代码
       * @return
       */
-    def zqlx(tzh: String, bcrq: String, zqdm: String): Boolean = {
+    def zqlx(tzh: String, zqdm: String): Boolean = {
       val condition1 = csbValues.value.get(tzh + CON01_KEY)
       if (condition1.isDefined && YES.equals(condition1.get)) {
         val condition2 = csbValues.value.get(tzh + "债券类型取债券品种信息维护的债券类型启用日期")
-        if (condition2.isDefined && bcrq.compareTo(condition2.get) >= 0) {
+        if (condition2.isDefined && convertedYwrq.compareTo(condition2.get) >= 0) {
           val condition3 = csbValues.value.get(tzh + "债券类型取债券品种信息维护的债券类型代码段")
           if (condition3.isDefined) {
             val array = condition3.get.split(SEPARATE2)
@@ -503,16 +478,16 @@ object ShghTrade {
       * @param cjjg 成交金额
       * @return
       */
-    def getZqbz(zqdm: String, cjjg: String, bcrq: String): String = {
+    def getZqbz(zqdm: String, cjjg: String): String = {
       if (zqdm.startsWith("6")) {
         if (zqdm.startsWith("609")) return "CDRGP"
         return "GP"
       }
       if (zqdm.startsWith("5")) {
         if (cjjg.equals("0")) {
-          if (jjxxbwh("ETF", zqdm, bcrq, 1)) return "EJDM"
-          if (jjxxbwh("ETF", zqdm, bcrq, 2)) return "XJTD"
-          if (jjxxbwh("ETF", zqdm, bcrq, 5)) return "XJTD_KSC"
+          if (jjxxbwh("ETF", zqdm, 1)) return "EJDM"
+          if (jjxxbwh("ETF", zqdm, 2)) return "XJTD"
+          if (jjxxbwh("ETF", zqdm, 5)) return "XJTD_KSC"
         }
         return "JJ"
       }
@@ -527,14 +502,13 @@ object ShghTrade {
         || zqdm.startsWith("793") || zqdm.startsWith("783")) return "XZ"
       if (zqdm.startsWith("742")) return "QY"
       if (zqdm.startsWith("714") || zqdm.startsWith("760") || zqdm.startsWith("781")) {
-        if (sfspggp(zqdm, bcrq)) return "QY"
+        if (sfspggp(zqdm)) return "QY"
         return "XG"
       }
       if (zqdm.startsWith("73")) return "XG"
       if (zqdm.startsWith("70")) {
         if ("100".equals(cjjg)) return "XZ"
-        val str = sfspggp(zqdm, bcrq)
-        if (sfspggp(zqdm, bcrq)) return "QY"
+        if (sfspggp(zqdm)) return "QY"
         return "XG"
       }
       //如果没有匹配到就返回空
@@ -550,24 +524,22 @@ object ShghTrade {
       * @param bs   买卖
       * @return
       */
-    def getYwbz(tzh: String,fsetid:String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, bcrq: String,sqbh:String): String = {
+    def getYwbz(tzh: String,fsetid:String, zqbz: String, zqdm: String, cjjg: String, bs: String, gsdm: String, sqbh:String): String = {
       if ("GP".equals(zqbz) || "CDRGP".equals(zqbz)) {
         val condition = csbValues.value.get(tzh + CON02_KEY)
         if (condition.isDefined && YES.equals(condition.get)) {
           //gh文件中的gsdm字段在CsQsXw表中有数据
-          val maybeString = csqsxwValue.value.get(tzh + SEPARATE1 + gsdm)
-          if (maybeString.isDefined) {
-            if (bcrq.compareTo(maybeString.get) >= 0) return "ZS"
+          val maybeString = csqsxwValue.value.contains(tzh + SEPARATE1 + gsdm)
+          if (maybeString) return "ZS"
+          //zqdm字段在CsTsKm表中有数据
+          val maybeString1 = csTsKmValue.value.contains(fsetid + SEPARATE1 + 3 + SEPARATE1 + zqdm)
+          if (maybeString1) {
+             return "ZS"
           }
           //zqdm字段在CsTsKm表中有数据
-          val maybeString1 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
-          if (maybeString1.isDefined) {
-            if (bcrq.compareTo(maybeString1.get) >= 0) return "ZS"
-          }
-          //zqdm字段在CsTsKm表中有数据
-          val maybeString2 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 2 + SEPARATE1 + zqdm)
-          if (maybeString2.isDefined) {
-            if (bcrq.compareTo(maybeString2.get) >= 0) return "ZB"
+          val maybeString2 = csTsKmValue.value.contains(fsetid  + SEPARATE1 + 2 + SEPARATE1 + zqdm)
+          if (maybeString2) {
+             return "ZB"
           }
         }
 
@@ -576,22 +548,20 @@ object ShghTrade {
         if ("0".equals(lset(0))) {
           if ("1".equals(lset(1)) || "5".equals(lset(1)) || "7".equals(lset(1))) {
             //gh文件中的gsdm字段在CsQsXw表中有数据
-            val maybeString = csqsxwValue.value.get(tzh + SEPARATE1 + gsdm)
-            if (maybeString.isDefined) {
-              if (bcrq.compareTo(maybeString.get) >= 0) return "ZS"
-            }
+            val maybeString = csqsxwValue.value.contains(tzh + SEPARATE1 + gsdm)
+            if (maybeString) return "ZS"
             //zqdm字段在CsTsKm表中有数据
-            val maybeString1 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
-            if (maybeString1.isDefined) {
-              if (bcrq.compareTo(maybeString1.get) >= 0) return "ZS"
+            val maybeString1 = csTsKmValue.value.contains(fsetid + SEPARATE1 + 3 + SEPARATE1 + zqdm)
+            if (maybeString1) {
+              return "ZS"
             }
           }
         }
         if ("0".equals(lset(0)) && "2".equals(lset(1))) {
           //zqdm字段在CsTsKm表中有数据
-          val maybeString2 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 2 + SEPARATE1 + zqdm)
-          if (maybeString2.isDefined) {
-            if (bcrq.compareTo(maybeString2.get) >= 0) return "ZB"
+          val maybeString2 = csTsKmValue.value.contains(fsetid  + SEPARATE1 + 2 + SEPARATE1 + zqdm)
+          if (maybeString2) {
+            return "ZB"
           }
         }
         return "PT"
@@ -603,31 +573,31 @@ object ShghTrade {
       if ("JJ".equals(zqbz)) {
         if (zqdm.startsWith("501") || zqdm.startsWith("502")) return "LOF"
         if (zqdm.startsWith("518")) return "HJETF"
-        if ("0".equals(cjjg) && (jjxxbwh("ETF", zqdm, bcrq, 0) || jjxxbwh("ETF", zqdm, bcrq, 1))) {
+        if ("0".equals(cjjg) && (jjxxbwh("ETF", zqdm, 0) || jjxxbwh("ETF", zqdm, 1))) {
           if ("B".equals(bs)) return "ETFSG"
           else return "ETFSH"
         }
-        if (sqbhValues.value.contains(sqbh) && (jjxxbwh("ETF", zqdm, bcrq, 2) || jjxxbwh("ETF", zqdm, bcrq, 5))) {
+        if (sqbhValues.value.contains(sqbh) && (jjxxbwh("ETF", zqdm, 2) || jjxxbwh("ETF", zqdm, 5))) {
           if ("B".equals(bs)) return "ETFSG"
           else return "ETFSH"
         }
-        if (jjxxbwh("ETF", zqdm, bcrq, 3)) {
+        if (jjxxbwh("ETF", zqdm, 3)) {
           if ("B".equals(bs)) return "ETFRG"
           else return "ETFFK"
         }
-        if (jjxxbwh("ETF", zqdm, bcrq, 4)) {
+        if (jjxxbwh("ETF", zqdm, 4)) {
           if ("B".equals(bs)) return "ETFRGZQ"
         }
-        if (jjxxbwh("HB", zqdm, bcrq, 6)) {
+        if (jjxxbwh("HB", zqdm, 6)) {
           return "HBETF"
         }
-        if (jjxxbwh("ETF", zqdm, bcrq, 0)) {
+        if (jjxxbwh("ETF", zqdm, 0)) {
           return "ETF"
         }
         return "FBS"
       }
       if ("ZQ".equals(zqbz)) {
-        if (zqlx(tzh, bcrq, zqdm)) {
+        if (zqlx(tzh,zqdm)) {
           val condition = cszqxxValues._1.value.get(zqdm)
           if (condition.isDefined) {
             val lx = condition.get
@@ -660,12 +630,12 @@ object ShghTrade {
           if (zqdm.startsWith("132") && "0".equals(cjjg)) return "KJHGSZQ"
           if ("0".equals(cjjg)) return "KZZGP"
           if (zqdm.startsWith("132")) return "KJHGSZQ"
-          var res = cszqxxValues._2.value.get(zqdm + SEPARATE1 + tzh)
-          if (res.isDefined && bcrq.compareTo(res.get) >= 0) {
+          var res = cszqxxValues._2.value.contains(zqdm + SEPARATE1 + tzh)
+          if (res) {
             return "FLKZZ"
           } else {
-            res = cszqxxValues._2.value.get(zqdm + SEPARATE1 + " ")
-            if (res.isDefined && bcrq.compareTo(res.get) >= 0) return "FLKZZ"
+            res = cszqxxValues._2.value.contains(zqdm + SEPARATE1 + " ")
+            if (res) return "FLKZZ"
           }
           return "QYZQ"
 
@@ -709,14 +679,14 @@ object ShghTrade {
           if ("0".equals(lset(0))) {
             if ("1".equals(lset(1)) || "5".equals(lset(1)) || "7".equals(lset(1))) {
               //gh文件中的gsdm字段在CsQsXw表中有数据
-              val maybeString = csqsxwValue.value.get(tzh + SEPARATE1 + gsdm)
-              if (maybeString.isDefined) {
-                if (bcrq.compareTo(maybeString.get) >= 0) return "ZSPSZFZQ"
+              val maybeString = csqsxwValue.value.contains(tzh + SEPARATE1 + gsdm)
+              if (maybeString) {
+               return "ZSPSZFZQ"
               }
               //zqdm字段在CsTsKm表中有数据
-              val maybeString1 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
-              if (maybeString1.isDefined) {
-                if (bcrq.compareTo(maybeString1.get) >= 0) return "ZSPSZFZQ"
+              val maybeString1 = csTsKmValue.value.contains(fsetid  + SEPARATE1 + 3 + SEPARATE1 + zqdm)
+              if (maybeString1) {
+                return "ZSPSZFZQ"
               }
             }
           }
@@ -742,14 +712,14 @@ object ShghTrade {
           if ("0".equals(lset(0))) {
             if ("1".equals(lset(1)) || "5".equals(lset(1)) || "7".equals(lset(1))) {
               //gh文件中的gsdm字段在CsQsXw表中有数据
-              val maybeString = csqsxwValue.value.get(tzh + SEPARATE1 + gsdm)
-              if (maybeString.isDefined) {
-                if (bcrq.compareTo(maybeString.get) >= 0) return "ZSPSZFZQ"
+              val maybeString = csqsxwValue.value.contains(tzh + SEPARATE1 + gsdm)
+              if (maybeString) {
+                return "ZSPSZFZQ"
               }
               //zqdm字段在CsTsKm表中有数据
-              val maybeString1 = csTsKmValue.value.get(fsetid + SEPARATE1 + 1 + SEPARATE1 + 3 + SEPARATE1 + zqdm)
-              if (maybeString1.isDefined) {
-                if (bcrq.compareTo(maybeString1.get) >= 0) return "ZSPSZFZQ"
+              val maybeString1 = csTsKmValue.value.contains(fsetid  + SEPARATE1 + 3 + SEPARATE1 + zqdm)
+              if (maybeString1) {
+                 return "ZSPSZFZQ"
               }
             }
           }
@@ -870,12 +840,12 @@ object ShghTrade {
       val sqbh = row.getAs[String](12)
       val bs = row.getAs[String](13)
       val mjbh = row.getAs[String](14)
-      val zqbz = getZqbz(zqdm, cjjg, bcrq)
+      val zqbz = getZqbz(zqdm, cjjg)
       val tzh = getTzh(gddm)
       val fsetid = getFsetId(tzh)
-      val ywbz = getYwbz(tzh, fsetid, zqbz, zqdm, cjjg, bs, gsdm, bcrq,sqbh)
-      val gzlv = gzlx(zqbz, zqdm, bcrq, cjsl)
-      val findate = getFindate(bcrq, tzh)
+      val ywbz = getYwbz(tzh, fsetid, zqbz, zqdm, cjjg, bs, gsdm, sqbh)
+      val gzlv = gzlx(zqbz, zqdm, cjsl)
+      val findate2 = getFindate(bcrq, tzh)
 
       zqdm = getZqdm(zqdm, cjjg)
       cjsl = getCjsl(zqdm, cjjg, cjsl)
@@ -886,16 +856,17 @@ object ShghTrade {
         gsdm = DEFAULT_VALUE_0 + gsdm
         length += 1
       }
-      ShghYssj(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, findate,fsetid)
+      ShghYssj(gddm, gdxm, bcrq, cjbh, gsdm, cjsl, bcye, zqdm, sbsj, cjsj, cjjg, cjje, sqbh, bs, mjbh, zqbz, ywbz, tzh, gzlv, findate2,fsetid)
     })
     etlRdd
   }
 
   /** 汇总然后进行计算 */
-  def doSum(spark: SparkSession, df: DataFrame, csb: Broadcast[collection.Map[String, String]],tableName:String) = {
+  def doSum(spark: SparkSession, df: DataFrame, csb: Broadcast[collection.Map[String, String]], ywrq:String) = {
 
     val sc = spark.sparkContext
-
+    // 转换日期
+    val convertedYwrq = convertDate(ywrq)
     /** 加载公共费率表和佣金表 */
     def loadFeeTables() = {
       //公共的费率表
@@ -912,60 +883,90 @@ object ShghTrade {
       //券商过户费承担方式
       val csqsfylvPath = Util.getDailyInputFilePath(TABLE_NAME_CSQSFYLV)
       val csqsfy = sc.textFile(csqsfylvPath)
-      val csqsfyMap = csqsfy.map(row => {
-        val fields = row.split(SEPARATE2)
-        val tzh = fields(0)
-        val fzqpz = fields(2)
-        val sh = fields(3)
-        val ffylb = fields(4)
-        val ffyfs = fields(5)
-        val flv = fields(8)
-        val ffymin = fields(9)
-        val flvzk = fields(10)
-        val key = tzh+SEPARATE1+fzqpz+SEPARATE1+sh+SEPARATE1+ffylb+SEPARATE1+ffyfs
-        val value = flv+SEPARATE1+ffymin+SEPARATE1+flvzk
-        (key,value)
-      }).collectAsMap()
+      val csqsfyMap = csqsfy
+        .filter(row => {
+            val fields = row.split(SEPARATE2)
+            val fsh = fields(13)
+            val fstartdate = fields(16)
+            if("1".equals(fsh) && fstartdate.compareTo(convertedYwrq) <= 0) true else false
+          })
+        .map(row => {
+          val fields = row.split(SEPARATE2)
+          val tzh = fields(0)
+          val fzqpz = fields(2)
+          val sh = fields(3)
+          val ffylb = fields(4)
+          val ffyfs = fields(5)
+          val flv = fields(8)
+          val ffymin = fields(9)
+          val flvzk = fields(10)
+          val key = tzh+SEPARATE1+fzqpz+SEPARATE1+sh+SEPARATE1+ffylb+SEPARATE1+ffyfs
+          val value = flv+SEPARATE1+ffymin+SEPARATE1+flvzk
+          (key,value)
+        })
+        .collectAsMap()
 
       //将佣金表转换成map结构
-      val yjbMap = yjb.map(row => {
-        val fields = row.split(SEPARATE2)
-        val fsetid = fields(1) //资产代码
-        val zqlb = fields(3) //证券类别
-        val sh = fields(4) //市场
-        val lv = fields(5) //利率
-        val minLv = fields(6) //最低利率
-        val startDate = fields(16) //启用日期
-        //      val zch = row.get(15).toString // 资产
-        val zk = fields(12) //折扣
-        val fstr1 = fields(8) //交易席位/公司代码
-        val key = fsetid + SEPARATE1 + zqlb + SEPARATE1 + sh + SEPARATE1 + fstr1 //资产代码+证券类别+市场+交易席位/公司代码
-        val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk + SEPARATE1 + minLv //启用日期+利率+折扣+最低佣金值
-        (key, value)
-      })
+      val yjbMap = yjb
+        .filter(row => {
+            val fields = row.split(SEPARATE2)
+            val startDate = fields(16) //启用日期
+            if(startDate.compareTo(convertedYwrq) <= 0) true else false
+          })
+        .map(row => {
+          val fields = row.split(SEPARATE2)
+          val fsetid = fields(1) //资产代码
+          val zqlb = fields(3) //证券类别
+          val sh = fields(4) //市场
+          val lv = fields(5) //利率
+          val minLv = fields(6) //最低利率
+          val startDate = fields(16) //启用日期
+          //      val zch = row.get(15).toString // 资产
+          val zk = fields(12) //折扣
+          val fstr1 = fields(8) //交易席位/公司代码
+          val key = fsetid + SEPARATE1 + zqlb + SEPARATE1 + sh + SEPARATE1 + fstr1 //资产代码+证券类别+市场+交易席位/公司代码
+          val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk + SEPARATE1 + minLv //启用日期+利率+折扣+最低佣金值
+          (key, value)
+        })
         .groupByKey()
+        .mapValues(arrs => {
+          arrs.toArray.sortWith((str1, str2) => {
+            str1.split(SEPARATE2)(0).compareTo(str2.split(SEPARATE2)(0)) > 0
+          })(0)
+        })
         .collectAsMap()
 
       //将费率表转换成map结构
-      val flbMap = flb.map(row => {
-        val fields = row.split(SEPARATE2)
-        val zqlb = fields(0)
-        //证券类别
-        val sh = fields(1)
-        //市场
-        val lvlb = fields(2)
-        //利率类别
-        val lv = fields(3) //利率
-        val zk = fields(5) //折扣
-        val zch = fields(10) //资产号
-        val startDate = fields(13)
-        val fother = fields(6)
-        //启用日期
-        val key = zqlb + SEPARATE1 + sh + SEPARATE1 + zch + SEPARATE1 + lvlb //证券类别+市场+资产号+利率类别
-        val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk +SEPARATE1+fother//启用日期+利率+折扣+天数
-        (key, value)
-      })
+      val flbMap = flb
+        .filter(row =>{
+            val fields = row.split(SEPARATE2)
+            val startDate = fields(13)
+            if(startDate.compareTo(convertedYwrq) <= 0) true else false
+          })
+        .map(row => {
+          val fields = row.split(SEPARATE2)
+          val zqlb = fields(0)
+          //证券类别
+          val sh = fields(1)
+          //市场
+          val lvlb = fields(2)
+          //利率类别
+          val lv = fields(3) //利率
+          val zk = fields(5) //折扣
+          val zch = fields(10) //资产号
+          val startDate = fields(13)
+          val fother = fields(6)
+          //启用日期
+          val key = zqlb + SEPARATE1 + sh + SEPARATE1 + zch + SEPARATE1 + lvlb //证券类别+市场+资产号+利率类别
+          val value = startDate + SEPARATE1 + lv + SEPARATE1 + zk +SEPARATE1+fother//启用日期+利率+折扣+天数
+          (key, value)
+       })
         .groupByKey()
+        .mapValues(arrs => {
+          arrs.toArray.sortWith((str1, str2) => {
+            str1.split(SEPARATE2)(0).compareTo(str2.split(SEPARATE2)(0)) > 0
+          })(0)
+        })
         .collectAsMap()
 
       //过滤基金信息表
@@ -975,7 +976,9 @@ object ShghTrade {
             val fzqlx = fields(9)
             val ftzdx = fields(15)
             val fszsh = fields(8)
-          if("ETF".equals(fzqlx) && SH.equals(fszsh) && "ZQ".equals(ftzdx))  true
+            val fstartdate = fields(14)
+          if("ETF".equals(fzqlx) && SH.equals(fszsh) && "ZQ".equals(ftzdx)
+           && fstartdate.compareTo(convertedYwrq) <= 0 )  true
           else  false
           })
         .map(row => {
@@ -1019,25 +1022,16 @@ object ShghTrade {
       * 获取公共费率和佣金费率
       *
       * @param gsdm  交易席位/公司代码
-      * @param bcrq  处理日期
       * @param ywbz1  业务标识
       * @param zqbz1  证券标识
       * @param zyzch 专用资产号
       * @param gyzch 公用资产号
       * @return
       */
-    def getRate( zqdm:String,gsdm: String, gddm: String, bcrq: String,fsetid:String, ywbz1: String, zqbz1: String, zyzch: String, gyzch: String) = {
+    def getRate( zqdm:String,gsdm: String, gddm: String,fsetid:String, ywbz1: String, zqbz1: String, zyzch: String, gyzch: String) = {
       //为了获取启动日期小于等于处理日期的参数
-      val flbMap = flbValues.value.mapValues(items => {
-        val arr = items.toArray.filter(str => (bcrq.compareTo(str.split(SEPARATE1)(0)) >= 0)).sortWith((str1, str2) => (str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0))
-        if (arr.size != 0)  arr(0)
-        else DEFORT_VALUE3
-      })
-      val yjMap = yjbValues.value.mapValues(items => {
-        val arr = items.toArray.filter(str => (bcrq.compareTo(str.split(SEPARATE1)(0)) >= 0)).sortWith((str1, str2) => (str1.split(SEPARATE1)(0).compareTo(str2.split(SEPARATE1)(0)) > 0))
-        if (arr.size != 0) arr(0)
-        else DEFORT_VALUE3
-      })
+      val flbMap = flbValues.value
+      val yjMap = yjbValues.value
 
       var ywbz = ywbz1
       var zqbz = zqbz1
@@ -1203,7 +1197,7 @@ object ShghTrade {
         val ywbz = fields(7)
         val fsetid = fields(9) //资产代码
 
-        val getRateResult = getRate(zqdm,gsdm, gddm, bcrq,fsetid, ywbz, zqbz, tzh, GYZCH)
+        val getRateResult = getRate(zqdm,gsdm, gddm,fsetid, ywbz, zqbz, tzh, GYZCH)
         val rateJS: String = getRateResult._1
         val rateJszk: String = getRateResult._2
         val rateYH: String = getRateResult._3
@@ -1424,7 +1418,10 @@ object ShghTrade {
     }
     //将结果输出
     import spark.implicits._
-    Util.outputMySql(result.toDF(), tableName)
+    Util.outputMySql(result.toDF(), "SHTransfer")
+
+    val outputPath = Util.getOutputFilePath(ywrq+"/gh")
+    Util.outputHdfs(result.toDF(),outputPath)
   }
 
 }
