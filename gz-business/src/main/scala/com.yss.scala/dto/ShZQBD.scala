@@ -1,5 +1,10 @@
 package com.yss.scala.dto
 
+/**
+  * @auther: lijiayan
+  * @date: 2018/11/7
+  * @desc: 上海证券变成源数据对应的样栗类
+  */
 case class ShZQBD(
                    SCDM: String,
                    QSBH: String,

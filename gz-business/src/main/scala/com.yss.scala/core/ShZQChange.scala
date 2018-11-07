@@ -1,12 +1,13 @@
 package com.yss.scala.core
 
 import java.io.File
+import java.util.Properties
 
-import com.yss.scala.core.Temp.ShZQBD
-import com.yss.scala.dto.ShZQChangeDto
+import com.yss.scala.dto.{ShZQBD, ShZQChangeDto}
 import com.yss.scala.util.{DateUtils, RowUtils, Util}
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks
@@ -18,10 +19,15 @@ import scala.util.control.Breaks
   */
 object ShZQChange {
 
+  //源数据
   val ZQBD_basePath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/"
 
   //要使用的表在hdfs中的路径
   private val TABLE_HDFS_PATH = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
+
+  //结果存到hdfs的路径
+  private val RES_HDFS_PATH = "hdfs://192.168.102.120:8020//yss/guzhi/hzjkqs/"
+
 
   //用于存储股东代码表中每一个股东代码对应的套账号
   var fgddm2Fsetcode: Map[String, String] = _
@@ -41,7 +47,7 @@ object ShZQChange {
 
   var CSJYLV_data: Array[(String, String, String, String, String)] = _
 
-  var A001CSTSKM_data: Array[(String, String, String, String)] = _
+  var CSSYSTSKM_data: Array[(String, String, String, String)] = _
 
   def main(args: Array[String]): Unit = {
 
@@ -64,10 +70,10 @@ object ShZQChange {
 
     zqbdData.persist()
 
-    //读取股东代码表
+    //读取股东账号表
     readCSGDZH(spark)
 
-    //读取资产表
+    //读取基金资产信息表
     readLSETLIST(spark)
 
     //读取回售信息新表
@@ -76,27 +82,31 @@ object ShZQChange {
     //读取债券信息表
     readCSZQXX(spark)
 
-    //读取参数表
+    //读取参数信息表
     readLVARLIST(spark)
 
     readCSQYXX(spark)
 
+    //读取国债利息表
     readJJGZLX(spark)
 
+    //读取交易费率表
     readCSJYLV(spark)
 
-    readA001CSTSKM(spark)
+    //读取特殊科目表
+    readCSSYSTSKM(spark)
     //进行计算
     caculate(spark, zqbdData, ywrq)
-
 
     spark.stop()
 
   }
 
 
-  def readA001CSTSKM(spark: SparkSession): Unit = {
-    A001CSTSKM_data = Util.readCSV(getTableDataPath("A001CSTSKM"), spark, header = false, sep = ",").toDF(
+  def readCSSYSTSKM(spark: SparkSession): Unit = {
+    CSSYSTSKM_data = Util.readCSV(getTableDataPath("CSSYSTSKM"), spark, header = false, sep = ",").toDF(
+      "FSETCODE",
+      "FSETID",
       "FZQDM",
       "FBZ",
       "FSH",
@@ -121,13 +131,13 @@ object ShZQChange {
     * select 1 from A117CsTsKm where fstartdate<=日期 and fsh=1 and fbz=2 and fzqdm=该zqdm
     */
   def queryZhiShuOrZhiBiao(zqdm: String, fbz: String = "3", ywrq: String, defaultValue: Boolean = false): Boolean = {
-    if (A001CSTSKM_data == null || A001CSTSKM_data.isEmpty) return defaultValue
+    if (CSSYSTSKM_data == null || CSSYSTSKM_data.isEmpty) return defaultValue
     var value = defaultValue
     val break = new Breaks
     val ywrqLong = DateUtils.formattedDate2Long(ywrq, DateUtils.YYYYMMDD)
     break.breakable({
-      for (item <- A001CSTSKM_data) {
-        val fstartdate = DateUtils.formattedDate2Long(item._4, DateUtils.YYYY_MM_DD_HH_MM_SS)
+      for (item <- CSSYSTSKM_data) {
+        val fstartdate = DateUtils.formattedDate2Long(item._4, DateUtils.YYYY_MM_DD)
         if (zqdm.equals(item._1) && fbz.equals(item._2) && "1".equals(item._3) && fstartdate <= ywrqLong) {
           value = true
           break.break()
@@ -327,9 +337,9 @@ object ShZQChange {
       for (item <- CSKZZHS_data) {
         val zqdm = item._1
         val fsh = item._2
-        val fstartdate = DateUtils.formattedDate2Long(item._3, DateUtils.YYYY_MM_DD_HH_MM_SS)
-        val fedate = DateUtils.formattedDate2Long(item._4, DateUtils.YYYY_MM_DD_HH_MM_SS)
-        val fbdate = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD_HH_MM_SS)
+        val fstartdate = DateUtils.formattedDate2Long(item._3, DateUtils.YYYY_MM_DD)
+        val fedate = DateUtils.formattedDate2Long(item._4, DateUtils.YYYY_MM_DD)
+        val fbdate = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD)
         if (zqdm.equals(fzqdm) && "1".equals(fsh) && fstartdate <= ywrqLong && fedate >= ywrqLong && fbdate <= ywrqLong) {
           value = true
           break.break
@@ -356,8 +366,8 @@ object ShZQChange {
     break.breakable({
       for (item <- CSKZZHS_data) {
         val fzqdm = item._1
-        val fedate = DateUtils.formattedDate2Long(item._4, DateUtils.YYYY_MM_DD_HH_MM_SS)
-        val fbdate = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD_HH_MM_SS)
+        val fedate = DateUtils.formattedDate2Long(item._4, DateUtils.YYYY_MM_DD)
+        val fbdate = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD)
 
         if (zqdm.equals(fzqdm) && fedate >= ywrqLone && fbdate <= ywrqLone) {
           value = item._6
@@ -365,7 +375,6 @@ object ShZQChange {
         }
       }
     })
-
     value
 
   }
@@ -515,8 +524,8 @@ object ShZQChange {
     val ywrqLong = DateUtils.formattedDate2Long(ywrq, DateUtils.YYYYMMDD)
     break.breakable({
       for (item <- CSQYXX_data) {
-        val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD_HH_MM_SS)
-        val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD_HH_MM_SS)
+        val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD)
+        val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD)
         if (zqdm.equals(item._1) && qylx.equals(item._2) && fqydjr <= ywrqLong && fjkjzr >= ywrqLong) {
           value = true
           break.break()
@@ -553,8 +562,8 @@ object ShZQChange {
             val FQYLX = item._2
             val FQYBL = item._3
             val FQYJG = item._4
-            val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD_HH_MM_SS)
-            val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD_HH_MM_SS)
+            val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD)
+            val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD)
             if ("JJPX".equals(FQYLX) && FZQDM.equals(zqdm) && fqydjr <= ywrqLong && fjkjzr >= ywrqLong && (
               !"银行间".equals(FQYBL) && !"上交所".equals(FQYBL) && !"深交所".equals(FQYBL) && !"场外".equals(FQYBL)
               )) {
@@ -572,8 +581,8 @@ object ShZQChange {
               val FQYLX = item._2
               val FQYBL = item._3
               val FQYJG = item._4
-              val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD_HH_MM_SS)
-              val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD_HH_MM_SS)
+              val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD)
+              val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD)
 
 
               if ("XJDJ".equals(FQYLX) && FZQDM.equals(zqdm) && fqydjr <= ywrqLong && fjkjzr >= ywrqLong && (
@@ -598,8 +607,8 @@ object ShZQChange {
             val FQYLX = item._2
             val FQYBL = item._3
             val FQYJG = item._4
-            val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD_HH_MM_SS)
-            val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD_HH_MM_SS)
+            val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD)
+            val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD)
 
 
             if ("GPPX".equals(FQYLX) && FZQDM.equals(zqdm) && fqydjr <= ywrqLong && fjkjzr >= ywrqLong && (
@@ -619,8 +628,8 @@ object ShZQChange {
               val FQYLX = item._2
               val FQYBL = item._3
               val FQYJG = item._4
-              val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD_HH_MM_SS)
-              val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD_HH_MM_SS)
+              val fqydjr = DateUtils.formattedDate2Long(item._5, DateUtils.YYYY_MM_DD)
+              val fjkjzr = DateUtils.formattedDate2Long(item._7, DateUtils.YYYY_MM_DD)
 
 
               if ("XJDJ".equals(FQYLX) && FZQDM.equals(zqdm) && fqydjr <= ywrqLong && fjkjzr >= ywrqLong && (
@@ -700,6 +709,7 @@ object ShZQChange {
     value
   }
 
+
   /**
     * 进行计算
     *
@@ -708,243 +718,89 @@ object ShZQChange {
     */
   private def caculate(spark: SparkSession, zqbdData: RDD[Row], ywrq: String): Unit = {
 
-    //分级基金配对转换
-    import spark.implicits._
+    // 过滤出分级基金的源数据
     val row151Data: RDD[Row] = zqbdData.filter(row => {
       val fywrq = RowUtils.getRowFieldAsString(row, "BDRQ")
       val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
       ywrq.equals(fywrq) && "151".equals(bdlx)
     })
 
-    row151Data.repartition(1).map(row => {
-      ShZQBD(
-        RowUtils.getRowFieldAsString(row, "SCDM"),
-        RowUtils.getRowFieldAsString(row, "QSBH"),
-        RowUtils.getRowFieldAsString(row, "ZQZH"),
-        RowUtils.getRowFieldAsString(row, "XWH"),
-        RowUtils.getRowFieldAsString(row, "ZQDM"),
-        RowUtils.getRowFieldAsString(row, "ZQLB"),
-        RowUtils.getRowFieldAsString(row, "LTLX"),
-        RowUtils.getRowFieldAsString(row, "QYLB"),
-        RowUtils.getRowFieldAsString(row, "GPNF"),
-        RowUtils.getRowFieldAsString(row, "BDSL"),
-        RowUtils.getRowFieldAsString(row, "BDLX"),
-        RowUtils.getRowFieldAsString(row, "BDRQ"),
-        RowUtils.getRowFieldAsString(row, "SL"),
-        RowUtils.getRowFieldAsString(row, "BH"),
-        RowUtils.getRowFieldAsString(row, "BY")
-      )
-    }).toDF().createTempView("t151")
-
-    spark.sql(
-      """
-        |select t1.SCDM,t1.QSBH,t1.ZQZH,t1.XWH,t1.ZQDM,
-        |t1.ZQLB,t1.LTLX,t1.QYLB,t1.GPNF,t1.BDSL,
-        |t1.BDLX,t1.BDRQ,t1.SL,t1.BH,t1.BY,FLOOR((t1.INDEX-1) / 3) as PART
-        |from
-        |(
-        |select *,row_number() OVER(partition by BDLX order by ZQDM) as INDEX from t151
-        |) t1
-        |""".stripMargin).rdd.map(row => {
-      val part = row.getAs[Long]("PART") + ""
-      (part, row)
-    }).groupByKey()
-      .map(tup => {
-        val it = tup._2.toBuffer
-        val len = it.size
-        var zqdm: String = null
-        if (len == 3) {
-          var zCount = 0
-          var fCount = 0
-          // 1.第一次迭代可以判断母基金为负还是为正
-          for (row <- it) {
-            val sl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL"))
-            if (sl > 0) {
-              zCount += 1
-            } else {
-              fCount += 1
-            }
-          }
-
-          //母基金标志
-          var m = 0
-          if ((zCount + fCount) == 3) {
-            if (zCount > fCount) {
-              m = -1
-            } else {
-              m = 1
-            }
-          }
-
-          //2.第二次迭代,得到母基金的zqdm
-          val break = new Breaks
-          break.breakable({
-            for (row <- it) {
-              val sl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL"))
-              val ZQDM = RowUtils.getRowFieldAsString(row, "ZQDM")
-              if ((m > 0 && sl > 0) || (m < 0 && sl < 0)) {
-                zqdm = ZQDM
-                break.break()
-              }
-            }
-          })
-
-        }
-        val list = ArrayBuffer[ShZQChangeDto]()
-
-        //3. 第三次迭代,获取进行所有的逻辑计算
-        for (row <- it) {
-          val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
-          val bdsl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL", "0"))
-          val qylb = RowUtils.getRowFieldAsString(row, "QYLB")
-          val zqlb = RowUtils.getRowFieldAsString(row, "ZQLB")
-          val ltlx = RowUtils.getRowFieldAsString(row, "LTLX")
-
-          //股东代码
-          val fgddm = RowUtils.getRowFieldAsString(row, "ZQZH")
-          //根据股东代码获取套账号
-          val fsetcode = queryFsetcodeByFgddm(fgddm)
-          //根据套账号查询资产表,获取fsetid
-          val FSETID = queryFsetIDByFsetcode(fsetcode)
-
-          val Fdate = RowUtils.getRowFieldAsString(row, "BDRQ")
-          val FinDate = Fdate
-
-          val FZqdm = RowUtils.getRowFieldAsString(row, "ZQDM")
-
-          val FSzsh = "H"
-          val Fjyxwh = getResultXWH(RowUtils.getRowFieldAsString(row, "XWH"))
-
-          var FBS = "B"
-          if (bdsl <= 0) {
-            FBS = "S"
-          }
-
-          val Fje = "0.00"
-
-          val Fsl = bdsl
-
-          val Fyj = "0.00"
-
-          val Fjsf = "0.00"
-
-          val Fyhs = "0.00"
-
-          val Fzgf = "0.00"
-
-          val Fghf = "0.00"
-
-          val Fgzlx = "0.00"
-
-          val Fhggain = "0.00"
-
-          val Ffxj = "0.00"
-
-          val Fsssje = "0.00"
-
-          val FZqbz = "JJ"
-
-          val Fywbz = "FJJJPDZH"
-
-          val FQsbz = "N"
-
-          val FQTF = "0.00"
-
-          var ZQDM = FZqdm
-
-          if (len == 3 && zqdm != null) {
-            ZQDM = zqdm
-          }
-
-
-          val FJYFS = "PT"
-
-          val Fsh = "1"
-
-          val FZZR = " "
-
-          val FCHK = " "
-
-          val fzlh = "0"
-
-          val ftzbz = " "
-
-          val FQsghf = "0.00"
-
-          val Fjybz = " "
-
-          val ISRTGS = "1"
-
-          val FPARTID = " "
-
-          val FHTXH = " "
-
-          val FCSHTXH = " "
-
-          val FRZLV = "0.0000"
-
-          val FCSGHQX = "0"
-
-          val FSJLY = " "
-
-          val Fbz = "RMB"
-
-          val shZQBD = ShZQChangeDto(
-            FSETID,
-            Fdate,
-            FinDate,
-            FZqdm,
-            FSzsh,
-            Fjyxwh,
-            FBS,
-            Fje,
-            Fsl.toString(),
-            Fyj,
-            Fjsf,
-            Fyhs,
-            Fzgf,
-            Fghf,
-            Ffxj,
-            FQTF,
-            Fgzlx,
-            Fhggain,
-            Fsssje,
-            FZqbz,
-            Fywbz,
-            Fjybz,
-            FQsbz,
-            ZQDM,
-            FJYFS,
-            Fsh,
-            FZZR,
-            FCHK,
-            fzlh,
-            ftzbz,
-            FQsghf,
-            fgddm,
-            ISRTGS,
-            FPARTID,
-            FHTXH,
-            FCSHTXH,
-            FRZLV,
-            FCSGHQX,
-            FSJLY,
-            Fbz,
-            Fby1 = "",
-            Fby2 = "",
-            Fby3 = "",
-            Fby4 = "",
-            Fby5 = ""
-          )
-          list.append(shZQBD)
-        }
-
-        list.toIterator
-
-      })
-
-
+    // 取差集得到非分级基金的结果数据
     val rowNot151Data: RDD[Row] = zqbdData.subtract(row151Data)
+
+    // 非分级基金结果数据
+    val not151ResData: RDD[ShZQChangeDto] = caculateNot151(spark, rowNot151Data, ywrq)
+
+    // 分级基金结果数据
+    val I51ResData: RDD[ShZQChangeDto] = caculate151(spark, row151Data, ywrq)
+
+    // 将结果数据合并
+    val shZQBDData: RDD[ShZQChangeDto] = not151ResData.union(I51ResData)
+
+    //存hdfs
+    saveToHDFS(spark, shZQBDData)
+    //存mysql
+    saveToMySQL(spark, shZQBDData)
+  }
+
+
+  /**
+    * 将结果数据保存到HDFS
+    *
+    * @param spark      SparkSession
+    * @param shZQBDData 结果数据
+    */
+  def saveToHDFS(spark: SparkSession, shZQBDData: RDD[ShZQChangeDto]): Unit = {
+    val date = DateUtils.formatDate(System.currentTimeMillis())
+    val path = RES_HDFS_PATH + date + File.separator + "zqdb/"
+
+    // 如果已经存在路径,则删除
+    /*val fs = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val hpath = new Path(path)
+    if (fs.exists(hpath)) {
+      fs.delete(hpath, true)
+    }*/
+
+    /*import spark.implicits._
+    shZQBDData
+      .toDF()
+      .write
+      .format("csv")
+      .option("header", value = false)
+      .option("delimiter", "\t")
+      .option("charset", "UTF-8")
+      .csv(path)*/
+    import spark.implicits._
+    Util.outputHdfs(shZQBDData.toDF(), path)
+
+  }
+
+  /**
+    * 将结果数据保存到MySQL
+    *
+    * @param spark      SparkSession
+    * @param shZQBDData 结果数据
+    */
+  def saveToMySQL(spark: SparkSession, shZQBDData: RDD[ShZQChangeDto]): Unit = {
+    import spark.implicits._
+    val properties = new Properties()
+    properties.put("user", "root")
+    properties.put("password", "root1234")
+    properties.put("driver", "com.mysql.jdbc.Driver")
+    val url = "jdbc:mysql://192.168.102.120:3306/JJCWGZ"
+    shZQBDData.toDF().write.mode(SaveMode.Overwrite).jdbc(url, "ShZQBD", properties)
+  }
+
+
+  /**
+    * 计算非分级基金配对转换
+    *
+    * @param spark
+    * @param rowNot151Data
+    * @param ywrq
+    * @return
+    */
+  def caculateNot151(spark: SparkSession, rowNot151Data: RDD[Row], ywrq: String): RDD[ShZQChangeDto] = {
     rowNot151Data.map(row => {
       val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
       val bdsl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL", "0"))
@@ -1216,7 +1072,243 @@ object ShZQChange {
 
 
     })
+  }
 
+  /**
+    * 计算分级基金配对转换
+    *
+    * @param spark
+    * @param row151Data
+    * @param ywrq
+    * @return
+    */
+  def caculate151(spark: SparkSession, row151Data: RDD[Row], ywrq: String): RDD[ShZQChangeDto] = {
+    //分级基金配对转换
+    import spark.implicits._
+    row151Data.repartition(1).map(row => {
+      ShZQBD(
+        RowUtils.getRowFieldAsString(row, "SCDM"),
+        RowUtils.getRowFieldAsString(row, "QSBH"),
+        RowUtils.getRowFieldAsString(row, "ZQZH"),
+        RowUtils.getRowFieldAsString(row, "XWH"),
+        RowUtils.getRowFieldAsString(row, "ZQDM"),
+        RowUtils.getRowFieldAsString(row, "ZQLB"),
+        RowUtils.getRowFieldAsString(row, "LTLX"),
+        RowUtils.getRowFieldAsString(row, "QYLB"),
+        RowUtils.getRowFieldAsString(row, "GPNF"),
+        RowUtils.getRowFieldAsString(row, "BDSL"),
+        RowUtils.getRowFieldAsString(row, "BDLX"),
+        RowUtils.getRowFieldAsString(row, "BDRQ"),
+        RowUtils.getRowFieldAsString(row, "SL"),
+        RowUtils.getRowFieldAsString(row, "BH"),
+        RowUtils.getRowFieldAsString(row, "BY")
+      )
+    }).toDF().createTempView("t151")
+
+    spark.sql(
+      """
+        |select t1.SCDM,t1.QSBH,t1.ZQZH,t1.XWH,t1.ZQDM,
+        |t1.ZQLB,t1.LTLX,t1.QYLB,t1.GPNF,t1.BDSL,
+        |t1.BDLX,t1.BDRQ,t1.SL,t1.BH,t1.BY,FLOOR((t1.INDEX-1) / 3) as PART
+        |from
+        |(
+        |select *,row_number() OVER(partition by BDLX order by ZQDM) as INDEX from t151
+        |) t1
+        |""".stripMargin).rdd.map(row => {
+      val part = row.getAs[Long]("PART") + ""
+      (part, row)
+    }).groupByKey()
+      .map(tup => {
+        val it = tup._2.toBuffer
+        val len = it.size
+        var zqdm: String = null
+        if (len == 3) {
+          var zCount = 0
+          var fCount = 0
+          // 1.第一次迭代可以判断母基金为负还是为正
+          for (row <- it) {
+            val sl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL"))
+            if (sl > 0) {
+              zCount += 1
+            } else {
+              fCount += 1
+            }
+          }
+
+          //母基金标志
+          var m = 0
+          if ((zCount + fCount) == 3) {
+            if (zCount > fCount) {
+              m = -1
+            } else {
+              m = 1
+            }
+          }
+
+          //2.第二次迭代,得到母基金的zqdm
+          val break = new Breaks
+          break.breakable({
+            for (row <- it) {
+              val sl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL"))
+              val ZQDM = RowUtils.getRowFieldAsString(row, "ZQDM")
+              if ((m > 0 && sl > 0) || (m < 0 && sl < 0)) {
+                zqdm = ZQDM
+                break.break()
+              }
+            }
+          })
+
+        }
+        val list = ArrayBuffer[ShZQChangeDto]()
+
+        //3. 第三次迭代,获取进行所有的逻辑计算
+        for (row <- it) {
+          val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
+          val bdsl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL", "0"))
+          val qylb = RowUtils.getRowFieldAsString(row, "QYLB")
+          val zqlb = RowUtils.getRowFieldAsString(row, "ZQLB")
+          val ltlx = RowUtils.getRowFieldAsString(row, "LTLX")
+
+          //股东代码
+          val fgddm = RowUtils.getRowFieldAsString(row, "ZQZH")
+          //根据股东代码获取套账号
+          val fsetcode = queryFsetcodeByFgddm(fgddm)
+          //根据套账号查询资产表,获取fsetid
+          val FSETID = queryFsetIDByFsetcode(fsetcode)
+
+          val Fdate = RowUtils.getRowFieldAsString(row, "BDRQ")
+          val FinDate = Fdate
+
+          val FZqdm = RowUtils.getRowFieldAsString(row, "ZQDM")
+
+          val FSzsh = "H"
+          val Fjyxwh = getResultXWH(RowUtils.getRowFieldAsString(row, "XWH"))
+
+          var FBS = "B"
+          if (bdsl <= 0) {
+            FBS = "S"
+          }
+
+          val Fje = "0.00"
+
+          val Fsl = bdsl
+
+          val Fyj = "0.00"
+
+          val Fjsf = "0.00"
+
+          val Fyhs = "0.00"
+
+          val Fzgf = "0.00"
+
+          val Fghf = "0.00"
+
+          val Fgzlx = "0.00"
+
+          val Fhggain = "0.00"
+
+          val Ffxj = "0.00"
+
+          val Fsssje = "0.00"
+
+          val FZqbz = "JJ"
+
+          val Fywbz = "FJJJPDZH"
+
+          val FQsbz = "N"
+
+          val FQTF = "0.00"
+
+          var ZQDM = FZqdm
+
+          if (len == 3 && zqdm != null) {
+            ZQDM = zqdm
+          }
+
+
+          val FJYFS = "PT"
+
+          val Fsh = "1"
+
+          val FZZR = " "
+
+          val FCHK = " "
+
+          val fzlh = "0"
+
+          val ftzbz = " "
+
+          val FQsghf = "0.00"
+
+          val Fjybz = " "
+
+          val ISRTGS = "1"
+
+          val FPARTID = " "
+
+          val FHTXH = " "
+
+          val FCSHTXH = " "
+
+          val FRZLV = "0.0000"
+
+          val FCSGHQX = "0"
+
+          val FSJLY = " "
+
+          val Fbz = "RMB"
+
+          val shZQBD = ShZQChangeDto(
+            FSETID,
+            Fdate,
+            FinDate,
+            FZqdm,
+            FSzsh,
+            Fjyxwh,
+            FBS,
+            Fje,
+            Fsl.toString(),
+            Fyj,
+            Fjsf,
+            Fyhs,
+            Fzgf,
+            Fghf,
+            Ffxj,
+            FQTF,
+            Fgzlx,
+            Fhggain,
+            Fsssje,
+            FZqbz,
+            Fywbz,
+            Fjybz,
+            FQsbz,
+            ZQDM,
+            FJYFS,
+            Fsh,
+            FZZR,
+            FCHK,
+            fzlh,
+            ftzbz,
+            FQsghf,
+            fgddm,
+            ISRTGS,
+            FPARTID,
+            FHTXH,
+            FCSHTXH,
+            FRZLV,
+            FCSGHQX,
+            FSJLY,
+            Fbz,
+            Fby1 = "",
+            Fby2 = "",
+            Fby3 = "",
+            Fby4 = "",
+            Fby5 = ""
+          )
+          list.append(shZQBD)
+        }
+        list.toIterator
+      }).flatMap(it => it.toList)
   }
 
   /**
