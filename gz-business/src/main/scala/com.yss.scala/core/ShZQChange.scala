@@ -256,7 +256,7 @@ object ShZQChange {
     *
     * @param spark SparkSession
     */
-  def readCSGDZH(spark: SparkSession) = {
+  def readCSGDZH(spark: SparkSession): Unit = {
     fgddm2Fsetcode = Util.readCSV(getTableDataPath("CSGDZH"), spark, header = false, sep = ",").toDF(
       "FGDDM",
       "FGDXM",
