@@ -11,13 +11,14 @@ import org.apache.spark.sql.SparkSession
 
 object SzhkTzxxToHbase {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().master("local[*]").appName("yss").getOrCreate()
+    val spark = SparkSession.builder().master("local[2]").appName("yss").getOrCreate()
     val sc = spark.sparkContext
 
     val conf = HBaseConfiguration.create()
-    conf.set("hbase.zookeeper.quorum", "192.168.235.4:2181")
+    conf.set("hbase.zookeeper.quorum", "192.168.102.121:2181")
+    conf.set("zookeeper.znode.parent","/hbase-unsecure")
 
-    val tablename = "SzhkTzxx"
+    val tablename = "SZHKTZXX"
 
     val admin = new HBaseAdmin(conf)
     if (!admin.tableExists(tablename)) {
@@ -31,56 +32,53 @@ object SzhkTzxxToHbase {
     jobConf.setOutputFormat(classOf[TableOutputFormat])
     jobConf.set(TableOutputFormat.OUTPUT_TABLE, tablename)
 
-    val dataRDD = sc.textFile("")
-    //val indataRDD = sc.makeRDD(Array("1,jack,15","2,Lily,16","3,余攀,16"))
-    val rdd = dataRDD.flatMap(_.split("\t")).map(f => {
-     // val list =List[String]()
+    //val dataRDD = sc.textFile("")
+    val indataRDD = sc.makeRDD(Array("1111\tsm\t20181901\t45612\t00\tY\tXXX\t1234567890\tZK\tKZ\t20190101\t20190202\t20190303\t10\t20\t30\t1\t2\tYMB\t0.45\t0.1\t0.2\t300\t500\tHM\tMH\t35546\t45678\tWU\tWU\t888\tY"))
+    val rdd = indataRDD.map(_.split("\t")).flatMap(f => {
       val scdm = f(0)
       val tzlb = f(1)
       val tzrq = f(2)
       val zqdm = f(3)
-      val gfxz =f(4)
-      val sszt =f(5)
-      val qylb =f(6)
-      val qybh =f(7)
-      val zh1 =f(8)
-      val zh2 =f(9)
-      val rq1 =f(10)
-      val rq2 =f(11)
-      val rq3 =f(12)
-      val je1= f(13)
-      val je2 =f(14)
-      val je3 =f(15)
-      val jg1 =f(16)
-      val jg2 =f(17)
-      val bz =f(18)
-      val hl=f(19)
-      val bL1=f(20)
-      val bL2 =f(21)
-      val sL1=f(22)
-      val sL2 =f(23)
-      val LX1 =f(24)
-      val LX2 =f(25)
-      val fzdm1 =f(26)
-      val fzdm2 =f(27)
-      val fjsm1 =f(28)
-      val fjsm2 =f(29)
-      val fby =f(30)
-      val zt =f(31)
+      val gfxz = f(4)
+      val sszt = f(5)
+      val qylb = f(6)
+      val qybh = f(7)
+      val zh1 = f(8)
+      val zh2 = f(9)
+      val rq1 = f(10)
+      val rq2 = f(11)
+      val rq3 = f(12)
+      val je1 = f(13)
+      val je2 = f(14)
+      val je3 = f(15)
+      val jg1 = f(16)
+      val jg2 = f(17)
+      val bz = f(18)
+      val hl = f(19)
+      val bL1 = f(20)
+      val bL2 = f(21)
+      val sL1 = f(22)
+      val sL2 = f(23)
+      val LX1 = f(24)
+      val LX2 = f(25)
+      val fzdm1 = f(26)
+      val fzdm2 = f(27)
+      val fjsm1 = f(28)
+      val fjsm2 = f(29)
+      val fby = f(30)
+      val zt = f(31)
 
-      val s1 =scdm+"\t"+tzlb+"\t"+tzrq+"\t"+zqdm+"\t"+gfxz+"\t"+sszt+"\t"+qylb+"\t"+qybh+"\t"+zh1+"\t"+zh2+"\t"+rq1+"\t"+rq2+"\t"+rq3+"\t"
-      +je1+"\t"+je2+"\t"+je3+"\t"+jg1+"\t"+jg2+"\t"+bz+"\t"+hl+"\t"+bL1+"\t"+bL2+"\t"+sL1+"\t"+sL2+"\t"+LX1+"\t"+LX2+"\t"+fjsm1+"\t"+fjsm2+"\t"+fby+"\t"+zt
 
-      val s2 =scdm+"\t"+tzlb+"\t"+tzrq+"\t"+fzdm1+"\t"+gfxz+"\t"+sszt+"\t"+qylb+"\t"+qybh+"\t"+zh1+"\t"+zh2+"\t"+rq1+"\t"+rq2+"\t"+rq3+"\t"
-      +je1+"\t"+je2+"\t"+je3+"\t"+jg1+"\t"+jg2+"\t"+bz+"\t"+hl+"\t"+bL1+"\t"+bL2+"\t"+sL1+"\t"+sL2+"\t"+LX1+"\t"+LX2+"\t"+fjsm1+"\t"+fjsm2+"\t"+fby+"\t"+zt
+      val s1 = scdm + "\t" + tzlb + "\t" + tzrq + "\t" + zqdm + "\t" + gfxz + "\t" + sszt + "\t" + qylb + "\t" + qybh + "\t" + zh1 + "\t" + zh2 + "\t" + rq1 + "\t" + rq2 + "\t" + rq3 + "\t"+je1 + "\t" + je2 + "\t" + je3 + "\t" + jg1 + "\t" + jg2 + "\t" + bz + "\t" + hl + "\t" + bL1 + "\t" + bL2 + "\t" + sL1 + "\t" + sL2 + "\t" + LX1 + "\t" + LX2 + "\t" + fjsm1 + "\t" + fjsm2 + "\t" + fby + "\t" + zt
 
-      val s3 =scdm+"\t"+tzlb+"\t"+tzrq+"\t"+fzdm2+"\t"+gfxz+"\t"+sszt+"\t"+qylb+"\t"+qybh+"\t"+zh1+"\t"+zh2+"\t"+rq1+"\t"+rq2+"\t"+rq3+"\t"
-      +je1+"\t"+je2+"\t"+je3+"\t"+jg1+"\t"+jg2+"\t"+bz+"\t"+hl+"\t"+bL1+"\t"+bL2+"\t"+sL1+"\t"+sL2+"\t"+LX1+"\t"+LX2+"\t"+fjsm1+"\t"+fjsm2+"\t"+fby+"\t"+zt
-      (s1,s2,s3)
+      val s2 = scdm + "\t" + tzlb + "\t" + tzrq + "\t" + fzdm1 + "\t" + gfxz + "\t" + sszt + "\t" + qylb + "\t" + qybh + "\t" + zh1 + "\t" + zh2 + "\t" + rq1 + "\t" + rq2 + "\t" + rq3 + "\t"+je1 + "\t" + je2 + "\t" + je3 + "\t" + jg1 + "\t" + jg2 + "\t" + bz + "\t" + hl + "\t" + bL1 + "\t" + bL2 + "\t" + sL1 + "\t" + sL2 + "\t" + LX1 + "\t" + LX2 + "\t" + fjsm1 + "\t" + fjsm2 + "\t" + fby + "\t" + zt
+
+      val s3 = scdm + "\t" + tzlb + "\t" + tzrq + "\t" + fzdm2 + "\t" + gfxz + "\t" + sszt + "\t" + qylb + "\t" + qybh + "\t" + zh1 + "\t" + zh2 + "\t" + rq1 + "\t" + rq2 + "\t" + rq3 + "\t"+je1 + "\t" + je2 + "\t" + je3 + "\t" + jg1 + "\t" + jg2 + "\t" + bz + "\t" + hl + "\t" + bL1 + "\t" + bL2 + "\t" + sL1 + "\t" + sL2 + "\t" + LX1 + "\t" + LX2 + "\t" + fjsm1 + "\t" + fjsm2 + "\t" + fby + "\t" + zt
+      val list = List[String](s1, s2, s3)
+      list
     }).map(m => {
-      val v = m._1.split("\t")
-
-      val rowkey = v(1)+v(3)
+      val v = m.split("\t")
+      val rowkey = v(1) + v(3)
       val put = new Put(Bytes.toBytes(rowkey))
       put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes("SCDM"), Bytes.toBytes(v(0)))
       put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes("TZLB"), Bytes.toBytes(v(1)))
@@ -112,9 +110,6 @@ object SzhkTzxxToHbase {
       put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes("FJSM2"), Bytes.toBytes(v(27)))
       put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes("FBY"), Bytes.toBytes(v(28)))
       put.addColumn(Bytes.toBytes("cf"), Bytes.toBytes("ZT"), Bytes.toBytes(v(29)))
-
-
-
       (new ImmutableBytesWritable, put)
     })
     rdd.saveAsHadoopDataset(jobConf)
