@@ -5,7 +5,6 @@ import java.util.Properties
 
 import com.yss.scala.dto.{ShZQBD, ShZQChangeDto}
 import com.yss.scala.util.{DateUtils, RowUtils, Util}
-import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -17,6 +16,7 @@ import scala.util.control.Breaks
   * @date: 2018/11/5
   * @desc: 上海证券变动
   */
+//noinspection ScalaDocParserErrorInspection
 object ShZQChange {
 
   //源数据
@@ -103,7 +103,7 @@ object ShZQChange {
   }
 
 
-  def readCSSYSTSKM(spark: SparkSession): Unit = {
+  private def readCSSYSTSKM(spark: SparkSession): Unit = {
     CSSYSTSKM_data = Util.readCSV(getTableDataPath("CSSYSTSKM"), spark, header = false, sep = ",").toDF(
       "FSETCODE",
       "FSETID",
@@ -130,7 +130,7 @@ object ShZQChange {
     * zqdm 是维护的指标股票：
     * select 1 from A117CsTsKm where fstartdate<=日期 and fsh=1 and fbz=2 and fzqdm=该zqdm
     */
-  def queryZhiShuOrZhiBiao(zqdm: String, fbz: String = "3", ywrq: String, defaultValue: Boolean = false): Boolean = {
+  private def queryZhiShuOrZhiBiao(zqdm: String, fbz: String = "3", ywrq: String, defaultValue: Boolean = false): Boolean = {
     if (CSSYSTSKM_data == null || CSSYSTSKM_data.isEmpty) return defaultValue
     var value = defaultValue
     val break = new Breaks
@@ -148,7 +148,7 @@ object ShZQChange {
   }
 
 
-  def readCSJYLV(spark: SparkSession): Unit = {
+  private def readCSJYLV(spark: SparkSession): Unit = {
     CSJYLV_data = Util.readCSV(getTableDataPath("CSJYLV"), spark, header = false, sep = ",").toDF(
       "FZQLB",
       "FSZSH",
@@ -182,7 +182,7 @@ object ShZQChange {
 
   }
 
-  def queryFlvFromCSJYLVByTzh(tzh: String, fvlb: String, defaultValue: String = "0"): String = {
+  private def queryFlvFromCSJYLVByTzh(tzh: String, fvlb: String, defaultValue: String = "0"): String = {
     if (CSJYLV_data == null || CSJYLV_data.isEmpty) return defaultValue
     val break = new Breaks
     var value = defaultValue
@@ -207,7 +207,7 @@ object ShZQChange {
     *
     * @param spark SparkSession
     */
-  def readLSETLIST(spark: SparkSession): Unit = {
+  private def readLSETLIST(spark: SparkSession): Unit = {
     fsetcode2Fsetid = Util.readCSV(getTableDataPath("LSETLIST"), spark, header = false, sep = ",").toDF(
       "FYEAR",
       "FSETID",
@@ -243,7 +243,7 @@ object ShZQChange {
     * @param defaultValue 默认值
     * @return
     */
-  def queryFsetIDByFsetcode(fsetcode: String, defaultValue: String = ""): String = {
+  private def queryFsetIDByFsetcode(fsetcode: String, defaultValue: String = ""): String = {
     if (fsetcode2Fsetid == null || fsetcode2Fsetid.isEmpty) {
       return defaultValue
     }
@@ -256,7 +256,7 @@ object ShZQChange {
     *
     * @param spark SparkSession
     */
-  def readCSGDZH(spark: SparkSession): Unit = {
+  private def readCSGDZH(spark: SparkSession): Unit = {
     fgddm2Fsetcode = Util.readCSV(getTableDataPath("CSGDZH"), spark, header = false, sep = ",").toDF(
       "FGDDM",
       "FGDXM",
@@ -282,7 +282,7 @@ object ShZQChange {
     * @param defaultValue 默认值
     * @return
     */
-  def queryFsetcodeByFgddm(fgddm: String, defaultValue: String = ""): String = {
+  private def queryFsetcodeByFgddm(fgddm: String, defaultValue: String = ""): String = {
     if (fgddm2Fsetcode == null || fgddm2Fsetcode.isEmpty) {
       return defaultValue
     }
@@ -292,11 +292,11 @@ object ShZQChange {
   /**
     * cskzzhs where fzqdm=“zqdm” and fsh=1 and fstartdate<=业务日期 and fedate>=业务日期 and fbdate<=业务日期
     *
-    * @param spark
+    * @param spark SparkSession
     * @return
     */
 
-  def readCSKZZHS(spark: SparkSession): Unit = {
+  private def readCSKZZHS(spark: SparkSession): Unit = {
     CSKZZHS_data = Util.readCSV(getTableDataPath("CSKZZHS"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FHSJG",
@@ -325,7 +325,7 @@ object ShZQChange {
     *
     * @return
     */
-  def queryCSKZZHSInfo(fzqdm: String, ywrq: String): Boolean = {
+  private def queryCSKZZHSInfo(fzqdm: String, ywrq: String): Boolean = {
 
     var value = false
     if (CSKZZHS_data == null || CSKZZHS_data.isEmpty) return value
@@ -353,12 +353,12 @@ object ShZQChange {
 
   /**
     *
-    * @param zqdm
-    * @param ywrq
-    * @param defaultValue
+    * @param zqdm         证券代码
+    * @param ywrq         业务日期
+    * @param defaultValue 默认值
     * @return
     */
-  def queryFhsjgByZqdmAndYwrq(zqdm: String, ywrq: String, defaultValue: String = "0"): String = {
+  private def queryFhsjgByZqdmAndYwrq(zqdm: String, ywrq: String, defaultValue: String = "0"): String = {
     if (CSKZZHS_data == null || CSKZZHS_data.isEmpty) return defaultValue
     val break = new Breaks
     val ywrqLone = DateUtils.formattedDate2Long(ywrq, DateUtils.YYYYMMDD)
@@ -379,7 +379,7 @@ object ShZQChange {
 
   }
 
-  def readCSZQXX(spark: SparkSession): Unit = {
+  private def readCSZQXX(spark: SparkSession): Unit = {
     zqdm2Fscdm = Util.readCSV(getTableDataPath("CSZQXX"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FZQMC",
@@ -425,7 +425,7 @@ object ShZQChange {
     }).collect().toMap
   }
 
-  def queryFscdmByFZQDM(fzqdm: String, defaultValue: String = ""): String = {
+  private def queryFscdmByFZQDM(fzqdm: String, defaultValue: String = ""): String = {
     if (zqdm2Fscdm == null || zqdm2Fscdm.isEmpty) {
       return defaultValue
     }
@@ -438,7 +438,7 @@ object ShZQChange {
     *
     * @param spark SparkSession
     */
-  def readLVARLIST(spark: SparkSession): Unit = {
+  private def readLVARLIST(spark: SparkSession): Unit = {
     selectKey2Value = Util.readCSV(getTableDataPath("LVARLIST"), spark, header = false, sep = ",").toDF(
       "FVARNAME",
       "FVARVALUE",
@@ -462,7 +462,7 @@ object ShZQChange {
     * @param defaultValue 选项结果
     * @return
     */
-  def queryVarValueByVarName(varName: String, defaultValue: String = "0"): String = {
+  private def queryVarValueByVarName(varName: String, defaultValue: String = "0"): String = {
     if (selectKey2Value == null || selectKey2Value.isEmpty) return defaultValue
     selectKey2Value.getOrElse(varName, defaultValue)
   }
@@ -473,7 +473,7 @@ object ShZQChange {
     *
     * @param spark SparkSession
     */
-  def readCSQYXX(spark: SparkSession): Unit = {
+  private def readCSQYXX(spark: SparkSession): Unit = {
     CSQYXX_data = Util.readCSV(getTableDataPath("CSQYXX"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FQYLX",
@@ -511,13 +511,13 @@ object ShZQChange {
     * FZqDm =zqdm and fqylx='GFDJ'and
     * fqydjr<=业务日期 and fjkjzr>=业务日期
     *
-    * @param zqdm
-    * @param qylx
-    * @param ywrq
-    * @param defaultValue
+    * @param zqdm         证券代码
+    * @param qylx         qy类别
+    * @param ywrq         业务日期
+    * @param defaultValue 默认值
     * @return
     */
-  def queryIsXjdjOrGpdj(zqdm: String, qylx: String, ywrq: String, defaultValue: Boolean = false): Boolean = {
+  private def queryIsXjdjOrGpdj(zqdm: String, qylx: String, ywrq: String, defaultValue: Boolean = false): Boolean = {
     if (CSQYXX_data == null || CSQYXX_data.isEmpty) return defaultValue
     val break = new Breaks
     var value = defaultValue
@@ -542,7 +542,7 @@ object ShZQChange {
     * @param tzh  套账号
     * @return
     */
-  def queryPxJg(zqdm: String, zqlb: String, ywrq: String, tzh: String, defaultValue: String = "0"): String = {
+  private def queryPxJg(zqdm: String, zqlb: String, ywrq: String, tzh: String, defaultValue: String = "0"): String = {
     if (CSQYXX_data == null || CSQYXX_data.isEmpty) return defaultValue
 
     val break = new Breaks
@@ -674,7 +674,7 @@ object ShZQChange {
   }
 
 
-  def readJJGZLX(spark: SparkSession): Unit = {
+  private def readJJGZLX(spark: SparkSession): Unit = {
     JJGZLX_data = Util.readCSV(getTableDataPath("JJGZLX"), spark, header = false, sep = ",").toDF(
       "FGZDM",
       "FJXRQ",
@@ -691,7 +691,7 @@ object ShZQChange {
   }
 
 
-  def queryFYJLXByZqdmAndYwrq(zqdm: String, ywrq: String, defaultValue: String = "0"): String = {
+  private def queryFYJLXByZqdmAndYwrq(zqdm: String, ywrq: String, defaultValue: String = "0"): String = {
     val break = new Breaks
     var value: String = null
     break.breakable({
@@ -750,7 +750,7 @@ object ShZQChange {
     * @param spark      SparkSession
     * @param shZQBDData 结果数据
     */
-  def saveToHDFS(spark: SparkSession, shZQBDData: RDD[ShZQChangeDto]): Unit = {
+  private def saveToHDFS(spark: SparkSession, shZQBDData: RDD[ShZQChangeDto]): Unit = {
     val date = DateUtils.formatDate(System.currentTimeMillis())
     val path = RES_HDFS_PATH + date + File.separator + "zqdb/"
 
@@ -781,7 +781,7 @@ object ShZQChange {
     * @param spark      SparkSession
     * @param shZQBDData 结果数据
     */
-  def saveToMySQL(spark: SparkSession, shZQBDData: RDD[ShZQChangeDto]): Unit = {
+  private def saveToMySQL(spark: SparkSession, shZQBDData: RDD[ShZQChangeDto]): Unit = {
     import spark.implicits._
     val properties = new Properties()
     properties.put("user", "root")
@@ -795,12 +795,12 @@ object ShZQChange {
   /**
     * 计算非分级基金配对转换
     *
-    * @param spark
-    * @param rowNot151Data
-    * @param ywrq
+    * @param spark         SparkSession
+    * @param rowNot151Data 非151的数据
+    * @param ywrq          业务日期
     * @return
     */
-  def caculateNot151(spark: SparkSession, rowNot151Data: RDD[Row], ywrq: String): RDD[ShZQChangeDto] = {
+  private def caculateNot151(spark: SparkSession, rowNot151Data: RDD[Row], ywrq: String): RDD[ShZQChangeDto] = {
     rowNot151Data.map(row => {
       val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
       val bdsl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL", "0"))
@@ -1077,12 +1077,12 @@ object ShZQChange {
   /**
     * 计算分级基金配对转换
     *
-    * @param spark
-    * @param row151Data
-    * @param ywrq
+    * @param spark      SparkSession
+    * @param row151Data 151的数据
+    * @param ywrq       业务日期
     * @return
     */
-  def caculate151(spark: SparkSession, row151Data: RDD[Row], ywrq: String): RDD[ShZQChangeDto] = {
+  private def caculate151(spark: SparkSession, row151Data: RDD[Row], ywrq: String): RDD[ShZQChangeDto] = {
     //分级基金配对转换
     import spark.implicits._
     row151Data.repartition(1).map(row => {
@@ -1163,11 +1163,11 @@ object ShZQChange {
 
         //3. 第三次迭代,获取进行所有的逻辑计算
         for (row <- it) {
-          val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
+          //val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
           val bdsl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL", "0"))
-          val qylb = RowUtils.getRowFieldAsString(row, "QYLB")
-          val zqlb = RowUtils.getRowFieldAsString(row, "ZQLB")
-          val ltlx = RowUtils.getRowFieldAsString(row, "LTLX")
+          //val qylb = RowUtils.getRowFieldAsString(row, "QYLB")
+          //val zqlb = RowUtils.getRowFieldAsString(row, "ZQLB")
+          //val ltlx = RowUtils.getRowFieldAsString(row, "LTLX")
 
           //股东代码
           val fgddm = RowUtils.getRowFieldAsString(row, "ZQZH")
@@ -1367,7 +1367,7 @@ object ShZQChange {
     * @param tName :表面
     * @return
     */
-  def getTableDataPath(tName: String): String = {
+  private def getTableDataPath(tName: String): String = {
     val date = DateUtils.formatDate(System.currentTimeMillis())
     TABLE_HDFS_PATH + date + File.separator + tName
   }
@@ -1379,7 +1379,7 @@ object ShZQChange {
     * @param xwh 从源数据中得到的席位号
     * @return
     */
-  def getResultXWH(xwh: String): String = {
+  private def getResultXWH(xwh: String): String = {
     if (xwh == null) throw new IllegalArgumentException("席位号不能为null")
     val xwhLen = xwh.length
     if (xwhLen > 5) return xwh.substring(0, 5)
