@@ -21,7 +21,7 @@ object SjsjgPTDoMake {
 
   def main(args: Array[String]): Unit = {
     var ywrq = DateUtils.getToday(DateUtils.YYYYMMDD)
-    if(args.size > 1){
+    if(args.length > 1){
       ywrq = args(0)
     }
     execute(ywrq)
@@ -274,24 +274,25 @@ object SjsjgPTDoMake {
       */
     def getZqbz(zqdm: String, jgywlb: String, jgsfje: Int, jgjssl: Int,fsetcode: String): String = {
 
-      val isFlag = csbValues.value.get(fsetcode + CON20_KEY)   //深圳交易数据来源
-      val isFlagValue = csbValues.value.get(fsetcode + CON20_KEY_1) //0: 深交所回报数据  1：深圳中登结算数据  2：深交所V5接口XML文件 3：深交所V5接口数据库直连 4：深交所V5接口成交汇总
+      val isFlag =  csbValues.value.getOrElse(fsetcode + CON20_KEY,"")  //深圳交易数据来源
 
-      if (zqdm.startsWith("16") && "TGXG".equalsIgnoreCase(jgywlb))  return "JJ"
+      val isFlagValue = csbValues.value.getOrElse(fsetcode + CON20_KEY_1,"") //0: 深交所回报数据  1：深圳中登结算数据  2：深交所V5接口XML文件 3：深交所V5接口数据库直连 4：深交所V5接口成交汇总
+
+      if (zqdm.startsWith("16") && "TGXG".equalsIgnoreCase(jgywlb))   "JJ"
       else if ("ZQZG".equalsIgnoreCase(jgywlb)){
-        if (zqdm.startsWith("12")) return "ZQ"
-        return "GP"
+        if (zqdm.startsWith("12"))  "ZQ"
+         "GP"
       }
-      else if ("PGQZ".equalsIgnoreCase(jgywlb) || "QPHG".equalsIgnoreCase(jgywlb) || "ZYWJ".equalsIgnoreCase(jgywlb)) return "QY"
-      else if ("ZQSH".equalsIgnoreCase(jgywlb)) return "ZQ"
-      else if ("FJZR".equalsIgnoreCase(jgywlb) || "YYGH".equalsIgnoreCase(jgywlb)) return "GP"
-      else if (("QZ02".equalsIgnoreCase(jgywlb) || "QZ04".equalsIgnoreCase(jgywlb))&& jgsfje != 0 &&  jgjssl !=0 ) return "QZ"
-      else if ("GS4B".equalsIgnoreCase(jgywlb)) return "JJFECF"   //需要增加 “cscnjjzh”表 hew
-      else if ("TA4A".equalsIgnoreCase(jgywlb)) return "JJ"
-      else if ("QPPX".equalsIgnoreCase(jgywlb) && (jgsfje > 0 &&  jgjssl ==0 || jgsfje == 0 &&  jgjssl > 0 ) ) return "QY"
-      else if ("PGRG".equalsIgnoreCase(jgywlb) && "1".equals(isFlag) && "1".equals(isFlagValue) && jgjssl!=0 && (jgsfje/jgjssl==100) ) return "XZ"
-      else if ("PGRG".equalsIgnoreCase(jgywlb) && "1".equals(isFlag) && "1".equals(isFlagValue) && (jgjssl==0 ||(jgjssl!=0  && (jgsfje/jgjssl!=100))) ) return "QY"
-      else if ((zqdm.startsWith("16")||zqdm.startsWith("15")) && ("ZTZC".equalsIgnoreCase(jgywlb)||"ZTZR".equalsIgnoreCase(jgywlb)))  return "ZTGYW"
+      else if ("PGQZ".equalsIgnoreCase(jgywlb) || "QPHG".equalsIgnoreCase(jgywlb) || "ZYWJ".equalsIgnoreCase(jgywlb))  "QY"
+      else if ("ZQSH".equalsIgnoreCase(jgywlb)) "ZQ"
+      else if ("FJZR".equalsIgnoreCase(jgywlb) || "YYGH".equalsIgnoreCase(jgywlb))  "GP"
+      else if (("QZ02".equalsIgnoreCase(jgywlb) || "QZ04".equalsIgnoreCase(jgywlb))&& jgsfje != 0 &&  jgjssl !=0 )  "QZ"
+      else if ("GS4B".equalsIgnoreCase(jgywlb)) "JJFECF"   //需要增加 “cscnjjzh”表 hew
+      else if ("TA4A".equalsIgnoreCase(jgywlb))  "JJ"
+      else if ("QPPX".equalsIgnoreCase(jgywlb) && (jgsfje > 0 &&  jgjssl ==0 || jgsfje == 0 &&  jgjssl > 0 ) )  "QY"
+      else if ("PGRG".equalsIgnoreCase(jgywlb) && "1".equals(isFlag) && "1".equals(isFlagValue) && jgjssl!=0 && (jgsfje/jgjssl==100) )  "XZ"
+      else if ("PGRG".equalsIgnoreCase(jgywlb) && "1".equals(isFlag) && "1".equals(isFlagValue) && (jgjssl==0 ||(jgjssl!=0  && (jgsfje/jgjssl!=100))) )  "QY"
+      else if ((zqdm.startsWith("16")||zqdm.startsWith("15")) && ("ZTZC".equalsIgnoreCase(jgywlb)||"ZTZR".equalsIgnoreCase(jgywlb)))   "ZTGYW"
       else DEFAULT_VALUE
     }
 
@@ -311,69 +312,69 @@ object SjsjgPTDoMake {
       val booZqlbEtf = csjjxxValues.value.contains(zqdm + SEPARATE1 + "ETF")
       var reFlag1 = cszqxxValues._2.value.contains(zqdm + SEPARATE1 + fsetcode)
       var reFlag2 = cszqxxValues._2.value.contains(zqdm + SEPARATE1 + " ")
-      val isFlag = csbValues.value.get(fsetcode + CON20_KEY)
-      val isFlagValue = csbValues.value.get(fsetcode + CON20_KEY_1)
+      val isFlag = csbValues.value.getOrElse(fsetcode + CON20_KEY,"")
+      val isFlagValue = csbValues.value.getOrElse(fsetcode + CON20_KEY_1,"")
 
-      if (zqdm.startsWith("16") && "TGXG".equalsIgnoreCase(jgywlb))  return "LOFRGQR"
-      else if ("ZQZG".equalsIgnoreCase(jgywlb)) return "KZZGP"
-      else if ("PGQZ".equalsIgnoreCase(jgywlb)) return "QZ"
-      else if ("ZQSH".equalsIgnoreCase(jgywlb) && zqdm.startsWith("11") && (reFlag1 || reFlag2 )) return "FLKZZSH"
-      else if ("ZQSH".equalsIgnoreCase(jgywlb) && zqdm.startsWith("11")) return "QYZQSH"
-      else if ("ZQSH".equalsIgnoreCase(jgywlb) ) return "KZZSH"
-      else if ("FJZR".equalsIgnoreCase(jgywlb) || "YYGH".equalsIgnoreCase(jgywlb)) return "YYSell"
+      if (zqdm.startsWith("16") && "TGXG".equalsIgnoreCase(jgywlb))   "LOFRGQR"
+      else if ("ZQZG".equalsIgnoreCase(jgywlb))  "KZZGP"
+      else if ("PGQZ".equalsIgnoreCase(jgywlb))  "QZ"
+      else if ("ZQSH".equalsIgnoreCase(jgywlb) && zqdm.startsWith("11") && (reFlag1 || reFlag2 ))  "FLKZZSH"
+      else if ("ZQSH".equalsIgnoreCase(jgywlb) && zqdm.startsWith("11"))  "QYZQSH"
+      else if ("ZQSH".equalsIgnoreCase(jgywlb) )  "KZZSH"
+      else if ("FJZR".equalsIgnoreCase(jgywlb) || "YYGH".equalsIgnoreCase(jgywlb))  "YYSell"
       else if (("QZ02".equalsIgnoreCase(jgywlb) || "QZ04".equalsIgnoreCase(jgywlb))&& jgsfje != 0 &&  jgjssl !=0 ){
         if(jgsfje > 0){
-          return "RZQZXQ"
+           "RZQZXQ"
         }else{
-          return "RGQZXQ"
+           "RGQZXQ"
         }
       }
       else if ("GS4B".equalsIgnoreCase(jgywlb)) {
         if(zqdm.startsWith("15") && booZqlb){
-          return "FBS"
+           "FBS"
         }else if(zqdm.startsWith("1599")){
-          return "ETF"
+           "ETF"
         }else if(zqdm.startsWith("15") && !booZqlb && !zqdm.startsWith("1599")){
-          return "LOF"
+           "LOF"
         }else if(zqdm.startsWith("16")){
-          return "LOF"
+           "LOF"
         }else if(zqdm.startsWith("18")){
-          return "JJ"
+           "JJ"
         }
       }
-      else if ("TA4A".equalsIgnoreCase(jgywlb) ) return "FJJJPDZH"
-      else if ("ZYWJ".equalsIgnoreCase(jgywlb) ) return "ZQPX"
+      else if ("TA4A".equalsIgnoreCase(jgywlb) )  "FJJJPDZH"
+      else if ("ZYWJ".equalsIgnoreCase(jgywlb) )  "ZQPX"
       else if ("QPPX".equalsIgnoreCase(jgywlb) ){
         if((zqdm.startsWith("10")||zqdm.startsWith("11")||zqdm.startsWith("10")) && jgjssl==0 && jgsfje >0){
-          return "ZQPX"
+           "ZQPX"
         }
         if((zqdm.startsWith("15")||zqdm.startsWith("16")||zqdm.startsWith("18")) && jgjssl==0 && jgsfje >0){
-          return "JJPX"
+           "JJPX"
         }
         if((!zqdm.startsWith("15") && !zqdm.startsWith("16") && !zqdm.startsWith("18") && !zqdm.startsWith("10") && !zqdm.startsWith("11") && !zqdm.startsWith("12")) && jgjssl==0 && jgsfje >0){
-          return "PX"
+           "PX"
         }else{
-          return "SG"
+           "SG"
         }
 
       }
-      else if ("PGRG".equalsIgnoreCase(jgywlb) && "1".equals(isFlag) && "1".equals(isFlagValue) && jgjssl!=0 && (jgsfje/jgjssl==100) ) return "KZZXZ"
-      else if ("PGRG".equalsIgnoreCase(jgywlb) && "1".equals(isFlag) && "1".equals(isFlagValue) && (jgjssl==0 ||(jgjssl!=0  && (jgsfje/jgjssl!=100))) ) return "PG"
-      else if ((zqdm.startsWith("16")||zqdm.startsWith("15")) && ("ZTZC".equalsIgnoreCase(jgywlb))){
+      else if ("PGRG".equalsIgnoreCase(jgywlb) && "1".equals(isFlag) && "1".equals(isFlagValue) && jgjssl!=0 && (jgsfje/jgjssl==100) )  "KZZXZ"
+      else if ("PGRG".equalsIgnoreCase(jgywlb) && "1".equals(isFlag) && "1".equals(isFlagValue) && (jgjssl==0 ||(jgjssl!=0  && (jgsfje/jgjssl!=100))) )  "PG"
+      else if ((zqdm.startsWith("16")||zqdm.startsWith("15")) && "ZTZC".equalsIgnoreCase(jgywlb)){
         if(booZqlbLof){
-          return "LOFZC"
+           "LOFZC"
         }else if(booZqlbEtf){
-          return "ETFZC"
+           "ETFZC"
         }
       }
-      else if ((zqdm.startsWith("16")||zqdm.startsWith("15")) && ("ZTZR".equalsIgnoreCase(jgywlb))){
+      else if ((zqdm.startsWith("16")||zqdm.startsWith("15")) && "ZTZR".equalsIgnoreCase(jgywlb)){
         if(booZqlbLof){
-          return "LOFZR"
+           "LOFZR"
         }else if(booZqlbEtf){
-          return "ETFZR"
+           "ETFZR"
         }
       }
-      else if("QPHG".equalsIgnoreCase(jgywlb))  return "SG"
+      else if("QPHG".equalsIgnoreCase(jgywlb))   "SG"
       DEFAULT_VALUE
     }
 
@@ -386,9 +387,9 @@ object SjsjgPTDoMake {
     def getZqdm(zqdm: String): String = {
       val end4 = zqdm.substring(2)
       val end3 = zqdm.substring(3)
-      if (zqdm.startsWith("3")) return "30" + end4
-      if (zqdm.startsWith("18")) return zqdm
-      if (zqdm.startsWith("003")) return "600" + end3
+      if (zqdm.startsWith("3"))  "30" + end4
+      if (zqdm.startsWith("18"))  zqdm
+      if (zqdm.startsWith("003"))  "600" + end3
       "00" + end4
     }
 
