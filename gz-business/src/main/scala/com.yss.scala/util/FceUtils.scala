@@ -137,32 +137,6 @@ object FceUtils {
   }
 
   /**
-    * 获取业务日期后的下一个工作日，
-    * 此方法应该在driver中执行，不要用在spark的一些算子中
-    *
-    * @param sc   ：SparkContext
-    * @param findate ：业务日期 注意（yyyy-MM-dd)
-    * @return 下一个工作日
-    */
-  def getCsholiday(sc: SparkContext, findate: String) = {
-    val csholidayPath = Util.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
-    val csholidayList = sc.textFile(csholidayPath)
-      .filter(str => {
-        val fields = str.split(SEPARATE2)
-        val fdate = fields(0)
-        val fbz = fields(1)
-        val fsh = fields(3)
-        if (DEFAULT_VALUE_0.equals(fbz) && FSH.equals(fsh) && fdate.compareTo(findate) >= 0) true
-        else false
-      })
-      .map(str => {
-        str.split(SEPARATE2)(0)
-      }).takeOrdered(1)
-    if (csholidayList.length == 0) findate
-    else csholidayList(0)
-  }
-
-  /**
     * 股东账号表csgdzh Broadcast[collection.Map[String, String]]结构
     *
     * @param sc ：SparkContext
@@ -201,6 +175,33 @@ object FceUtils {
       })
       .collectAsMap()
     sc.broadcast(lsetlistMap)
+  }
+
+
+  /**
+    * 获取业务日期后的下一个工作日，
+    * 此方法应该在driver中执行，不要用在spark的一些算子中
+    *
+    * @param sc   ：SparkContext
+    * @param findate ：业务日期 注意（yyyy-MM-dd)
+    * @return 下一个工作日
+    */
+  def getCsholiday(sc: SparkContext, findate: String) = {
+    val csholidayPath = Util.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
+    val csholidayList = sc.textFile(csholidayPath)
+      .filter(str => {
+        val fields = str.split(SEPARATE2)
+        val fdate = fields(0)
+        val fbz = fields(1)
+        val fsh = fields(3)
+        if (DEFAULT_VALUE_0.equals(fbz) && FSH.equals(fsh) && fdate.compareTo(findate) >= 0) true
+        else false
+      })
+      .map(str => {
+        str.split(SEPARATE2)(0)
+      }).takeOrdered(1)
+    if (csholidayList.length == 0) findate
+    else csholidayList(0)
   }
 
   /**
