@@ -22,7 +22,7 @@ import scala.math.BigDecimal.RoundingMode
   *
   *
   */
-object SZSETriPartyRepo {
+object SjsmxSjsjg {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().appName("SZSETriPartyRepo")
       .master("local[*]")
