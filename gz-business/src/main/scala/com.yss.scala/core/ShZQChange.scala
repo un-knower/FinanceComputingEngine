@@ -56,8 +56,8 @@ object ShZQChange {
       .master("local[*]")
       .getOrCreate()
     val day = DateUtils.formatDate(System.currentTimeMillis())
-    var dataPath = ZQBD_basePath + day + "/zqbd.DBF.csv"
-    var ywrq = "20160622"
+    var dataPath = ZQBD_basePath + day + "/zqbd/zqbd*.csv"
+    var ywrq = "20180703"
     if (args != null && args.length == 2) {
       dataPath = args(0)
       ywrq = args(1)

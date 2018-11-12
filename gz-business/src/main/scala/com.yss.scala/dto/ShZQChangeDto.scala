@@ -1,8 +1,11 @@
 package com.yss.scala.dto
 
 /**
-  * 上海证券变动
+  * @auther: lijiayan
+  * @date: 2018/11/9
+  * @desc: 上海证券变动结果数据
   */
+//noinspection ScalaDocParserErrorInspection
 case class ShZQChangeDto(
                           FSETID: String,
                           FDATE: String,
