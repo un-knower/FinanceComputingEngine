@@ -16,8 +16,8 @@ case class ExecutionObj(
                                 FZGF: String, //征管费
                                 FGHF: String, //过户费
                                 FFXJ: String, //风险金
-                                HGSY:String,
                                 FGZLX: String, //国债利息
+                                FHGGAIN: String, //回购收益
                                 FSSSFJE: String, //实付金额
                                 FZQBZ: String, //证券标志
                                 FYWBZ: String, //业务标志
