@@ -14,6 +14,7 @@ case class ExecutionOriginalObj(
                          SQBH:String,
                          FZQBZ:String,
                          FYWBZ:String,
-                         SETCODE:String
+                         SETCODE:String,
+                         SH:String
 
                          )
