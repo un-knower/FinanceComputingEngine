@@ -5,6 +5,7 @@ package com.yss.scala.dto
   * @date: 2018/11/7
   * @desc: 上海证券变成源数据对应的样栗类
   */
+//noinspection ScalaDocParserErrorInspection
 case class ShZQBD(
                    SCDM: String,
                    QSBH: String,
