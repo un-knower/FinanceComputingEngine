@@ -29,29 +29,11 @@ object ShghContants {
   val BUY = "B"
   /** 卖 S*/
   val SALE = "S"
-
-
   val JSF = "JSF"
   val YHS = "YHS"
   val ZGF = "ZGF"
   val FXJ = "FXJ"
   val GHF = "GHF"
-  /** 上交所A股过户费按成交金额计算*/
-  val CS2_KEY = "上交所A股过户费按成交金额计算"
-  /** 佣金包含经手费，证管费*/
-  val CS1_KEY = "佣金包含经手费，证管费"
-  /** 是否按千分之一费率计算过户费*/
-  val CS3_KEY = "是否按千分之一费率计算过户费"
-  /** 计算佣金减去风险金*/
-  val CS4_KEY = "计算佣金减去风险金"
-  /** 计算佣金减去结算费*/
-  val CS6_KEY = "计算佣金减去结算费"
-  /** 实际收付金额包含佣金*/
-  val CON8_KEY = "实际收付金额包含佣金"
-  /** 计算公共费率保留小数位 */
-  val CS7_KEY = "计算公共费率保留小数位"
-  /** 计算佣金保留小数位 */
-  val CS8_KEY = "计算佣金保留小数位"
 
   /** 资产信息表 */
   val TABLE_NAME_ZCXX = "LSETLIST"
@@ -64,7 +46,7 @@ object ShghContants {
   /** 席位表 */
   val TABLE_NAME_QSXW = "CSQSXW"
   /** 001套账的特殊科目设置表 */
-   val TABLE_NAME_TSKM= "CSSYSTSKM"
+  val TABLE_NAME_TSKM= "CSSYSTSKM"
   /** 资产信息*/
   val TABLE_NAME_SYSJJ= "LSETCSSYSJJ"
   /** 债券信息表 */
@@ -79,24 +61,6 @@ object ShghContants {
   val TABLE_NAME_HOLIDAY = "CSHOLIDAY"
   /** 001套账的佣金利率 */
   val TABLE_NAME_A117CSJYLV = "CSSYSYJLV"
-  /** 特殊处理的ETF基金的业务标志和证券标志 ZQETFJY*/
-  val ETF_ZQBZ_OR_YWZ = "ZQETFJY"
-  /** 券商过户费 CSQSFYLV*/
-  val TABLE_NAME_CSQSFYLV = "CSQSFYLV"
-  /** 回购业务标志 MRHG*/
-  val MRHG = "MRHG"
-  /** 回购业务标志 MCHG*/
-  val MCHG = "MCHG"
-  /** 回购业务HG */
-  val HG  = "HG"
-  /** 回购业务取回购天数的*/
-  val SXF = "SXF"
-  /** 券商过户费 QSGHF */
-  val QSGHF = "QSGHF"
-  /** 券商过户费的ffyfs标识 0 */
-  val FFYFS = "0"
-  /** HDFS上源数据前缀 /yss/guzhi/interface/ */
-  val PREFIX = "/yss/guzhi/interface/"
 
   /** 默认的将数字格式化成字符串格式 %.2f */
   val DEFAULT_DIGIT_FORMAT = "%.2f"
@@ -119,6 +83,8 @@ object ShghContants {
   /** 默认值 -1@-1 */
   val DEFAULT_VALUE4 = "-1@-1"
 
+
+  //-----------------------上海过户 -----------------------------------
   /** 债券类型取债券品种信息维护的债券类型 */
   val CON01_KEY = "债券类型取债券品种信息维护的债券类型"
   /** 指数、指标股票按特殊科目设置页面处理 */
@@ -127,6 +93,42 @@ object ShghContants {
   val CON03_KEY = "上交所是否启用企债净价交易"
   /** 上海回购价格位数 */
   val CON04_KEY = "上海回购价格位数"
+
+  /** 上交所A股过户费按成交金额计算*/
+  val CS2_KEY = "上交所A股过户费按成交金额计算"
+  /** 佣金包含经手费，证管费*/
+  val CS1_KEY = "佣金包含经手费，证管费"
+  /** 是否按千分之一费率计算过户费*/
+  val CS3_KEY = "是否按千分之一费率计算过户费"
+  /** 计算佣金减去风险金*/
+  val CS4_KEY = "计算佣金减去风险金"
+  /** 计算佣金减去结算费*/
+  val CS6_KEY = "计算佣金减去结算费"
+  /** 实际收付金额包含佣金*/
+  val CON8_KEY = "实际收付金额包含佣金"
+  /** 计算公共费率保留小数位 */
+  val CS7_KEY = "计算公共费率保留小数位"
+  /** 计算佣金保留小数位 */
+  val CS8_KEY = "计算佣金保留小数位"
+
+  /** 特殊处理的ETF基金的业务标志和证券标志 ZQETFJY*/
+  val ETF_ZQBZ_OR_YWZ = "ZQETFJY"
+  /** 券商过户费 CSQSFYLV*/
+  val TABLE_NAME_CSQSFYLV = "CSQSFYLV"
+  /** 回购业务标志 MRHG*/
+  val MRHG = "MRHG"
+  /** 回购业务标志 MCHG*/
+  val MCHG = "MCHG"
+  /** 回购业务HG */
+  val HG  = "HG"
+  /** 回购业务取回购天数的*/
+  val SXF = "SXF"
+  /** 券商过户费 QSGHF */
+  val QSGHF = "QSGHF"
+  /** 券商过户费的ffyfs标识 0 */
+  val FFYFS = "0"
+  /** HDFS上源数据前缀 /yss/guzhi/interface/ */
+  val PREFIX = "/yss/guzhi/interface/"
 
   /** 上海过户的可能没有用到 */
   val CON1_KEY = "按申请编号汇总计算经手费"
@@ -141,5 +143,30 @@ object ShghContants {
   val CON14_KEY = "按成交记录计算印花税"
   val CON15_KEY = "H按成交记录计算佣金"
   val CON17_KEY = "H按成交记录计算风险金"
+
+
+
+//---------- 上证LOF ------------------
+
+  /** 上证LOF申请交易标志为LFC */
+  val LFC = "LFC"
+  /** 上证LOF申请交易标志为LFS */
+  val LFS = "LFS"
+  /** 上证LOF申请交易标志为LFR */
+  val LFR = "LFR"
+  /** 上证LOF申请 */
+  val BGH = "bgh"
+  /** 上证LOF申请的文件路径 /bgh*/
+  val PATH_BGH = "/bgh"
+  /** 上证LOF证券标志 CWJJ */
+  val ZQBZ_BGH = "CWJJ"
+  /** 上证LOF业务标志 LOFSSSQ */
+  val YWBZ_BGH = "LOFSSSQ"
+  /** 人名币 */
+  val RMB = "RBM"
+  /** 上证LOF确认 */
+  val LOFMXZF = "lofmxzf"
+  /** 上证LOF确认文件路径 */
+  val PATH_LOFMXZF = "/lofmxzf"
 
 }

@@ -20,39 +20,41 @@ import scala.collection.mutable.ListBuffer
 import scala.math.BigDecimal.RoundingMode
 
 /**
-  * 港股通
+  * @author qmy
+  * @version 2018-11-05
+  *          描述：深圳港股通(深交所明细)
+  *          源文件：szhk_sjsmx.dbf
+  *          结果表：HZJKQS
   */
-object Ggt {
+object SZHK_SjsMx {
 
   def main(args: Array[String]): Unit = {
 
-    val conf = new SparkConf().setAppName("Ggt")
-
-    val spark = SparkSession.builder().config(conf).getOrCreate()
+    val spark = SparkSession.builder().appName("SZHK_SJSMX").master("local[*]").getOrCreate()
 
     //获取配置参数
-    val (commonUrl, currentDate,ggtHadoopPath, hadoopRpcPath) = loadInitParam(args)
+    val (commonUrl, currentDate,ggtHadoopPath, hadoopRpcPath) = loadInitParam()
 
-    val (jsmxFiles,tzxxFiles) = getHadoopFilesName(hadoopRpcPath, ggtHadoopPath, "jsmx", "tzxx")
+    val (jsmxFiles,tzxxFiles) = getHadoopFilesName(hadoopRpcPath, ggtHadoopPath, "szhk_jsmx", "szhk_tzxx")
 
     //过滤不需要的数据
     val jsmxdbfDF = filterYWLX(spark,jsmxFiles).persist(StorageLevel.MEMORY_ONLY)
     val tzxxDF = getHktzxxDF(spark,tzxxFiles).persist(StorageLevel.MEMORY_ONLY)
 
-    var qsrq = currentDate
+    var qsrq = currentDate//确认日期
     val qsrqformat = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(qsrq))
 
     //获取原始数据的GDDM数据
-    val gddmPairRDD = jsmxdbfDF.select("ZQZH").distinct().rdd.map(item => (trim(item.getAs[String]("ZQZH")), 1)).persist(StorageLevel.MEMORY_ONLY)
+    val gddmPairRDD = jsmxdbfDF.select("ZQZH").distinct().rdd.map(item => (trim(item.getAs[String]("ZQZH")).substring(0,10), 1)).persist(StorageLevel.MEMORY_ONLY)
 
-    //获取原始数据的XWH数据
-    val xwhPairRDD = jsmxdbfDF.select("XWH1").distinct().rdd.map(item => (trim(item.getAs[String]("XWH1")), 1)).persist(StorageLevel.MEMORY_ONLY)
+    //获取原始数据的JYDY数据
+    val xwhPairRDD = jsmxdbfDF.select("JYDY").distinct().rdd.map(item => (trim(item.getAs[String]("JYDY")), 1)).persist(StorageLevel.MEMORY_ONLY)
 
     //获取原始数据的zqdm1数据
     val zqdm1PairRDD = jsmxdbfDF.select("ZQDM1").distinct().rdd.map(item =>(trim(item.getAs("ZQDM1")), 1)).persist(StorageLevel.MEMORY_ONLY)
 
     //获取原始数据的(XWH,gddm)数据
-    val xwhGddmPairRDD = jsmxdbfDF.select("XWH1", "ZQZH").distinct().rdd.map(item => (trim(item.getAs[String]("XWH1")), trim(item.getAs[String]("ZQZH")))).persist(StorageLevel.MEMORY_ONLY)
+    val xwhGddmPairRDD = jsmxdbfDF.select("JYDY", "ZQZH").distinct().rdd.map(item => (trim(item.getAs[String]("JYDY")), trim(item.getAs[String]("ZQZH").substring(0,10)))).persist(StorageLevel.MEMORY_ONLY)
 
     //gddm和套账号fsetcode的对应关系
     val gddmFsetCodeRDD = buildGddmFsetCode(gddmPairRDD, spark, commonUrl, currentDate).persist(StorageLevel.MEMORY_ONLY)
@@ -190,7 +192,7 @@ object Ggt {
     yjResultDF.createOrReplaceTempView("yjResultDF_table")
 
     val resutlDF = spark.sql(
-        " SELECT t1.FSETID, t1.FDATE, t1.FINDATE, t1.FZQDM, t1.FJYXWH, t1.FZQBZ, t1.FYWBZ, t1.ZQDM, t1.FBS, " +
+      " SELECT t1.FSETID, t1.FDATE, t1.FINDATE, t1.FZQDM, t1.FJYXWH, t1.FZQBZ, t1.FYWBZ, t1.ZQDM, t1.FBS, " +
         " t1.FQTF, t1.FJE, t1.FSL, t2.fyj FYJ, t1.FJSF, t1.FYHS," +
         " t1.FZGF, t1.FGHF, t1.FGZLX, t1.FHGGAIN, t1.FFXJ, t2.Fsssje FSFJE," +
         " t1.FSZSH, t1.FQSBZ, t1.FJYFS," +
@@ -207,53 +209,53 @@ object Ggt {
 
     val format :DecimalFormat  = new DecimalFormat("0.00")
     val resultDS = resutlDF.as[Hzjkqs].rdd.map{ item =>
-          Hzjkqs(
-            item.FSETID,
-            item.FDATE,
-            item.FINDATE,
-            item.FZQDM,
-            item.FSZSH,
-            item.FJYXWH,
-            item.FBS,
-            format.format(item.FJE.toDouble),
-            format.format(item.FSL.toDouble),
-            format.format(item.FYJ.toDouble),
-            format.format(item.FJSF.toDouble),
-            format.format(item.FYHS.toDouble),
-            format.format(item.FZGF.toDouble),
-            format.format(item.FGHF.toDouble),
-            format.format(item.FFXJ.toDouble),
-            format.format(item.FQTF.toDouble),
-            format.format(item.FGZLX.toDouble),
-            format.format(item.FHGGAIN.toDouble),
-            format.format(item.FSFJE.toDouble),
-            item.FZQBZ,
-            item.FYWBZ,
-            item.FJYBZ,
-            item.FQSBZ,
-            item.ZQDM,
-            item.FJYFS,
-            item.FSH,
-            item.FZZR,
-            item.FCHK,
-            item.FZLH,
-            item.FTZBZ,
-            item.FQSGHF,
-            item.FGDDM,
-            item.ISRTGS,
-            item.FPARTID,
-            item.FHTXH ,
-            item.FCSHTXH,
-            item.FRZLV,
-            item.FCSGHQX,
-            item.FSJLY,
-            item.FBZ,
-            item.FBY1,
-            item.FBY2,
-            item.FBY3,
-            item.FBY4,
-            item.FBY5)
-        }.toDS()
+      Hzjkqs(
+        item.FSETID,
+        item.FDATE,
+        item.FINDATE,
+        item.FZQDM,
+        item.FSZSH,
+        item.FJYXWH,
+        item.FBS,
+        format.format(item.FJE.toDouble),
+        format.format(item.FSL.toDouble),
+        format.format(item.FYJ.toDouble),
+        format.format(item.FJSF.toDouble),
+        format.format(item.FYHS.toDouble),
+        format.format(item.FZGF.toDouble),
+        format.format(item.FGHF.toDouble),
+        format.format(item.FFXJ.toDouble),
+        format.format(item.FQTF.toDouble),
+        format.format(item.FGZLX.toDouble),
+        format.format(item.FHGGAIN.toDouble),
+        format.format(item.FSFJE.toDouble),
+        item.FZQBZ,
+        item.FYWBZ,
+        item.FJYBZ,
+        item.FQSBZ,
+        item.ZQDM,
+        item.FJYFS,
+        item.FSH,
+        item.FZZR,
+        item.FCHK,
+        item.FZLH,
+        item.FTZBZ,
+        item.FQSGHF,
+        item.FGDDM,
+        item.ISRTGS,
+        item.FPARTID,
+        item.FHTXH ,
+        item.FCSHTXH,
+        item.FRZLV,
+        item.FCSGHQX,
+        item.FSJLY,
+        item.FBZ,
+        item.FBY1,
+        item.FBY2,
+        item.FBY3,
+        item.FBY4,
+        item.FBY5)
+    }.toDS()
 
     val resultOrder = resultDS.orderBy("FDATE", "FINDATE", "FZQDM", "FJYXWH", "FZQBZ", "FYWBZ","ZQDM")
 
@@ -329,7 +331,7 @@ object Ggt {
     sqBhMx1Result.toDS().createOrReplaceTempView("SQBH1_TALBE")
 
     spark.sql(
-        " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
+      " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
         " SUM(FQTF) FQTF, SUM(FJE) FJE, SUM(FSL) FSL, SUM(FYJ) FYJ, SUM(FJSF) FJSF, SUM(FYHS) FYHS," +
         " SUM(FZGF) FZGF, SUM(FGHF) FGHF, SUM(FGZLX) FGZLX, SUM(FHGGAIN) FHGGAIN, SUM(FFXJ) FFXJ, SUM(FSFJE) FSFJE," +
         " MIN(FSZSH) FSZSH, MIN(FQSBZ) FQSBZ, MIN(FJYFS) FJYFS," +
@@ -362,7 +364,7 @@ object Ggt {
     cjBhMx1Result.toDS().createOrReplaceTempView("CJBH1_TALBE")
 
     spark.sql(
-        " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS," +
+      " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM,FBS," +
         " SUM(FQTF) FQTF, SUM(FJE) FJE, SUM(FSL) FSL, SUM(FYJ) FYJ, SUM(FJSF) FJSF, SUM(FYHS) FYHS," +
         " SUM(FZGF) FZGF, SUM(FGHF) FGHF, SUM(FGZLX) FGZLX, SUM(FHGGAIN) FHGGAIN, SUM(FFXJ) FFXJ, SUM(FSFJE) FSFJE," +
         " MIN(FSZSH) FSZSH, MIN(FQSBZ) FQSBZ, MIN(FJYFS) FJYFS," +
@@ -384,12 +386,12 @@ object Ggt {
     import spark.implicits._
     basicsRDD.toDS().createOrReplaceTempView("jsmxModels00_table")
     spark.sql(
-    " select ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl, "+
-    " sum(sl) sl, sum(cjsl) cjsl, sum(wbje) wbje, sum(yhs) yhs, " +
-    " sum(jyzf) jyzf,sum(jyf) jyf, sum(syf) syf, sum(jsf) jsf, " +
-    " sum(qtje) qtje, sum(wbysf) wbysf,sum(ysfje) ysfje,min(paraminfos) paraminfos"+
-    " from jsmxModels00_table "+
-    " group by ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl "
+      " select ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl, "+
+        " sum(sl) sl, sum(cjsl) cjsl, sum(wbje) wbje, sum(yhs) yhs, " +
+        " sum(jyzf) jyzf,sum(jyf) jyf, sum(syf) syf, sum(jsf) jsf, " +
+        " sum(qtje) qtje, sum(wbysf) wbysf,sum(ysfje) ysfje,min(paraminfos) paraminfos"+
+        " from jsmxModels00_table "+
+        " group by ywlx,bdlx,qsrq,jsrq,xwh1, zqzh, zqdm1,qsbz, mmbz,wbhl "
     )
   }
 
@@ -463,7 +465,7 @@ object Ggt {
     cjBhMxSqBhMx00Result.toDS().createOrReplaceTempView("CJSQ_TALBE")
 
     spark.sql(
-        " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
+      " SELECT FDATE,FINDATE,FZQDM,FJYXWH,FZQBZ,FYWBZ,ZQDM, FBS," +
         " SUM(FQTF) FQTF, SUM(FJE) FJE, SUM(FSL) FSL, SUM(FYJ) FYJ, SUM(FJSF) FJSF, SUM(FYHS) FYHS," +
         " SUM(FZGF) FZGF, SUM(FGHF) FGHF, SUM(FGZLX) FGZLX, SUM(FHGGAIN) FHGGAIN, SUM(FFXJ) FFXJ, SUM(FSFJE) FSFJE," +
         " MIN(FSZSH) FSZSH, MIN(FQSBZ) FQSBZ, MIN(FJYFS) FJYFS," +
@@ -490,13 +492,13 @@ object Ggt {
     * @return
     */
   def buildblnYj00RDD(basicsRDD:RDD[HkJsmxModel], spark:SparkSession,
-                          bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
-                          bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
-                          bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
-                          bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
-                          bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
-                          bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
-                          bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) : DataFrame = {
+                      bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
+                      bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
+                      bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
+                      bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
+                      bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
+                      bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
+                      bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) : DataFrame = {
     import spark.implicits._
     val blnYj00DF = conditionGroupBy1(basicsRDD, spark)
 
@@ -528,13 +530,13 @@ object Ggt {
     * @return
     */
   def buildBlnYjCjBhMx1(basicsRDD:RDD[HkJsmxModel], spark:SparkSession,
-                      bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
-                      bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
-                      bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
-                      bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
-                      bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
-                      bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
-                      bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) : DataFrame = {
+                        bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
+                        bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
+                        bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
+                        bdGddmGsdmZslMap:Broadcast[scala.collection.Map[String,String]],
+                        bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
+                        bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
+                        bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]) : DataFrame = {
     import spark.implicits._
     val blnYj00DF = conditionGroupBy2(basicsRDD, spark)
 
@@ -760,13 +762,13 @@ object Ggt {
     * @return
     */
   def yJcalculationResult(item: Row,
-                        bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
-                        bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
-                        bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
-                        bdxwhZslMap:Broadcast[scala.collection.Map[String,String]],
-                        bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
-                        bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
-                        bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]):YjModel = {
+                          bdGddmParamMap:Broadcast[scala.collection.Map[String,String]],
+                          bdZqdm1ValueMap:Broadcast[scala.collection.Map[String,String]],
+                          bdGddmFJJLxLBMap:Broadcast[scala.collection.Map[String,String]],
+                          bdxwhZslMap:Broadcast[scala.collection.Map[String,String]],
+                          bdZqdm1ZS2Map:Broadcast[scala.collection.Map[String,String]],
+                          bdYjlvMap:Broadcast[scala.collection.Map[String,String]],
+                          bdFFyffsMap:Broadcast[scala.collection.Map[String,String]]):YjModel = {
 
     val gddmParamMap = bdGddmParamMap.value
     val zqdm1Map = bdZqdm1ValueMap.value
@@ -1665,19 +1667,15 @@ object Ggt {
   def filterYWLX(spark: SparkSession, listFiles:ListBuffer[String]) = {
     val jsmxdbfDF = mergeFileDF(spark,listFiles)
 
-    jsmxdbfDF.createOrReplaceTempView("hk_jsmx_table")
-    spark.sql("select * from hk_jsmx_table where YWLX in ('H01','H02','H54','H55','H60','H63','H64','H65','H67')")
+    jsmxdbfDF.createOrReplaceTempView("szhk_jsmx_table")
+    spark.sql("select * from szhk_jsmx_table where YWLX in ('H01','H02','H54','H55','H60','H63','H64','H65','H67')")
   }
 
-  def loadInitParam(args: Array[String]):(String,String,String,String)={
-    if(args.length < 1) {
-      throw new Exception("args 参数不完整")
-    }
-
-    val currentDate = args(0)
+  def loadInitParam():(String,String,String,String)={
+    var currentDate = getCurrentDate()
     val hadoopRpcPath = "hdfs://192.168.102.120:8020"
     val commonUrl = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
-    val ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/hkjsmx"
+    val ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/SZHK"
 
     (commonUrl, currentDate,ggtHadoopPath,hadoopRpcPath)
   }
@@ -1714,13 +1712,13 @@ object Ggt {
     * @return
     */
   def loadA117CSXWFY(spark:SparkSession, commonUrl:String, date:String, fileName:String)= {
-        val csgdzhRDD = spark.sparkContext.textFile(commonUrl + date + "/" + fileName)
+    val csgdzhRDD = spark.sparkContext.textFile(commonUrl + date + "/" + fileName)
 
-        val csgdzhPairRDD = csgdzhRDD.map { item =>
-          val items = item.split(",")
-          CsxwfyModel(trim(items(0)), trim(items(1)), trim(items(2)), trim(items(3)), trim(items(4)),
-            trim(items(5)), trim(items(6)), trim(items(7)), trim(items(8)))
-        }
+    val csgdzhPairRDD = csgdzhRDD.map { item =>
+      val items = item.split(",")
+      CsxwfyModel(trim(items(0)), trim(items(1)), trim(items(2)), trim(items(3)), trim(items(4)),
+        trim(items(5)), trim(items(6)), trim(items(7)), trim(items(8)))
+    }
     csgdzhPairRDD
   }
 
@@ -1737,9 +1735,9 @@ object Ggt {
         ("", "", "", "", "")
       ).toDF("FZDM1", "FZDM2", "RQ1", "RQ2", "ZQDM")
     } else {
-      mergeFileDF(spark, listFiles).createOrReplaceTempView("hk_tzxx_table")
+      mergeFileDF(spark, listFiles).createOrReplaceTempView("szhk_tzxx_table")
 
-      spark.sql("select FZDM1,FZDM2,RQ1,RQ2,ZQDM from hk_tzxx_table where TZLB='H10'")
+      spark.sql("select FZDM1,FZDM2,RQ1,RQ2,ZQDM from szhk_tzxx_table where TZLB='H10'")
     }
   }
 

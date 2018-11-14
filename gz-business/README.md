@@ -13,11 +13,9 @@
 *** 备    注:  更新表信息
 
 *****************************************************************************************
-# 类名命名（参照说明） 
-
-https://docs.qq.com/sheet/DZ3BvYkpLa1ZrUFNV?opendocxfrom=admin&tab=BB08J2
 
 # 基础信息表表信息
+
 
     CSGDZH      股东账号表
     CSHOLIDAY   节假日信息表
@@ -42,9 +40,10 @@ https://docs.qq.com/sheet/DZ3BvYkpLa1ZrUFNV?opendocxfrom=admin&tab=BB08J2
 
 # HDFS 路径规则
     ${date}格式，例如20180917
-    hdfs://hostname:9000/yss/guzhi/interface/${date}/接口名称/数据文件
-    hdfs://hostname:9000/yss/guzhi/base_list/${date}/表名/数据文件
-
+    接口文件存储规则：hdfs://hostname:9000/yss/guzhi/interface/${date}/接口名称/数据文件
+    基础数据文件存储规则：hdfs://hostname:9000/yss/guzhi/base_list/${date}/表名/数据文件
+    结果文件存储规则： hdfs://hostname:9000/yss/guzhi/hzjkqs/${date}/接口名称/数据文件
+    
 ## 估值核算原数据
     ip:  192.168.102.68
     sid:  orcl

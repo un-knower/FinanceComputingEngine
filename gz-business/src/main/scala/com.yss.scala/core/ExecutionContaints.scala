@@ -11,7 +11,7 @@ object ExecutionContaints {
   /** 公用资产号 */
   val GYZCH = "0"
   /** 市场 */
-  val SH = "SDZ"
+ // val SH = "S"
   /** 参数开启 */
   val YES = "1"
   /** 参数不开启 */

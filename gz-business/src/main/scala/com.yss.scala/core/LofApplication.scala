@@ -2,21 +2,27 @@ package com.yss.scala.core
 
 import com.yss.scala.core.ShghContants._
 import com.yss.scala.dto.Hzjkqs
-import com.yss.scala.util.Util
+import com.yss.scala.util.{DateUtils, Util}
 import org.apache.spark.sql.SparkSession
 
 /**
   * @auther: wusong
   * @date: 2018/11/5
   * @version: 1.0.0
-  * @desc: 上证lof确认
+  * @desc: 上证lof申请
+  * @目标数据: bgh
   */
-class lofConfirm {
+object LofApplication {
 
   def main(args: Array[String]): Unit = {
-
+    var findate = DateUtils.getToday(DateUtils.YYYYMMDD)
+    if(args.size >= 1){
+      findate = args(0)
+    }
+    execute(findate)
   }
 
+  /** 加载基础表信息 */
   def loadTables(spark:SparkSession,finDate:String) = {
     val sc = spark.sparkContext
     /** 过滤基金信息表 */
@@ -71,23 +77,25 @@ class lofConfirm {
   }
 
   def execute(finDate:String): Unit = {
-
-    /**基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd，这里将原始数据转换成yyyy-MM-dd的格式*/
+    /**
+      * 进行日期的格式化，基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd
+      * 这里将原始数据转换成yyyy-MM-dd的格式
+      * @return yyyy-MM-dd
+      */
     val convertDate = (bcrq:String) => {
-      val yyyy = bcrq.substring(0,4)
-      val mm = bcrq.substring(4,6)
-      val dd = bcrq.substring(6)
+      val yyyy = bcrq.substring(0,4) //year
+      val mm = bcrq.substring(4,6)  //day
+      val dd = bcrq.substring(6)  //month
       yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
     }
-
     val convertedfinDate = convertDate(finDate)
 
     val spark = SparkSession.builder()
-      .appName("lofmxzf")
+      .appName(BGH)
       .master("local[*]")
       .getOrCreate()
 
-    val sourcePath = Util.getInputFilePath(finDate+"/lofmxzf")
+    val sourcePath = Util.getInputFilePath(finDate+PATH_BGH)
     val sourceDataFrame = Util.readCSV(sourcePath,spark)
 
     //加载基础表数据
@@ -105,50 +113,45 @@ class lofConfirm {
 
     /** 过滤原始数据 */
     val filteredRdd = sourceDataFrame.rdd.filter(row => {
-      val bzsm = row.getAs[String](9)
-      val rgbz = row.getAs[String](28)
-      val qrrq = row.getAs[String](2)
-      val qrfe = row.getAs[String](16)
-      val zqdm = row.getAs[String](11)
+      val bcrq = row.getAs[String](1) //日期
+      val cjbz = row.getAs[String](11) //交易标志
+      val bs = row.getAs[String](12) //买卖
+      val zqdm = row.getAs[String](5) //证券代码
       val isExists = broadcastValue_csjjxxList.value.contains(zqdm)
-      if(qrrq.equals(finDate) && isExists && qrfe.compareTo("0") > 0 &&
-        (("642".equals(bzsm)||"643".equals(bzsm)) ||
-          ("641".equals(bzsm) && "1".equals(rgbz)))
+      if(bcrq.equals(finDate) && isExists &&
+        ((BUY.equals(bs) && (LFS.equals(cjbz) || LFC.equals(cjbz))) ||
+          (SALE.equals(bs) && LFR.equals(cjbz)))
       ) true else false
     })
 
     /** 转换结果数据 */
     val resultRdd = filteredRdd.map(row => {
-      val fdate = convertedfinDate //格式是yyyy-MM-dd
-      val finDate = row.getAs[String](4)
-      val zqdm = row.getAs[String](11)
-      val bzsm = row.getAs[String](9)
-      val fbs = if("641".equals(bzsm)||"642".equals(bzsm)) "B" else "S"
-      val fje = row.getAs[String](17)
-      val fsl = row.getAs[String](16)
-      val sxfy =  BigDecimal(row.getAs[String](19))
-      val dlfy =  BigDecimal(row.getAs[String](20))
-      val jsfy =  BigDecimal(row.getAs[String](21))
-      val ghfy =  BigDecimal(row.getAs[String](22))
-      val qtfy =  BigDecimal(row.getAs[String](23))
-      val yhse =  BigDecimal(row.getAs[String](24))
-      val otf2 =  BigDecimal(row.getAs[String](25))
-      val fqtf = (sxfy + dlfy + jsfy + ghfy + qtfy + yhse + otf2).formatted("%.2f")
-      val fgddm = row.getAs[String](13)
-      val fjybz = if("641".equals(bzsm)) "认购确认" else if("642".equals(bzsm)) "申购确认" else "赎回确认"
-      val fsetid = getFsetid(zqdm)
+      val bcrq = convertedfinDate  //格式是yyyy-MM-dd
+      val cjbz = row.getAs[String](11) //交易标志
+      val bs = row.getAs[String](12)
+      val zqdm = row.getAs[String](5)
+      val gddm = row.getAs[String](0)
+      val gsdm = row.getAs[String](3)
+      val fsetid = getFsetid(gddm)
+      val cjje = row.getAs[String](9)
+      val cjsl = row.getAs[String](4)
+      val fzqbz = ZQBZ_BGH
+      val fywbz = YWBZ_BGH
+      val fjybz = if(LFS.equals(cjbz)) "认购申请" else if(LFC.equals(cjbz)) "申购申请" else "赎回申请"
       val fhtxh = "D"+fsetid+finDate
-      Hzjkqs(fsetid, fdate,finDate,zqdm,SH," ",fbs,fje,fsl
+      Hzjkqs(fsetid, bcrq,bcrq,zqdm,SH,gsdm,bs,cjje,cjsl
         ,"0","0","0","0","0","0","0","0","0",
-        "CWJJ","LOFSSSQ","N",fqtf,zqdm,"PT","1",
-        " "," ","0"," ","0",fgddm,fjybz,"1"," ",
-        fhtxh," ","0","0","lofmxzf","RMB",
+        ZQBZ_BGH,YWBZ_BGH,"N","0",zqdm,"PT","1",
+        " "," ","0"," ","0",gddm,fjybz,"1"," ",
+        fhtxh," ","0","0",BGH,RMB,
         "","","","","")
     })
     import spark.implicits._
-    Util.outputMySql(resultRdd.toDF(),"lofmxzf")
+    // 将结果保存到mysql中
+    Util.outputMySql(resultRdd.toDF(),BGH)
     // 将结果保存到hdfs上
-    val hfdsPath = Util.getoutputFilePath(finDate+"/lofmxzf")
+    val hfdsPath = Util.getOutputFilePath(finDate+PATH_BGH)
     Util.outputHdfs(resultRdd.toDF(),hfdsPath)
+    spark.stop()
   }
 }
