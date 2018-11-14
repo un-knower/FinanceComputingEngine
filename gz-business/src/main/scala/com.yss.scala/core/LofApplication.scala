@@ -139,10 +139,10 @@ object LofApplication {
       val fywbz = YWBZ_BGH
       val fjybz = if(LFS.equals(cjbz)) "认购申请" else if(LFC.equals(cjbz)) "申购申请" else "赎回申请"
       val fhtxh = "D"+fsetid+finDate
-      Hzjkqs(fsetid, bcrq,bcrq,zqdm,SH,gsdm,bs,cjje,cjsl
-        ,"0","0","0","0","0","0","0","0","0",
-        ZQBZ_BGH,YWBZ_BGH,"N","0",zqdm,"PT","1",
-        " "," ","0"," ","0",gddm,fjybz,"1"," ",
+      Hzjkqs(fsetid, bcrq,bcrq,zqdm,SH,gsdm,bs,cjje,cjsl,
+        "0","0","0","0","0","0","0","0","0","0",
+        ZQBZ_BGH,YWBZ_BGH,fjybz,"N",zqdm,"PT","1",
+        " "," ","0"," ","0",gddm,"1"," ",
         fhtxh," ","0","0",BGH,RMB,
         "","","","","")
     })
