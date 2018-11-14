@@ -2,7 +2,7 @@ package com.yss.scala.core
 
 import com.yss.scala.core.ShghContants._
 import com.yss.scala.dto.Hzjkqs
-import com.yss.scala.util.{DateUtils, Util}
+import com.yss.scala.util.{DateUtils, BasicUtils}
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -27,7 +27,7 @@ object LofApplication {
     val sc = spark.sparkContext
     /** 过滤基金信息表 */
     val loadCsjjxx = () =>{
-      val csjjxxPath = Util.getDailyInputFilePath(TABLE_NAME_JJXX)
+      val csjjxxPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_JJXX)
       val csjjxx = sc.textFile(csjjxxPath)
         .filter(row => {
           val fields = row.split(SEPARATE2)
@@ -50,7 +50,7 @@ object LofApplication {
     /** 股东账号表csgdzh */
     val loadCsgdzhvalue = () => {
       //读取股东账号表，
-      val csgdzhPath = Util.getDailyInputFilePath(TABLE_NAME_GDZH)
+      val csgdzhPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_GDZH)
       val csgdzhMap = sc.textFile(csgdzhPath)
         .map(row => {
           val fields = row.split(SEPARATE2)
@@ -61,7 +61,7 @@ object LofApplication {
 
     /** 加载资产信息表 lsetlist */
     val loadLsetlist = () => {
-      val lsetlistPath = Util.getDailyInputFilePath(TABLE_NAME_ZCXX)
+      val lsetlistPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_ZCXX)
       val lsetlistMap = sc.textFile(lsetlistPath)
         .map(row => {
           val fields = row.split(SEPARATE2)
@@ -95,8 +95,8 @@ object LofApplication {
       .master("local[*]")
       .getOrCreate()
 
-    val sourcePath = Util.getInputFilePath(finDate+PATH_BGH)
-    val sourceDataFrame = Util.readCSV(sourcePath,spark)
+    val sourcePath = BasicUtils.getInputFilePath(finDate+PATH_BGH)
+    val sourceDataFrame = BasicUtils.readCSV(sourcePath,spark)
 
     //加载基础表数据
     val broadcastValues = loadTables(spark,convertedfinDate)
@@ -148,10 +148,10 @@ object LofApplication {
     })
     import spark.implicits._
     // 将结果保存到mysql中
-    Util.outputMySql(resultRdd.toDF(),BGH)
+    BasicUtils.outputMySql(resultRdd.toDF(),BGH)
     // 将结果保存到hdfs上
-    val hfdsPath = Util.getOutputFilePath(finDate+PATH_BGH)
-    Util.outputHdfs(resultRdd.toDF(),hfdsPath)
+    val hfdsPath = BasicUtils.getOutputFilePath(finDate+PATH_BGH)
+    BasicUtils.outputHdfs(resultRdd.toDF(),hfdsPath)
     spark.stop()
   }
 }
