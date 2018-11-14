@@ -57,7 +57,7 @@ object ShZQChange {
       .getOrCreate()
     val day = DateUtils.formatDate(System.currentTimeMillis())
     var dataPath = ZQBD_basePath + day + "/zqbd/zqbd*.tsv"
-    var ywrq = "20180208"
+    var ywrq = "20180209"
     if (args != null && args.length == 2) {
       dataPath = args(0)
       ywrq = args(1)
@@ -112,7 +112,8 @@ object ShZQChange {
       "FSH",
       "FZZR",
       "FCHK",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val FZQDM = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FBZ = RowUtils.getRowFieldAsString(row, "FBZ")
@@ -170,7 +171,8 @@ object ShZQChange {
       "FGDSXF",
       "FSXFLX",
       "FJSZX",
-      "FJXTS"
+      "FJXTS",
+      "IP/DB"
     ).rdd.map(row => {
       val flv = RowUtils.getRowFieldAsString(row, "FLV", "0")
       val fzqlb = RowUtils.getRowFieldAsString(row, "FZQLB")
@@ -224,11 +226,12 @@ object ShZQChange {
       "FSETLEVEL",
       "FTSETCODE",
       "FSH",
-      "FZZR ",
+      "FZZR",
       "FCHK",
       "FTZJC",
       "FZYDM",
-      "FTZZHDM"
+      "FTZZHDM",
+      "IP/DB"
     ).rdd.map(row => {
       val fsetcode = RowUtils.getRowFieldAsString(row, "FSETCODE")
       val fsetid = RowUtils.getRowFieldAsString(row, "FSETID")
@@ -266,7 +269,8 @@ object ShZQChange {
       "FSETCODE",
       "FCHK",
       "FSTARTDATE",
-      "FACCOUNTTYPT"
+      "FACCOUNTTYPT",
+      "IP/DB"
     ).rdd.map(row => {
       val fgddm = RowUtils.getRowFieldAsString(row, "FGDDM")
       val fsetcode = RowUtils.getRowFieldAsString(row, "FSETCODE")
@@ -307,7 +311,8 @@ object ShZQChange {
       "FZZR",
       "FCHK",
       "FSZSH",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val fzqdm = RowUtils.getRowFieldAsString(row, "FZQDM")
       val fsh = RowUtils.getRowFieldAsString(row, "FSH")
@@ -417,7 +422,8 @@ object ShZQChange {
       "FFXR",
       "FTSFXR",
       "FHFXR",
-      "FUPDATE"
+      "FUPDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val zqdm = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FSCDM = RowUtils.getRowFieldAsString(row, "FSCDM")
@@ -445,7 +451,8 @@ object ShZQChange {
       "FSH",
       "FZZR",
       "FCHK",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val name = RowUtils.getRowFieldAsString(row, "FVARNAME")
       val value = RowUtils.getRowFieldAsString(row, "FVARVALUE")
@@ -486,7 +493,8 @@ object ShZQChange {
       "FZZR",
       "FCHK",
       "FSZSH",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val FZQDM = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FQYLX = RowUtils.getRowFieldAsString(row, "FQYLX")
@@ -681,7 +689,8 @@ object ShZQChange {
       "FYJLX",
       "FLXTS",
       "FPMLL",
-      "FSZSH"
+      "FSZSH",
+      "IP/DB"
     ).rdd.map(row => {
       val FYJLX = RowUtils.getRowFieldAsString(row, "FYJLX", "0")
       val FGZDM = RowUtils.getRowFieldAsString(row, "FGZDM")
