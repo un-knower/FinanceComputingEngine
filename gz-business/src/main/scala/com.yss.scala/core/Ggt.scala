@@ -6,7 +6,7 @@ import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util.{Date, Properties}
 
 import com.yss.scala.dto._
-import com.yss.scala.util.Util
+import com.yss.scala.util.BasicUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, LocatedFileStatus, Path, RemoteIterator}
 import org.apache.spark.SparkConf
@@ -1652,7 +1652,7 @@ object Ggt {
     val listDf = new mutable.ListBuffer[DataFrame]
 
     for (filename <- listFiles) {
-      listDf += Util.readCSV(filename, spark, true)
+      listDf += BasicUtils.readCSV(filename, spark, true)
     }
     var jsmxdbfDF = listDf(0)
 
