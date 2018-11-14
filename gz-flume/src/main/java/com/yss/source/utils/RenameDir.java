@@ -151,6 +151,15 @@ public class RenameDir {
         hashMap.put("^SJSDZ\\.dbf", "sjsdz");//深圳对账库
         hashMap.put("^RZRQLX_\\d*\\.dbf", "rzrqlx");//融资融券每日利息
         hashMap.put("^\\d*_.*_\\d*_\\d_ClientCapitalDetail\\.dbf", "clientcapitaldetail");//客户分项资金明细表
+
+
+
+
+        //新增三方回购
+        hashMap.put("^jsmx03_jsjc.*$", "jsmxjsjc03");//三方回购
+        hashMap.put("^jsmx02_jsjc.*$", "jsmxjsjc02");//三方回购
+        hashMap.put("^jsmx01_jsjc.*$", "jsmxjsjc01");//三方回购
+
         return hashMap;
     }
 

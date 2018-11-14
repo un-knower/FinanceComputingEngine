@@ -88,11 +88,11 @@ object LofConfirm {
     val convertedfinDate = convertDate(finDate)
 
     val spark = SparkSession.builder()
-      .appName("lofmxzf")
+      .appName(LOFMXZF)
       .master("local[*]")
       .getOrCreate()
 
-    val sourcePath = Util.getInputFilePath(finDate+"/lofmxzf")
+    val sourcePath = Util.getInputFilePath(finDate+PATH_LOFMXZF)
     val sourceDataFrame = Util.readCSV(sourcePath,spark)
 
     //加载基础表数据
@@ -128,7 +128,7 @@ object LofConfirm {
       val finDate = row.getAs[String](4)
       val zqdm = row.getAs[String](11)
       val bzsm = row.getAs[String](9)
-      val fbs = if("641".equals(bzsm)||"642".equals(bzsm)) "B" else "S"
+      val fbs = if("641".equals(bzsm)||"642".equals(bzsm)) BUY else SALE
       val fje = row.getAs[String](17)
       val fsl = row.getAs[String](16)
       val sxfy =  BigDecimal(row.getAs[String](19))
@@ -138,22 +138,22 @@ object LofConfirm {
       val qtfy =  BigDecimal(row.getAs[String](23))
       val yhse =  BigDecimal(row.getAs[String](24))
       val otf2 =  BigDecimal(row.getAs[String](25))
-      val fqtf = (sxfy + dlfy + jsfy + ghfy + qtfy + yhse + otf2).formatted("%.2f")
+      val fqtf = (sxfy + dlfy + jsfy + ghfy + qtfy + yhse + otf2).formatted(DEFAULT_DIGIT_FORMAT)
       val fgddm = row.getAs[String](13)
       val fjybz = if("641".equals(bzsm)) "认购确认" else if("642".equals(bzsm)) "申购确认" else "赎回确认"
-      val fsetid = getFsetid(zqdm)
+      val fsetid = getFsetid(fgddm)
       val fhtxh = "D"+fsetid+finDate
       Hzjkqs(fsetid, fdate,finDate,zqdm,SH," ",fbs,fje,fsl
         ,"0","0","0","0","0","0","0","0","0",
-        "CWJJ","LOFSSSQ","N",fqtf,zqdm,"PT","1",
+        ZQBZ_BGH,YWBZ_BGH,"N",fqtf,zqdm,"PT","1",
         " "," ","0"," ","0",fgddm,fjybz,"1"," ",
-        fhtxh," ","0","0","lofmxzf","RMB",
+        fhtxh," ","0","0",LOFMXZF,RMB,
         "","","","","")
     })
     import spark.implicits._
-    Util.outputMySql(resultRdd.toDF(),"lofmxzf")
+    Util.outputMySql(resultRdd.toDF(),LOFMXZF)
     // 将结果保存到hdfs上
-    val hfdsPath = Util.getOutputFilePath(finDate+"/lofmxzf")
+    val hfdsPath = Util.getOutputFilePath(finDate+PATH_LOFMXZF)
     Util.outputHdfs(resultRdd.toDF(),hfdsPath)
     spark.stop()
   }
