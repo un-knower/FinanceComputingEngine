@@ -119,9 +119,9 @@ public class RenameDir {
         hashMap.put("^SZHK_SJSJG\\d*\\.dbf$", "szhksjsjg");//港股通（深圳）证券变动文件
         hashMap.put("^ZSMXFK\\d*\\.dbf$", "zsmxfk");//征税明细反馈库
         hashMap.put("^ZSMX\\.dbf$", "zsmx");//征税明细信息库
-        hashMap.put("^SJSMX2\\.dbf$", "sjsmx");//深交所清算明细库
-        hashMap.put("^SJSMX1\\.dbf$", "sjsmx");//深交所清算明细库
-        hashMap.put("^SJSMX0\\.dbf$", "sjsmx");//深交所清算明细库
+        hashMap.put("^SJSMX2\\.dbf$", "sjsmx/2");//深交所清算明细库
+        hashMap.put("^SJSMX1\\.dbf$", "sjsmx/1");//深交所清算明细库
+        hashMap.put("^SJSMX0\\.dbf$", "sjsmx/0");//深交所清算明细库
         hashMap.put("^SJSZHHB\\.dbf$", "sjszhhb");//深交所综合回报库
         hashMap.put("^LOFMXZF\\.dbf$", "lofmxzf");//上证LOF清算明细文件
         hashMap.put("^LOFJS\\.dbf$", "lofjs");//深圳LOF结算信息库
