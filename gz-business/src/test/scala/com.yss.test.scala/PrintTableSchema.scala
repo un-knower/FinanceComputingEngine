@@ -31,7 +31,7 @@ object PrintTableSchema {
       .master("local[*]")
       .getOrCreate()
 
-    printSchema(spark, "CSSYSTSKM", TABLE_TYPE.ORACLE)
+    printSchema(spark, "CSSYSYJLV", TABLE_TYPE.ORACLE)
     spark.stop()
   }
 

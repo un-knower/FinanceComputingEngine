@@ -4,7 +4,7 @@ import java.io.File
 import java.util.Properties
 
 import com.yss.scala.dto.{Hzjkqs, ShZQBD}
-import com.yss.scala.util.{DateUtils, RowUtils, Util}
+import com.yss.scala.util.{DateUtils, RowUtils, BasicUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -57,7 +57,7 @@ object ShZQChange {
       .getOrCreate()
     val day = DateUtils.formatDate(System.currentTimeMillis())
     var dataPath = ZQBD_basePath + day + "/zqbd/zqbd*.tsv"
-    var ywrq = "20180208"
+    var ywrq = "20180209"
     if (args != null && args.length == 2) {
       dataPath = args(0)
       ywrq = args(1)
@@ -104,7 +104,7 @@ object ShZQChange {
 
 
   private def readCSSYSTSKM(spark: SparkSession): Unit = {
-    CSSYSTSKM_data = Util.readCSV(getTableDataPath("CSSYSTSKM"), spark, header = false, sep = ",").toDF(
+    CSSYSTSKM_data = BasicUtils.readCSV(getTableDataPath("CSSYSTSKM"), spark, header = false, sep = ",").toDF(
       "FSETCODE",
       "FSETID",
       "FZQDM",
@@ -112,7 +112,8 @@ object ShZQChange {
       "FSH",
       "FZZR",
       "FCHK",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val FZQDM = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FBZ = RowUtils.getRowFieldAsString(row, "FBZ")
@@ -149,7 +150,7 @@ object ShZQChange {
 
 
   private def readCSJYLV(spark: SparkSession): Unit = {
-    CSJYLV_data = Util.readCSV(getTableDataPath("CSJYLV"), spark, header = false, sep = ",").toDF(
+    CSJYLV_data = BasicUtils.readCSV(getTableDataPath("CSJYLV"), spark, header = false, sep = ",").toDF(
       "FZQLB",
       "FSZSH",
       "FFVLB",
@@ -170,7 +171,8 @@ object ShZQChange {
       "FGDSXF",
       "FSXFLX",
       "FJSZX",
-      "FJXTS"
+      "FJXTS",
+      "IP/DB"
     ).rdd.map(row => {
       val flv = RowUtils.getRowFieldAsString(row, "FLV", "0")
       val fzqlb = RowUtils.getRowFieldAsString(row, "FZQLB")
@@ -208,7 +210,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readLSETLIST(spark: SparkSession): Unit = {
-    fsetcode2Fsetid = Util.readCSV(getTableDataPath("LSETLIST"), spark, header = false, sep = ",").toDF(
+    fsetcode2Fsetid = BasicUtils.readCSV(getTableDataPath("LSETLIST"), spark, header = false, sep = ",").toDF(
       "FYEAR",
       "FSETID",
       "FSETCODE",
@@ -224,11 +226,12 @@ object ShZQChange {
       "FSETLEVEL",
       "FTSETCODE",
       "FSH",
-      "FZZR ",
+      "FZZR",
       "FCHK",
       "FTZJC",
       "FZYDM",
-      "FTZZHDM"
+      "FTZZHDM",
+      "IP/DB"
     ).rdd.map(row => {
       val fsetcode = RowUtils.getRowFieldAsString(row, "FSETCODE")
       val fsetid = RowUtils.getRowFieldAsString(row, "FSETID")
@@ -257,7 +260,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readCSGDZH(spark: SparkSession): Unit = {
-    fgddm2Fsetcode = Util.readCSV(getTableDataPath("CSGDZH"), spark, header = false, sep = ",").toDF(
+    fgddm2Fsetcode = BasicUtils.readCSV(getTableDataPath("CSGDZH"), spark, header = false, sep = ",").toDF(
       "FGDDM",
       "FGDXM",
       "FSZSH",
@@ -266,7 +269,8 @@ object ShZQChange {
       "FSETCODE",
       "FCHK",
       "FSTARTDATE",
-      "FACCOUNTTYPT"
+      "FACCOUNTTYPT",
+      "IP/DB"
     ).rdd.map(row => {
       val fgddm = RowUtils.getRowFieldAsString(row, "FGDDM")
       val fsetcode = RowUtils.getRowFieldAsString(row, "FSETCODE")
@@ -297,7 +301,7 @@ object ShZQChange {
     */
 
   private def readCSKZZHS(spark: SparkSession): Unit = {
-    CSKZZHS_data = Util.readCSV(getTableDataPath("CSKZZHS"), spark, header = false, sep = ",").toDF(
+    CSKZZHS_data = BasicUtils.readCSV(getTableDataPath("CSKZZHS"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FHSJG",
       "FBDATE",
@@ -307,7 +311,8 @@ object ShZQChange {
       "FZZR",
       "FCHK",
       "FSZSH",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val fzqdm = RowUtils.getRowFieldAsString(row, "FZQDM")
       val fsh = RowUtils.getRowFieldAsString(row, "FSH")
@@ -380,7 +385,7 @@ object ShZQChange {
   }
 
   private def readCSZQXX(spark: SparkSession): Unit = {
-    zqdm2Fscdm = Util.readCSV(getTableDataPath("CSZQXX"), spark, header = false, sep = ",").toDF(
+    zqdm2Fscdm = BasicUtils.readCSV(getTableDataPath("CSZQXX"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FZQMC",
       "FJJDM",
@@ -417,7 +422,8 @@ object ShZQChange {
       "FFXR",
       "FTSFXR",
       "FHFXR",
-      "FUPDATE"
+      "FUPDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val zqdm = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FSCDM = RowUtils.getRowFieldAsString(row, "FSCDM")
@@ -439,13 +445,14 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readLVARLIST(spark: SparkSession): Unit = {
-    selectKey2Value = Util.readCSV(getTableDataPath("LVARLIST"), spark, header = false, sep = ",").toDF(
+    selectKey2Value = BasicUtils.readCSV(getTableDataPath("LVARLIST"), spark, header = false, sep = ",").toDF(
       "FVARNAME",
       "FVARVALUE",
       "FSH",
       "FZZR",
       "FCHK",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val name = RowUtils.getRowFieldAsString(row, "FVARNAME")
       val value = RowUtils.getRowFieldAsString(row, "FVARVALUE")
@@ -474,7 +481,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readCSQYXX(spark: SparkSession): Unit = {
-    CSQYXX_data = Util.readCSV(getTableDataPath("CSQYXX"), spark, header = false, sep = ",").toDF(
+    CSQYXX_data = BasicUtils.readCSV(getTableDataPath("CSQYXX"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FQYLX",
       "FQYBL",
@@ -486,7 +493,8 @@ object ShZQChange {
       "FZZR",
       "FCHK",
       "FSZSH",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val FZQDM = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FQYLX = RowUtils.getRowFieldAsString(row, "FQYLX")
@@ -675,13 +683,14 @@ object ShZQChange {
 
 
   private def readJJGZLX(spark: SparkSession): Unit = {
-    JJGZLX_data = Util.readCSV(getTableDataPath("JJGZLX"), spark, header = false, sep = ",").toDF(
+    JJGZLX_data = BasicUtils.readCSV(getTableDataPath("JJGZLX"), spark, header = false, sep = ",").toDF(
       "FGZDM",
       "FJXRQ",
       "FYJLX",
       "FLXTS",
       "FPMLL",
-      "FSZSH"
+      "FSZSH",
+      "IP/DB"
     ).rdd.map(row => {
       val FYJLX = RowUtils.getRowFieldAsString(row, "FYJLX", "0")
       val FGZDM = RowUtils.getRowFieldAsString(row, "FGZDM")
@@ -771,7 +780,7 @@ object ShZQChange {
       .option("charset", "UTF-8")
       .csv(path)*/
     import spark.implicits._
-    Util.outputHdfs(shZQBDData.toDF(), path)
+    BasicUtils.outputHdfs(shZQBDData.toDF(), path)
 
   }
 
@@ -1357,7 +1366,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readZQBDData(spark: SparkSession, dataPath: String): RDD[Row] = {
-    Util.readCSV(dataPath, spark).rdd
+    BasicUtils.readCSV(dataPath, spark).rdd
   }
 
 
