@@ -27,10 +27,11 @@ object Ggt {
   def main(args: Array[String]): Unit = {
 
     val conf = new SparkConf().setAppName("Ggt")
+
     val spark = SparkSession.builder().config(conf).getOrCreate()
 
     //获取配置参数
-    val (commonUrl, currentDate,ggtHadoopPath, hadoopRpcPath) = loadInitParam()
+    val (commonUrl, currentDate,ggtHadoopPath, hadoopRpcPath) = loadInitParam(args)
 
     val (jsmxFiles,tzxxFiles) = getHadoopFilesName(hadoopRpcPath, ggtHadoopPath, "jsmx", "tzxx")
 
@@ -1668,8 +1669,12 @@ object Ggt {
     spark.sql("select * from hk_jsmx_table where YWLX in ('H01','H02','H54','H55','H60','H63','H64','H65','H67')")
   }
 
-  def loadInitParam():(String,String,String,String)={
-    var currentDate = getCurrentDate()
+  def loadInitParam(args: Array[String]):(String,String,String,String)={
+    if(args.length < 1) {
+      throw new Exception("args 参数不完整")
+    }
+
+    val currentDate = args(0)
     val hadoopRpcPath = "hdfs://192.168.102.120:8020"
     val commonUrl = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
     val ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/ggt"
