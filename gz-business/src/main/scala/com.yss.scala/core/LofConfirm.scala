@@ -125,7 +125,7 @@ object LofConfirm {
     /** 转换结果数据 */
     val resultRdd = filteredRdd.map(row => {
       val fdate = convertedfinDate //格式是yyyy-MM-dd
-      val finDate = row.getAs[String](4)
+      val finDate = convertDate(row.getAs[String](4))
       val zqdm = row.getAs[String](11)
       val bzsm = row.getAs[String](9)
       val fbs = if("641".equals(bzsm)||"642".equals(bzsm)) BUY else SALE
@@ -138,15 +138,18 @@ object LofConfirm {
       val qtfy =  BigDecimal(row.getAs[String](23))
       val yhse =  BigDecimal(row.getAs[String](24))
       val otf2 =  BigDecimal(row.getAs[String](25))
-      val fqtf = (sxfy + dlfy + jsfy + ghfy + qtfy + yhse + otf2).formatted(DEFAULT_DIGIT_FORMAT)
+      val hsfy = row.getAs[String](26)
+      val sffs = row.getAs[String](27)
+      val fqtf = if("0".equals(sffs)) (sxfy + dlfy + jsfy + ghfy + qtfy + yhse + otf2).formatted(DEFAULT_DIGIT_FORMAT)
+                  else hsfy
       val fgddm = row.getAs[String](13)
       val fjybz = if("641".equals(bzsm)) "认购确认" else if("642".equals(bzsm)) "申购确认" else "赎回确认"
       val fsetid = getFsetid(fgddm)
       val fhtxh = "D"+fsetid+finDate
-      Hzjkqs(fsetid, fdate,finDate,zqdm,SH," ",fbs,fje,fsl
-        ,"0","0","0","0","0","0","0","0","0",
-        ZQBZ_BGH,YWBZ_BGH,"N",fqtf,zqdm,"PT","1",
-        " "," ","0"," ","0",fgddm,fjybz,"1"," ",
+      Hzjkqs(fsetid, fdate,finDate,zqdm,SH," ",fbs,fje,fsl,
+        "0","0","0","0","0","0",fqtf,"0","0","0",
+        ZQBZ_BGH,YWBZ_BGH,fjybz,"N",zqdm,"PT","1",
+        " "," "," "," ","0",fgddm,"1"," ",
         fhtxh," ","0","0",LOFMXZF,RMB,
         "","","","","")
     })
