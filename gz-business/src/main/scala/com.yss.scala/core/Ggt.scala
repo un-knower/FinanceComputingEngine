@@ -1677,7 +1677,7 @@ object Ggt {
     val currentDate = args(0)
     val hadoopRpcPath = "hdfs://192.168.102.120:8020"
     val commonUrl = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
-    val ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/ggt"
+    val ggtHadoopPath = s"/yss/guzhi/interface/${currentDate}/hkjsmx"
 
     (commonUrl, currentDate,ggtHadoopPath,hadoopRpcPath)
   }
