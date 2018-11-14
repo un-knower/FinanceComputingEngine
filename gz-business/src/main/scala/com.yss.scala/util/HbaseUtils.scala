@@ -23,10 +23,10 @@ import scala.collection.mutable
   *          目标表：
   */
 
-class HbaseUtils(conn1:Connection,conf1:Configuration) {
+class HbaseUtils() {
 
-  val conn:Connection = conn1
-  val conf:Configuration = conf1
+  val conn:Connection = ConnUtils.getConn()
+  val conf:Configuration = ConnUtils.getConf()
 
   /**
     * 关闭连接
@@ -205,8 +205,11 @@ object ConnUtils{
     if(conn == null) {
       conf = getConf()
       val pool = Executors.newFixedThreadPool(5)
-//      conn = ConnectionFactory.createConnection(conf, pool)
-      conn = ConnectionFactory.createConnection(conf,pool);
+      try {
+        conn = ConnectionFactory.createConnection(conf, pool);
+      }catch {
+        case e:Exception => print(e)
+      }
     }
 
     conn
