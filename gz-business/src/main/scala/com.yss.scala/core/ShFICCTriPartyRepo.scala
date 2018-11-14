@@ -4,7 +4,7 @@ import java.io.File
 import java.util.Properties
 
 import com.yss.scala.dto.Hzjkqs
-import com.yss.scala.util.{DateUtils, RowUtils, Util}
+import com.yss.scala.util.{DateUtils, RowUtils, BasicUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
@@ -143,7 +143,7 @@ object ShFICCTriPartyRepo {
     val date = DateUtils.formatDate(System.currentTimeMillis())
     val path = RES_HDFS_PATH + date + File.separator + "shgdsysfhg/"
     import spark.implicits._
-    Util.outputHdfs(shZQBDData.repartition(1).toDF(), path)
+    BasicUtils.outputHdfs(shZQBDData.repartition(1).toDF(), path)
 
   }
 
@@ -388,7 +388,7 @@ object ShFICCTriPartyRepo {
     * @return <证券类别|席位号|市场号,佣金>
     */
   def readA117CSYJLV(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(YJLL_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(YJLL_TABLE), spark, header = false, ",").toDF(
       "FSETCODE",
       "FSETID",
       "FID",
@@ -428,7 +428,7 @@ object ShFICCTriPartyRepo {
     * @return <选项名称,是否选中(true/false)>
     */
   def readLVARLIST(spark: SparkSession): RDD[(String, Boolean)] = {
-    Util.readCSV(getTableDataPath(PARAMS_LIST_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(PARAMS_LIST_TABLE), spark, header = false, ",").toDF(
       "FVARNAME",
       "FVARVALUE",
       "FSH",
@@ -454,7 +454,7 @@ object ShFICCTriPartyRepo {
     * @return 返回<席位号,套账号>
     */
   def readCSQSXW(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(XHW_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(XHW_TABLE), spark, header = false, ",").toDF(
       "FQSDM",
       "FQSMC",
       "FSZSH",
@@ -487,7 +487,7 @@ object ShFICCTriPartyRepo {
     * @return 放回<股东代码,套账号>
     */
   def readCSGDZH(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(GUDM_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(GUDM_TABLE), spark, header = false, ",").toDF(
       "FGDDM",
       "FGDXM",
       "FSZSH",
@@ -519,7 +519,7 @@ object ShFICCTriPartyRepo {
     * @return
     */
   def readLSETLIST(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(ZC_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(ZC_TABLE), spark, header = false, ",").toDF(
       "FYEAR",
       "FSETID",
       "FSETCODE",
