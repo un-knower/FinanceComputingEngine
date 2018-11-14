@@ -3,7 +3,7 @@ package com.yss.scala.core
 import java.io.File
 import java.util.Properties
 
-import com.yss.scala.dto.{ShZQBD, ShZQChangeDto}
+import com.yss.scala.dto.{Hzjkqs, ShZQBD}
 import com.yss.scala.util.{DateUtils, RowUtils, Util}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
@@ -56,8 +56,8 @@ object ShZQChange {
       .master("local[*]")
       .getOrCreate()
     val day = DateUtils.formatDate(System.currentTimeMillis())
-    var dataPath = ZQBD_basePath + day + "/zqbd/zqbd*.csv"
-    var ywrq = "20180703"
+    var dataPath = ZQBD_basePath + day + "/zqbd/zqbd*.tsv"
+    var ywrq = "20180208"
     if (args != null && args.length == 2) {
       dataPath = args(0)
       ywrq = args(1)
@@ -729,13 +729,13 @@ object ShZQChange {
     val rowNot151Data: RDD[Row] = zqbdData.subtract(row151Data)
 
     // 非分级基金结果数据
-    val not151ResData: RDD[ShZQChangeDto] = caculateNot151(spark, rowNot151Data, ywrq)
+    val not151ResData: RDD[Hzjkqs] = caculateNot151(spark, rowNot151Data, ywrq)
 
     // 分级基金结果数据
-    val I51ResData: RDD[ShZQChangeDto] = caculate151(spark, row151Data, ywrq)
+    val I51ResData: RDD[Hzjkqs] = caculate151(spark, row151Data, ywrq)
 
     // 将结果数据合并
-    val shZQBDData: RDD[ShZQChangeDto] = not151ResData.union(I51ResData)
+    val shZQBDData: RDD[Hzjkqs] = not151ResData.union(I51ResData)
 
     //存hdfs
     saveToHDFS(spark, shZQBDData)
@@ -750,7 +750,7 @@ object ShZQChange {
     * @param spark      SparkSession
     * @param shZQBDData 结果数据
     */
-  private def saveToHDFS(spark: SparkSession, shZQBDData: RDD[ShZQChangeDto]): Unit = {
+  private def saveToHDFS(spark: SparkSession, shZQBDData: RDD[Hzjkqs]): Unit = {
     val date = DateUtils.formatDate(System.currentTimeMillis())
     val path = RES_HDFS_PATH + date + File.separator + "zqdb/"
 
@@ -781,7 +781,7 @@ object ShZQChange {
     * @param spark      SparkSession
     * @param shZQBDData 结果数据
     */
-  private def saveToMySQL(spark: SparkSession, shZQBDData: RDD[ShZQChangeDto]): Unit = {
+  private def saveToMySQL(spark: SparkSession, shZQBDData: RDD[Hzjkqs]): Unit = {
     import spark.implicits._
     val properties = new Properties()
     properties.put("user", "root")
@@ -800,7 +800,7 @@ object ShZQChange {
     * @param ywrq          业务日期
     * @return
     */
-  private def caculateNot151(spark: SparkSession, rowNot151Data: RDD[Row], ywrq: String): RDD[ShZQChangeDto] = {
+  private def caculateNot151(spark: SparkSession, rowNot151Data: RDD[Row], ywrq: String): RDD[Hzjkqs] = {
     rowNot151Data.map(row => {
       val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
       val bdsl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL", "0"))
@@ -1022,7 +1022,7 @@ object ShZQChange {
       }
       val FinDate = Fdate
 
-      ShZQChangeDto(
+      Hzjkqs(
         FSETID,
         Fdate,
         FinDate,
@@ -1063,11 +1063,11 @@ object ShZQChange {
         FCSGHQX.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         FSJLY,
         Fbz,
-        Fby1 = "",
-        Fby2 = "",
-        Fby3 = "",
-        Fby4 = "",
-        Fby5 = ""
+        FBY1 = "",
+        FBY2 = "",
+        FBY3 = "",
+        FBY4 = "",
+        FBY5 = ""
       )
 
 
@@ -1082,7 +1082,7 @@ object ShZQChange {
     * @param ywrq       业务日期
     * @return
     */
-  private def caculate151(spark: SparkSession, row151Data: RDD[Row], ywrq: String): RDD[ShZQChangeDto] = {
+  private def caculate151(spark: SparkSession, row151Data: RDD[Row], ywrq: String): RDD[Hzjkqs] = {
     //分级基金配对转换
     import spark.implicits._
     row151Data.repartition(1).map(row => {
@@ -1159,7 +1159,7 @@ object ShZQChange {
           })
 
         }
-        val list = ArrayBuffer[ShZQChangeDto]()
+        val list = ArrayBuffer[Hzjkqs]()
 
         //3. 第三次迭代,获取进行所有的逻辑计算
         for (row <- it) {
@@ -1258,7 +1258,7 @@ object ShZQChange {
 
           val Fbz = "RMB"
 
-          val shZQBD = ShZQChangeDto(
+          val shZQBD = Hzjkqs(
             FSETID,
             Fdate,
             FinDate,
@@ -1299,11 +1299,11 @@ object ShZQChange {
             FCSGHQX,
             FSJLY,
             Fbz,
-            Fby1 = "",
-            Fby2 = "",
-            Fby3 = "",
-            Fby4 = "",
-            Fby5 = ""
+            FBY1 = "",
+            FBY2 = "",
+            FBY3 = "",
+            FBY4 = "",
+            FBY5 = ""
           )
           list.append(shZQBD)
         }
@@ -1357,7 +1357,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readZQBDData(spark: SparkSession, dataPath: String): RDD[Row] = {
-    Util.readCSV(dataPath, spark, sep = ",").rdd
+    Util.readCSV(dataPath, spark).rdd
   }
 
 

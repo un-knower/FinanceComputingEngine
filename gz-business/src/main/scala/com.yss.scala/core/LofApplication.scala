@@ -16,7 +16,7 @@ object LofApplication {
 
   def main(args: Array[String]): Unit = {
     var findate = DateUtils.getToday(DateUtils.YYYYMMDD)
-    if(args.size > 1){
+    if(args.size >= 1){
       findate = args(0)
     }
     execute(findate)

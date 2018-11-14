@@ -1,6 +1,7 @@
 package com.yss.scala.util
 
 import java.util.Calendar
+import java.util.concurrent.Executors
 
 import com.yss.scala.dto.Hzjkqs
 import org.apache.hadoop.conf.Configuration
@@ -22,7 +23,9 @@ import scala.collection.mutable
   *          目标表：
   */
 
-object HbaseUtils {
+class HbaseUtils {
+
+
 
   /**
     * 关闭连接
@@ -68,14 +71,14 @@ object HbaseUtils {
     * @return  获取hbase连接
     */
 
-  def getConn():Connection={
-    val conf =getconf()
-    val conn = ConnectionFactory.createConnection(conf)
+  def getConn(conf:Configuration):Connection={
+    val pool = Executors.newFixedThreadPool(100)
+    val conn = ConnectionFactory.createConnection(conf,pool)
     conn
   }
 
   /**
-    *
+    * @param conn    Hbase 连接
     * @param tablename   表名
     * @param columncluster  列簇
     * @param rowkey    rowkey
@@ -83,54 +86,52 @@ object HbaseUtils {
     * @return  Hbase get方法获取的值
     */
 
-  def getHbaseData(tablename:String,columncluster:String,rowkey:String,columnname:String): String = {
-    val conn = getConn()
+  def getHbaseData(conn:Connection,tablename:String,columncluster:String,rowkey:String,columnname:String): String = {
     val table = conn.getTable(TableName.valueOf(tablename))
     val get = new Get(Bytes.toBytes(rowkey))
     val result = table.get(get)
 
     val value = result.getValue(Bytes.toBytes(columncluster),Bytes.toBytes(columnname))
     table.close()
-    closeConn(conn)
     val valuefinal=Bytes.toString(value)
     valuefinal
   }
 
   /**
     *默认的列簇名称为"cf"
+    * @param conn Hbase连接
     * @param tablename   表名
     * @param rowkey       rowkey
     * @param columnname   列名
     * @return         Hbase get方法获取列名对应的值
     */
-  def getHbaseDataDefaultColumnCluster(tablename:String,rowkey:String,columnname:String): String = {
-    val conn = getConn()
+  def getHbaseDataDefaultColumnCluster(conn:Connection,tablename:String,rowkey:String,columnname:String): String = {
+
     val table = conn.getTable(TableName.valueOf(tablename))
     val get = new Get(Bytes.toBytes(rowkey))
     val result = table.get(get)
 
     val value = result.getValue(Bytes.toBytes("cf"),Bytes.toBytes(columnname))
     table.close()
-    closeConn(conn)
     val valuefinal=Bytes.toString(value)
     valuefinal
   }
 
   /**
     *默认的列簇为"cf"
+    * @param conn
     * @param tablename  表名
     * @param rowkey  rowkey
     * @return  hbase get方法获取rowkey对应的所有列的值  是一个Map结构
     */
 
-  def getHbaseAllDataDefaultColumnCluster(tablename:String,rowkey:String): Map[String,String] = {
+  def getHbaseAllDataDefaultColumnCluster(conn:Connection,tablename:String,rowkey:String): Map[String,String] = {
     val resultarray=new mutable.HashMap[String,String]()
-    val conn = getConn()
+
     val table = conn.getTable(TableName.valueOf(tablename))
     val get = new Get(Bytes.toBytes(rowkey))
     val result = table.get(get)
     table.close()
-    closeConn(conn)
 
     for(cell<-result.rawCells()){
       val value = Bytes.toString(CellUtil.cloneValue(cell));
@@ -143,14 +144,14 @@ object HbaseUtils {
 
   /**
     * 读取目录下所有filename的文件（匹配日期文件）
+    * @param conf   配置参数
     * @param sparkSession
     * @param tablename    表名
     * @param fieldName    表字段信息
     * @param filename     文件名称
     */
 
-  def writeDataToHZJKQS(sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String):Unit={
-    val conf = getconf();
+  def writeDataToHZJKQS(conf:Configuration,sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String):Unit={
 
     val jobConf =getJobConf(conf,tablename)
 
@@ -168,14 +169,14 @@ object HbaseUtils {
 
   /**
     * 读取目录下某个固定月份的下的filename文件
+    * @param conf   配置参数
     * @param sparkSession
     * @param tablename  表名
     * @param fieldName  字段信息
     * @param filename   文件名称
     * @param month      月份
     */
-  def writeMonDataToHZJKQS(sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String,month:String):Unit={
-    val conf = getconf();
+  def writeMonDataToHZJKQS(conf:Configuration,sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String,month:String):Unit={
 
     val jobConf =getJobConf(conf,tablename)
 
@@ -195,14 +196,14 @@ object HbaseUtils {
 
   /**
     * 读取固定目录下的filename文件
+    * @param conf   配置参数
     * @param sparkSession
     * @param tablename
     * @param fieldName
     * @param filename
     * @param date
     */
-  def writeSomeDateDataToHZJKQS(sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String,date:String):Unit={
-    val conf = getconf();
+  def writeSomeDateDataToHZJKQS(conf:Configuration,sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String,date:String):Unit={
     val jobConf =getJobConf(conf,tablename)
 
     val indataRDD = sparkSession.sparkContext.textFile("C:\\Users\\dell\\Desktop\\test\\"+date+"\\data1\\"+filename)
@@ -215,4 +216,11 @@ object HbaseUtils {
     })
     rdd.saveAsHadoopDataset(jobConf)
   }
+}
+
+
+object HbaseUtils{
+  private val hbaseUtils =new HbaseUtils
+
+  def getInstance=hbaseUtils
 }
