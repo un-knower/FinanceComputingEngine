@@ -23,34 +23,24 @@ import scala.collection.mutable
   *          目标表：
   */
 
-class HbaseUtils {
+class HbaseUtils(conn1:Connection,conf1:Configuration) {
 
-
+  val conn:Connection = conn1
+  val conf:Configuration = conf1
 
   /**
     * 关闭连接
-    * @param conn
+    *
     */
-  def closeConn(conn:Connection):Unit={
+  def closeConn():Unit={
     if(conn != null){
-    conn.close
+      try{
+        conn.close
+      }catch{
+        case e:Exception => print(e)
+      }
     }
   }
-
-  /**
-    * 设置hbase的参数，主要是zookeeper地址、端口以及hbase在zookeeper中存储的节点
-    * @return
-    */
-
-  def getconf(): Configuration ={
-    val conf = HBaseConfiguration.create();
-    conf.set("hbase.zookeeper.property.clientPort", "2181")
-    conf.set("hbase.zookeeper.quorum","192.168.102.121")
-
-    conf.set("zookeeper.znode.parent", "/hbase-unsecure")
-    conf
-  }
-
 
   /**
     *
@@ -67,18 +57,6 @@ class HbaseUtils {
   }
 
   /**
-    *
-    * @return  获取hbase连接
-    */
-
-  def getConn(conf:Configuration):Connection={
-    val pool = Executors.newFixedThreadPool(100)
-    val conn = ConnectionFactory.createConnection(conf,pool)
-    conn
-  }
-
-  /**
-    * @param conn    Hbase 连接
     * @param tablename   表名
     * @param columncluster  列簇
     * @param rowkey    rowkey
@@ -86,7 +64,7 @@ class HbaseUtils {
     * @return  Hbase get方法获取的值
     */
 
-  def getHbaseData(conn:Connection,tablename:String,columncluster:String,rowkey:String,columnname:String): String = {
+  def getHbaseData(tablename:String,columncluster:String,rowkey:String,columnname:String): String = {
     val table = conn.getTable(TableName.valueOf(tablename))
     val get = new Get(Bytes.toBytes(rowkey))
     val result = table.get(get)
@@ -99,13 +77,12 @@ class HbaseUtils {
 
   /**
     *默认的列簇名称为"cf"
-    * @param conn Hbase连接
     * @param tablename   表名
     * @param rowkey       rowkey
     * @param columnname   列名
     * @return         Hbase get方法获取列名对应的值
     */
-  def getHbaseDataDefaultColumnCluster(conn:Connection,tablename:String,rowkey:String,columnname:String): String = {
+  def getHbaseDataDefaultColumnCluster(tablename:String,rowkey:String,columnname:String): String = {
 
     val table = conn.getTable(TableName.valueOf(tablename))
     val get = new Get(Bytes.toBytes(rowkey))
@@ -119,13 +96,12 @@ class HbaseUtils {
 
   /**
     *默认的列簇为"cf"
-    * @param conn
     * @param tablename  表名
     * @param rowkey  rowkey
     * @return  hbase get方法获取rowkey对应的所有列的值  是一个Map结构
     */
 
-  def getHbaseAllDataDefaultColumnCluster(conn:Connection,tablename:String,rowkey:String): Map[String,String] = {
+  def getHbaseAllDataDefaultColumnCluster(tablename:String,rowkey:String): Map[String,String] = {
     val resultarray=new mutable.HashMap[String,String]()
 
     val table = conn.getTable(TableName.valueOf(tablename))
@@ -144,14 +120,13 @@ class HbaseUtils {
 
   /**
     * 读取目录下所有filename的文件（匹配日期文件）
-    * @param conf   配置参数
     * @param sparkSession
     * @param tablename    表名
     * @param fieldName    表字段信息
     * @param filename     文件名称
     */
 
-  def writeDataToHZJKQS(conf:Configuration,sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String):Unit={
+  def writeDataToHZJKQS(sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String):Unit={
 
     val jobConf =getJobConf(conf,tablename)
 
@@ -169,14 +144,13 @@ class HbaseUtils {
 
   /**
     * 读取目录下某个固定月份的下的filename文件
-    * @param conf   配置参数
     * @param sparkSession
     * @param tablename  表名
     * @param fieldName  字段信息
     * @param filename   文件名称
     * @param month      月份
     */
-  def writeMonDataToHZJKQS(conf:Configuration,sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String,month:String):Unit={
+  def writeMonDataToHZJKQS(sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String,month:String):Unit={
 
     val jobConf =getJobConf(conf,tablename)
 
@@ -196,14 +170,13 @@ class HbaseUtils {
 
   /**
     * 读取固定目录下的filename文件
-    * @param conf   配置参数
     * @param sparkSession
     * @param tablename
     * @param fieldName
     * @param filename
     * @param date
     */
-  def writeSomeDateDataToHZJKQS(conf:Configuration,sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String,date:String):Unit={
+  def writeSomeDateDataToHZJKQS(sparkSession: SparkSession,tablename: String,fieldName:Array[String],filename:String,date:String):Unit={
     val jobConf =getJobConf(conf,tablename)
 
     val indataRDD = sparkSession.sparkContext.textFile("C:\\Users\\dell\\Desktop\\test\\"+date+"\\data1\\"+filename)
@@ -219,8 +192,33 @@ class HbaseUtils {
 }
 
 
-object HbaseUtils{
-  private val hbaseUtils =new HbaseUtils
+/**
+  * 将Connection对象变为单例模式
+  * 保证Hbase连接过程中不会产生过多的连接
+  */
+object ConnUtils{
 
-  def getInstance=hbaseUtils
+  private var conn:Connection = null;
+  private var conf :Configuration = null;
+
+  def getConn():Connection={
+    if(conn == null) {
+      conf = getConf()
+      val pool = Executors.newFixedThreadPool(5)
+//      conn = ConnectionFactory.createConnection(conf, pool)
+      conn = ConnectionFactory.createConnection(conf,pool);
+    }
+
+    conn
+  }
+
+  def getConf():Configuration={
+    if(conf == null){
+      conf = HBaseConfiguration.create();
+      conf.set("hbase.zookeeper.property.clientPort", "2181")
+      conf.set("hbase.zookeeper.quorum","192.168.102.121")
+      conf.set("zookeeper.znode.parent", "/hbase-unsecure")
+    }
+    conf
+  }
 }
