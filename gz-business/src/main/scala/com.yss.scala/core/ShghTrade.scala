@@ -21,7 +21,7 @@ object ShghTrade {
 
   def main(args: Array[String]): Unit = {
     var ywrq = DateUtils.getToday(DateUtils.YYYYMMDD)
-    if(args.size > 1){
+    if(args.size >= 1){
       ywrq = args(0)
     }
     execute(ywrq)
