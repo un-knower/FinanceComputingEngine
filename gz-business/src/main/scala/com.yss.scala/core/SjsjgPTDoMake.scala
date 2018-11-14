@@ -2,7 +2,7 @@ package com.yss.scala.core
 
 import com.yss.scala.dto._
 import com.yss.scala.core.SjsjgContants._
-import com.yss.scala.util.{DateUtils, Util}
+import com.yss.scala.util.{DateUtils, BasicUtils}
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -48,7 +48,7 @@ object SjsjgPTDoMake {
   def loadLvarlist(sc: SparkContext, ywrq:String) = {
 
     val convertedFindate = convertDate(ywrq)
-    val csbPath = Util.getDailyInputFilePath(TABLE_NAME_GGCS)
+    val csbPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_GGCS)
     val csb = sc.textFile(csbPath)
 
     //将参数表转换成map结构
@@ -74,7 +74,7 @@ object SjsjgPTDoMake {
 
     /** * 读取基金信息表csjjxx */
     def loadCsjjxx() = {
-      val csjjxxPath = Util.getDailyInputFilePath(TABLE_NAME_JJXX)
+      val csjjxxPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_JJXX)
       val csjjxx = sc.textFile(csjjxxPath)
         .filter(row => {
           val fields = row.split(SEPARATE2)
@@ -97,7 +97,7 @@ object SjsjgPTDoMake {
     /** 债券信息表cszqxx */
     def loadCszqxx() = {
       //读取CsZqXx表
-      val cszqxxPath = Util.getDailyInputFilePath(TABLE_NAME_ZQXX)
+      val cszqxxPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_ZQXX)
       val cszqxx = sc.textFile(cszqxxPath)
       val cszqxxMap1 = cszqxx
         .map(row => {
@@ -137,7 +137,7 @@ object SjsjgPTDoMake {
     /** 股东账号表csgdzh */
     def loadCsgdzh() = {
       //读取股东账号表，
-      val csgdzhPath = Util.getDailyInputFilePath(TABLE_NAME_GDZH)
+      val csgdzhPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_GDZH)
       val csgdzhMap = sc.textFile(csgdzhPath)
         .map(row => {
           val fields = row.split(SEPARATE2)
@@ -149,7 +149,7 @@ object SjsjgPTDoMake {
 
     /** 已计提国债利息 JJGZLX */
     def loadGzlx() = {
-      val jjgzlxPath = Util.getDailyInputFilePath(TABLE_NAME_GZLX)
+      val jjgzlxPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_GZLX)
       val jjgzlxMap = sc.textFile(jjgzlxPath)
         .map(str => {
           val fields = str.split(SEPARATE2)
@@ -163,7 +163,7 @@ object SjsjgPTDoMake {
 
     /** 加载节假日表 csholiday */
     def loadCsholiday() = {
-      val csholidayPath = Util.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
+      val csholidayPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
       val csholidayList = sc.textFile(csholidayPath)
         .filter(str => {
           val fields = str.split(SEPARATE2)
@@ -182,7 +182,7 @@ object SjsjgPTDoMake {
 
     /** 加载资产信息表 lsetlist */
     def loadLsetlist() = {
-      val lsetlistPath = Util.getDailyInputFilePath(TABLE_NAME_ZCXX)
+      val lsetlistPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_ZCXX)
       val lsetlistMap = sc.textFile(lsetlistPath)
         .map(row => {
           val fields = row.split(SEPARATE2)
@@ -200,8 +200,8 @@ object SjsjgPTDoMake {
   def doMake(spark: SparkSession, csb: Broadcast[collection.Map[String, String]], ywrq:String) = {
     val sc = spark.sparkContext
     // 读取原始数据
-    val sourcePath = Util.getInputFilePath("/SJSJG"+ywrq.substring(4))
-    val df = Util.readCSV(sourcePath,spark)
+    val sourcePath = BasicUtils.getInputFilePath("/SJSJG"+ywrq.substring(4))
+    val df = BasicUtils.readCSV(sourcePath,spark)
     // 转换日期
     val convertedYwrq = convertDate(ywrq)
     // 加载基础班信息
@@ -479,18 +479,18 @@ object SjsjgPTDoMake {
     /** 加载公共费率表和佣金表 */
     def loadFeeTables() = {
       //公共的费率表
-      val flbPath = Util.getDailyInputFilePath(TATABLE_NAME_JYLV)
+      val flbPath = BasicUtils.getDailyInputFilePath(TATABLE_NAME_JYLV)
       val flb = sc.textFile(flbPath)
       //佣金利率表
-      val yjPath = Util.getDailyInputFilePath(TABLE_NAME_A117CSJYLV)
+      val yjPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_A117CSJYLV)
       val yjb = sc.textFile(yjPath)
 
       //基金信息表csjjxx
-      val csjjxxPath = Util.getDailyInputFilePath(TABLE_NAME_JJXX)
+      val csjjxxPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_JJXX)
       val jjxxb = sc.textFile(csjjxxPath)
 
       //券商过户费承担方式
-      val csqsfylvPath = Util.getDailyInputFilePath(TABLE_NAME_CSQSFYLV)
+      val csqsfylvPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_CSQSFYLV)
       val csqsfy = sc.textFile(csqsfylvPath)
       val csqsfyMap = csqsfy
         .filter(row => {
@@ -1021,10 +1021,10 @@ object SjsjgPTDoMake {
     }
     //将结果输出
     import spark.implicits._
-    Util.outputMySql(result.toDF(), "sjsjgPTDataDoMakeResult")
+    BasicUtils.outputMySql(result.toDF(), "sjsjgPTDataDoMakeResult")
 
-    val outputPath = Util.getOutputFilePath("/sjsjg"+ywrq.substring(4)+"result")
-    Util.outputHdfs(result.toDF(),outputPath)
+    val outputPath = BasicUtils.getOutputFilePath("/sjsjg"+ywrq.substring(4)+"result")
+    BasicUtils.outputHdfs(result.toDF(),outputPath)
   }
 
 }
