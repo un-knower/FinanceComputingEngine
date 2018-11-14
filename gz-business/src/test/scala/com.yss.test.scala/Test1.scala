@@ -1,14 +1,10 @@
 package com.yss.test.scala
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SparkSession
+import com.yss.scala.util.DateUtils
 
 object Test1 {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().appName("ShenJiaoSuo").master("lcoal[*]").getOrCreate()
-    val sc: SparkContext = spark.sparkContext
-    import spark.implicits._
-
-
+     val date = "1900-01-01"
+    println(DateUtils.formattedDate2Long(date,DateUtils.YYYY_MM_DD))
   }
 }
