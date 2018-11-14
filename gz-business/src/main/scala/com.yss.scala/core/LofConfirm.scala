@@ -141,7 +141,7 @@ object LofConfirm {
       val fqtf = (sxfy + dlfy + jsfy + ghfy + qtfy + yhse + otf2).formatted("%.2f")
       val fgddm = row.getAs[String](13)
       val fjybz = if("641".equals(bzsm)) "认购确认" else if("642".equals(bzsm)) "申购确认" else "赎回确认"
-      val fsetid = getFsetid(zqdm)
+      val fsetid = getFsetid(fgddm)
       val fhtxh = "D"+fsetid+finDate
       Hzjkqs(fsetid, fdate,finDate,zqdm,SH," ",fbs,fje,fsl
         ,"0","0","0","0","0","0","0","0","0",

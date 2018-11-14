@@ -132,7 +132,7 @@ object LofApplication {
       val zqdm = row.getAs[String](5)
       val gddm = row.getAs[String](0)
       val gsdm = row.getAs[String](3)
-      val fsetid = getFsetid(zqdm)
+      val fsetid = getFsetid(gddm)
       val cjje = row.getAs[String](9)
       val cjsl = row.getAs[String](4)
       val fzqbz = "CWJJ"
@@ -142,7 +142,7 @@ object LofApplication {
       Hzjkqs(fsetid, bcrq,bcrq,zqdm,SH,gsdm,bs,cjje,cjsl
         ,"0","0","0","0","0","0","0","0","0",
         "CWJJ","LOFSSSQ","N","0",zqdm,"PT","1",
-        " "," ","0"," ","0",gddm,cjbz,"1"," ",
+        " "," ","0"," ","0",gddm,fjybz,"1"," ",
         fhtxh," ","0","0","bgh","RMB",
         "","","","","")
     })
