@@ -1,6 +1,6 @@
 package com.yss.scala.core
 
-object ExecutionAggrrContants {
+object ExecutionContaints {
   //定义分隔符
   val SEPARATE1 = "@"
   val SEPARATE2 = ","
@@ -11,7 +11,7 @@ object ExecutionAggrrContants {
   /** 公用资产号 */
   val GYZCH = "0"
   /** 市场 */
-  val SH = "SDZ"
+ // val SH = "S"
   /** 参数开启 */
   val YES = "1"
   /** 参数不开启 */

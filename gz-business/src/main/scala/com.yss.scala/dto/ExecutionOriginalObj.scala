@@ -1,6 +1,6 @@
 package com.yss.scala.dto
 
-case class ExecutionAggrrOriginalObj(
+case class ExecutionOriginalObj(
 
                          date:String,
                          ApplID:String,
@@ -14,6 +14,7 @@ case class ExecutionAggrrOriginalObj(
                          SQBH:String,
                          FZQBZ:String,
                          FYWBZ:String,
-                         SETCODE:String
+                         SETCODE:String,
+                         SH:String
 
                          )

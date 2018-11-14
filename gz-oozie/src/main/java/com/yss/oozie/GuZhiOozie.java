@@ -14,7 +14,8 @@ import java.util.Properties;
  * 目标表：
  */
 public class GuZhiOozie {
-    public static void main(String[] args) {
+
+    public   String run () {
         //创建客户端oozie，指定oozieServer
         OozieClient wc = new OozieClient("http://192.168.102.122:11000/oozie");
 
@@ -53,22 +54,24 @@ public class GuZhiOozie {
         conf.setProperty("security_enabled", "False");
         conf.setProperty("dryrun", "False");
         conf.setProperty("sparkopts", "--num-executors 2 --executor-memory 2g --executor-cores 2 --driver-memory 2g");
-
+        String result = "";
         //提交和运行workflow
         try{
             String jobId = wc.run(conf);
             System.out.println("Workflow job submitted");
             System.out.println(jobId);
             while(true){
-                //获取oozie运行状态
+                //获取oozie运行状态ni
                 WorkflowJob.Status status= wc.getJobInfo(jobId).getStatus();
                 if (status == WorkflowJob.Status.RUNNING) {
                     System.out.println("Workflow job running...");
                 } else if (status == WorkflowJob.Status.SUCCEEDED) {
                     System.out.println("Workflow job success");
+                    result = "success";
                     break;
                 } else {
                     System.out.println("Workflow job failed");
+                    result = "failed";
                     break;
                 }
 
@@ -81,6 +84,9 @@ public class GuZhiOozie {
         }catch(OozieClientException e){
             e.printStackTrace();
         }
+        return result;
 
     }
+
+
 }
