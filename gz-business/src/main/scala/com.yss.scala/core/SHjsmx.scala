@@ -8,7 +8,7 @@ import com.yss.scala.core.ShghContants.{DEFAULT_VALUE_0, FSH, SEPARATE2, TABLE_N
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 import com.yss.scala.dbf.dbf._
 import com.yss.scala.dto.{Hzjkqs, SHjsmxHzjkqs}
-import com.yss.scala.util.{DateUtils, Util}
+import com.yss.scala.util.{DateUtils, BasicUtils}
 import org.apache.spark
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
@@ -34,7 +34,7 @@ object SHjsmx {
     val sparkSession = sc.sparkSession
 
     //读取源文件
-    val SHjsmxFileDF: DataFrame = Util.readCSV("hdfs://192.168.102.120:8020/yss/guzhi/interface/20181114/jsmxjs/jsmxjs20180108.dbf.tsv", spark)
+    val SHjsmxFileDF: DataFrame = BasicUtils.readCSV("hdfs://192.168.102.120:8020/yss/guzhi/interface/20181114/jsmxjs/jsmxjs20180108.dbf.tsv", spark)
 
     //读取CSGDZH表
     val CSGDZHTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/CSGDZH/part-m-00000")
@@ -2880,7 +2880,7 @@ object SHjsmx {
     */
   def getNextWorkDay(sparkSession: SparkSession, YWDate: String): String = {
     val sc = sparkSession.sqlContext
-    val csholidayPath = Util.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
+    val csholidayPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
     val csholidayList = sc.sparkContext.textFile(csholidayPath)
       .filter(str => {
         val fields = str.split(",")

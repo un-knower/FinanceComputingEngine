@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 
 import com.yss.scala.dto._
 import com.yss.scala.core.ExecutionContaints._
-import com.yss.scala.util.Util
+import com.yss.scala.util.BasicUtils
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -63,7 +63,7 @@ object Execution extends Serializable {
     /**
       * 2.取数据表 CSQSXW,进行map,将FQSXW为key,FXWLB为value
       */
-    val CSJYLVPath = Util.getDailyInputFilePath("CSJYLV")
+    val CSJYLVPath = BasicUtils.getDailyInputFilePath("CSJYLV")
     val xwTable = sc.textFile(CSJYLVPath)
     val xwValue = xwTable.map {
       x => {
@@ -78,7 +78,7 @@ object Execution extends Serializable {
       * 3.读取Lvarlist
       *
       */
-    val LVARLISTPath = Util.getDailyInputFilePath("LVARLIST")
+    val LVARLISTPath = BasicUtils.getDailyInputFilePath("LVARLIST")
     val varList = sc.textFile(LVARLISTPath)
     val varlistValue = varList.map {
       x => {
@@ -94,7 +94,7 @@ object Execution extends Serializable {
       * key
       *
       */
-    val A001CSTSKMPath = Util.getDailyInputFilePath("CSSYSTSKM")
+    val A001CSTSKMPath = BasicUtils.getDailyInputFilePath("CSSYSTSKM")
     val cstskm = sc.textFile(A001CSTSKMPath)
     val cstskmValue = cstskm.map {
       x => {
@@ -110,7 +110,7 @@ object Execution extends Serializable {
       * 5.读取LSetCsSysJj 这张表
       *
       */
-    val LSETCSSYSJJPath = Util.getDailyInputFilePath("LSETCSSYSJJ")
+    val LSETCSSYSJJPath = BasicUtils.getDailyInputFilePath("LSETCSSYSJJ")
     val LSETCSSYSJJ = sc.textFile(LSETCSSYSJJPath)
     val LSETCSSYSJJValue = LSETCSSYSJJ.map {
       x => {
@@ -125,7 +125,7 @@ object Execution extends Serializable {
       * 6.读取基金信息表
       */
 
-    val CSJJXXPath = Util.getDailyInputFilePath("CSJJXX")
+    val CSJJXXPath = BasicUtils.getDailyInputFilePath("CSJJXX")
     val CSJJXX = sc.textFile(CSJJXXPath)
     //hdfs://nscluster/yss/guzhi/basic_list/20180917/CSJJXX
     val CSJJXXValue = CSJJXX.map {
@@ -156,7 +156,7 @@ object Execution extends Serializable {
       * 7.读取股东账号
       *
       */
-    val CSGDZHPath = Util.getDailyInputFilePath("CSGDZH")
+    val CSGDZHPath = BasicUtils.getDailyInputFilePath("CSGDZH")
     val accountNumber = sc.textFile(CSGDZHPath )
 
     val setCode = accountNumber.map {
@@ -172,7 +172,7 @@ object Execution extends Serializable {
       * 读取 CSZQXX表
       *
       */
-    val CSZQXXPath = Util.getDailyInputFilePath("CSZQXX")
+    val CSZQXXPath = BasicUtils.getDailyInputFilePath("CSZQXX")
     val CSZQXX = sc.textFile(CSZQXXPath)
     val fzqlb = CSZQXX.map {
       x => {
@@ -542,7 +542,7 @@ object Execution extends Serializable {
     * */
   def loadLvarlist(sc: SparkContext) = {
     //公共的参数表
-    val csbPath = Util.getDailyInputFilePath("LVARLIST")
+    val csbPath = BasicUtils.getDailyInputFilePath("LVARLIST")
     val csb = sc.textFile(csbPath)
 
     //将参数表转换成map结构
@@ -574,10 +574,10 @@ object Execution extends Serializable {
       * */
     def loadFeeTables() = {
       //公共的费率表
-      val flbPath = Util.getDailyInputFilePath("CSJYLV")
+      val flbPath = BasicUtils.getDailyInputFilePath("CSJYLV")
       val flb = sc.textFile(flbPath)
       //117的佣金利率表
-      val yjPath = Util.getDailyInputFilePath("CSSYSYJLV")
+      val yjPath = BasicUtils.getDailyInputFilePath("CSSYSYJLV")
       val yjb = sc.textFile(yjPath)
 
       //将佣金表转换成map结构
@@ -624,7 +624,7 @@ object Execution extends Serializable {
         .collectAsMap()
 
       //交易费用表（佣金的三种模式）
-      val csbPath = Util.getDailyInputFilePath("CSSYSXWFY")
+      val csbPath = BasicUtils.getDailyInputFilePath("CSSYSXWFY")
       val jyfy = sc.textFile(csbPath)
       //同一个席位号只能选一个JSF,ZGF
       val jyfyMap = jyfy.map {
@@ -646,7 +646,7 @@ object Execution extends Serializable {
         *
         */
 
-      val CSQSFYLV = Util.getDailyInputFilePath("CSQSFYLV")
+      val CSQSFYLV = BasicUtils.getDailyInputFilePath("CSQSFYLV")
       val CSQSFYLVMap = sc.textFile(CSQSFYLV)
       //同一个席位号只能选一个JSF,ZGF
       val qsghf = CSQSFYLVMap.map {
@@ -665,7 +665,7 @@ object Execution extends Serializable {
 
 
       /** * 读取基金信息表csjjxx */
-      val csjjxxPath = Util.getDailyInputFilePath("CSJJXX")
+      val csjjxxPath = BasicUtils.getDailyInputFilePath("CSJJXX")
       val jjxxb = sc.textFile(csjjxxPath)
 
 
@@ -703,7 +703,7 @@ object Execution extends Serializable {
 
     def getZCDM() = {
       //交易费用表（佣金的三种模式）
-      val listPath = Util.getDailyInputFilePath("LSETLIST")
+      val listPath = BasicUtils.getDailyInputFilePath("LSETLIST")
       val lSetList = sc.textFile(listPath)
       //同一个席位号只能选一个JSF,ZGF
       val listMap = lSetList.map {
@@ -1197,7 +1197,7 @@ object Execution extends Serializable {
     }
     //将结果输出
     import spark.implicits._
-    Util.outputMySql(result.toDF(), "SZSTOCKK")
+    BasicUtils.outputMySql(result.toDF(), "SZSTOCKK")
     //Util.outputHdfs(result.toDF(),"/yss/guzhi/hzjkqs/20181106/Execution/")
     result.toDF.show(100)
   }

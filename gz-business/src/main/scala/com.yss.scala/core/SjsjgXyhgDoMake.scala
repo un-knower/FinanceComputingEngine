@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import com.yss.scala.core.SjsjgContants.DEFAULT_VALUE_SPACE
 import com.yss.scala.dbf.dbf._
 import com.yss.scala.dto.{Hzjkqs, SJSJGETL}
-import com.yss.scala.util.{DateUtils, Util}
+import com.yss.scala.util.{DateUtils, BasicUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
@@ -144,7 +144,7 @@ object SjsjgXyhgDoMake {
     })
     import spark.implicits._
     //初始交易、到期交易数据写入mysql数据库，方便校验
-    Util.outputMySql(JGvalueRDD.toDF(), "SJSJGXYCSDQAllData")
+    BasicUtils.outputMySql(JGvalueRDD.toDF(), "SJSJGXYCSDQAllData")
 
     //计算规则方法
     calculator(JGvalueRDD.toDF(),spark )
@@ -402,6 +402,6 @@ object SjsjgXyhgDoMake {
     })
 
     import spark.implicits._
-    Util.outputMySql(sjsjgXzxkRDD.toDF(), "SJSJGXYCSDQ")
+    BasicUtils.outputMySql(sjsjgXzxkRDD.toDF(), "SJSJGXYCSDQ")
   }
 }

@@ -7,7 +7,7 @@ import java.util.{Properties}
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import java.net.{InetAddress}
 
-object Util {
+object BasicUtils {
 
   /**
     * 读取XML文件，解析成Row类型的RDD
