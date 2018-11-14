@@ -4,7 +4,7 @@ import java.io.File
 import java.util.Properties
 
 import com.yss.scala.dto.SHFICCTriPartyRepoETLDto
-import com.yss.scala.util.{DateUtils, RowUtils, Util}
+import com.yss.scala.util.{DateUtils, RowUtils, BasicUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -440,7 +440,7 @@ object ShFICCTriPartyRepoETL {
     * @return
     */
   private def readJsmxFileAndFilted(spark: SparkSession, jsmxFilePath: String): RDD[Row] = {
-    val jsmxRDD: RDD[Row] = Util.readCSV(jsmxFilePath, spark).rdd
+    val jsmxRDD: RDD[Row] = BasicUtils.readCSV(jsmxFilePath, spark).rdd
     //val jsmxRDD: RDD[Row] = spark.sqlContext.dbfFile("/Users/lijiayan/Desktop/dbf/jsmx/jsmx03_jsjc1.802.1.dbf").rdd
     jsmxRDD.filter(row => {
       val JLLX = RowUtils.getRowFieldAsString(row, "JLLX")
@@ -456,7 +456,7 @@ object ShFICCTriPartyRepoETL {
 
   private def readWdqFileAndFilted(spark: SparkSession, wdqFilePath: String): RDD[Row] = {
     try {
-      val wdqRDD: RDD[Row] = Util.readCSV(wdqFilePath, spark).rdd
+      val wdqRDD: RDD[Row] = BasicUtils.readCSV(wdqFilePath, spark).rdd
       //val wdqRDD: RDD[Row]  = spark.sqlContext.dbfFile("/Users/lijiayan/Desktop/dbf/test").rdd
       //过滤数据,wdq（未到期）文件中：scdm=‘01’and wdqlb=‘008’的所有数据
       wdqRDD.filter(row => {
