@@ -93,7 +93,7 @@ public class RenameDir {
         hashMap.put("^hk_zjbd.*$", "hkzjbd");//港股通资金变动文件
         hashMap.put("^hk_zjhz.*$", "hkzjhz");//港股通资金汇总文件
         hashMap.put("^hk_zjye.*$", "hkzjye");//港股通资金余额文件
-        hashMap.put("^jsmxjs.*$", "jsmxjs");//上海结算明细库
+        hashMap.put("^jsmx.*$", "jsmx");//上海结算明细库
         hashMap.put("^op_bzjzh.*$", "opbzjzh");//衍生品保证金账户数据
         //BDF文件
         hashMap.put("^gh\\d*\\.dbf$", "gh");//上海回报库
@@ -119,9 +119,9 @@ public class RenameDir {
         hashMap.put("^SZHK_SJSJG\\d*\\.dbf$", "szhksjsjg");//港股通（深圳）证券变动文件
         hashMap.put("^ZSMXFK\\d*\\.dbf$", "zsmxfk");//征税明细反馈库
         hashMap.put("^ZSMX\\.dbf$", "zsmx");//征税明细信息库
-        hashMap.put("^SJSMX2\\.dbf$", "sjsmx/2");//深交所清算明细库
-        hashMap.put("^SJSMX1\\.dbf$", "sjsmx/1");//深交所清算明细库
-        hashMap.put("^SJSMX0\\.dbf$", "sjsmx/0");//深交所清算明细库
+        hashMap.put("^SJSMX2\\.dbf$", "sjsmx");//深交所清算明细库
+        hashMap.put("^SJSMX1\\.dbf$", "sjsmx");//深交所清算明细库
+        hashMap.put("^SJSMX0\\.dbf$", "sjsmx");//深交所清算明细库
         hashMap.put("^SJSZHHB\\.dbf$", "sjszhhb");//深交所综合回报库
         hashMap.put("^LOFMXZF\\.dbf$", "lofmxzf");//上证LOF清算明细文件
         hashMap.put("^LOFJS\\.dbf$", "lofjs");//深圳LOF结算信息库
@@ -151,14 +151,10 @@ public class RenameDir {
         hashMap.put("^SJSDZ\\.dbf", "sjsdz");//深圳对账库
         hashMap.put("^RZRQLX_\\d*\\.dbf", "rzrqlx");//融资融券每日利息
         hashMap.put("^\\d*_.*_\\d*_\\d_ClientCapitalDetail\\.dbf", "clientcapitaldetail");//客户分项资金明细表
-
-
-
-
-        //新增三方回购
-        hashMap.put("^jsmx03_jsjc.*$", "jsmxjsjc03");//三方回购
-        hashMap.put("^jsmx02_jsjc.*$", "jsmxjsjc02");//三方回购
-        hashMap.put("^jsmx01_jsjc.*$", "jsmxjsjc01");//三方回购
+//        //新增三方回购
+//        hashMap.put("^jsmx03_jsjc.*$", "jsmxjsjc03");//三方回购
+//        hashMap.put("^jsmx02_jsjc.*$", "jsmxjsjc02");//三方回购
+//        hashMap.put("^jsmx01_jsjc.*$", "jsmxjsjc01");//三方回购
 
         return hashMap;
     }

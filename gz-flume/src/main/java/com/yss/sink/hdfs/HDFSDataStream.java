@@ -78,18 +78,18 @@ public class HDFSDataStream extends AbstractHDFSWriter {
         } else {
             //删除已存在的文件
             Path parent = dstPath.getParent();
-            if (parent.getName().equals(LocalDate.now().toString().replaceAll("-", ""))) {
+//            if (parent.getName().equals(LocalDate.now().toString().replaceAll("-", ""))) {
                 String filePath = dstPath.toString();
                 String path = filePath.substring(0, filePath.length() - 4);
                 Path fs = new Path(path);
                 if (hdfs.exists(fs)) {
                     hdfs.delete(fs, false);
                 }
-            } else {
-                if (hdfs.exists(parent)) {
-                    hdfs.delete(parent, true);
-                }
-            }
+//            } else {
+//                if (hdfs.exists(parent)) {
+//                    hdfs.delete(parent, true);
+//                }
+//            }
             logger.info("HDFS创建文件开始写数据:" + dstPath.toString() + "    当前时间是:" + System.currentTimeMillis());
             outStream = hdfs.create(dstPath);
         }
