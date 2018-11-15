@@ -4,7 +4,8 @@ object ExecutionContaints {
   //定义分隔符
   val SEPARATE1 = "@"
   val SEPARATE2 = ","
-
+  /** 分隔符 - */
+  val SEPARATE3 = "-"
   /** 资产类型 */
   val ZCLB = "GP"
 
