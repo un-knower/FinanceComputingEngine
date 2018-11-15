@@ -2,7 +2,7 @@ package com.yss.scala.core
 
 import com.yss.scala.dto.{Hzjkqs, ShghFee, ShghYssj}
 import com.yss.scala.core.ShghContants._
-import com.yss.scala.util.{DateUtils, BasicUtils}
+import com.yss.scala.util.{BasicUtils, DateUtils, FceUtils}
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -307,25 +307,6 @@ object ShghTrade {
       sc.broadcast(jjgzlxMap)
     }
 
-    /** 加载节假日表 csholiday */
-    def loadCsholiday() = {
-      val csholidayPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
-      val csholidayList = sc.textFile(csholidayPath)
-        .filter(str => {
-          val fields = str.split(SEPARATE2)
-          val fdate = fields(0)
-          val fbz = fields(1)
-          val fsh = fields(3)
-          if (DEFAULT_VALUE_0.equals(fbz) && FSH.equals(fsh) && fdate.compareTo(ywrq) >= 0) true
-          else false
-        })
-        .map(str => {
-          str.split(SEPARATE2)(0)
-        }).takeOrdered(1)
-      if (csholidayList.length == 0) ywrq
-      else csholidayList(0)
-    }
-
     /** 加载资产信息表 lsetlist */
     def loadLsetlist() = {
       val lsetlistPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_ZCXX)
@@ -340,8 +321,11 @@ object ShghTrade {
       sc.broadcast(lsetlistMap)
     }
 
+    /** 获取下一个工作日 */
+    val  nextWorkDay = FceUtils.getCsholiday(sc,ywrq,1)
+
     (loadCsjjxx(), loadCsqyxx(), loadCsqsxw(),loadCsTsKm(), loadCssysjj(),
-      loadCszqxx(), loadCsgdzh(), loadGzlx(), loadCsholiday(),loadLsetlist())
+      loadCszqxx(), loadCsgdzh(), loadGzlx(), nextWorkDay,loadLsetlist())
   }
 
   /** 基础信息表日期是 yyyy-MM-dd,原始数据是 yyyyMMdd,将原始数据转换成yyyy-MM-dd的格式 */
