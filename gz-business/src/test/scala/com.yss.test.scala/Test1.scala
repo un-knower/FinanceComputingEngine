@@ -1,10 +1,9 @@
 package com.yss.test.scala
 
-import com.yss.scala.util.DateUtils
-
 object Test1 {
   def main(args: Array[String]): Unit = {
-     val date = "1900-01-01"
-    println(DateUtils.formattedDate2Long(date,DateUtils.YYYY_MM_DD))
+    val str1 = "Hello"
+    val str2 = "World"
+    //println(ShZQChange.contactString("@", str1, str2,"haha"))
   }
 }

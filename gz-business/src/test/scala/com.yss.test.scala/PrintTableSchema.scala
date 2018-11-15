@@ -2,7 +2,7 @@ package com.yss.test.scala
 
 import java.io.File
 
-import com.yss.scala.util.{DateUtils, Util}
+import com.yss.scala.util.{DateUtils, BasicUtils}
 import com.yss.test.scala.PrintTableSchema.TABLE_TYPE.TABLE_TYPE
 import org.apache.spark.sql.SparkSession
 
@@ -48,7 +48,7 @@ object PrintTableSchema {
 
 
   def printHDFSSchema(spark: SparkSession, tableName: String): Unit = {
-    Util.readCSV(getTableDataPath(tableName), spark, header = true, sep = "\t").toDF().printSchema()
+    BasicUtils.readCSV(getTableDataPath(tableName), spark, header = true, sep = "\t").toDF().printSchema()
   }
 
   def printOracleSchema(spark: SparkSession, tableName: String) = {

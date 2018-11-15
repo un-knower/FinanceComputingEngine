@@ -1,7 +1,7 @@
 package com.yss.test.scala
 
 import com.yss.scala.dto.QiHuoChengJiao
-import com.yss.scala.util.Util
+import com.yss.scala.util.BasicUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{Dataset, SparkSession}
 
@@ -21,7 +21,7 @@ object QiHuoChengJiaoMingXi {
 
     //读取目标文件：期货成交明细
     val fileName = "09000211trddata20180420.txt"
-    val readData: Dataset[String] = spark.read.textFile(Util.getInputFilePath(fileName))
+    val readData: Dataset[String] = spark.read.textFile(BasicUtils.getInputFilePath(fileName))
     //val readData: Dataset[String] = spark.read.textFile("C:\\Users\\YZM\\Desktop\\test1.txt")
 
     //处理目标文件的每一行数据，得到最终结果
@@ -103,7 +103,7 @@ object QiHuoChengJiaoMingXi {
 
     //将结果输出到Mysql数据库中
     val dfResult = dsResult.toDF()
-    Util.outputMySql(dfResult,"QHCJMX")
+    BasicUtils.outputMySql(dfResult,"QHCJMX")
 
   }
 }
