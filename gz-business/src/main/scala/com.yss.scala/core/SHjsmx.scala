@@ -34,51 +34,51 @@ object SHjsmx {
     val sparkSession = sc.sparkSession
 
     //读取源文件
-    val SHjsmxFileDF: DataFrame = BasicUtils.readCSV("hdfs://192.168.102.120:8020/yss/guzhi/interface/20181114/jsmxjs/jsmxjs20180108.dbf.tsv", spark)
+    val SHjsmxFileDF: DataFrame = BasicUtils.readCSV("hdfs://192.168.102.120:8020/yss/guzhi/interface/20181115/jsmx/jsmxjs20180108.dbf.tsv", spark)
     SHjsmxFileDF.show()
 
     //读取CSGDZH表
-    val CSGDZHTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/CSGDZH/part-m-00000")
+    val CSGDZHTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/CSGDZH/part-m-00000")
     //广播出去
     val CSGDZHBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(CSGDZHTable.collect())
 
     //读取LsetList表
-    val LSETLISTTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/LSETLIST/part-m-00000")
+    val LSETLISTTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/LSETLIST/part-m-00000")
     //广播出去
     val LSETLISTBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(LSETLISTTable.collect())
 
     //读取LVARLIST表
-    val LVARLISTTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/LVARLIST/part-m-00000")
+    val LVARLISTTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/LVARLIST/part-m-00000")
     //广播出去
     val LVARLISTBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(LVARLISTTable.collect())
 
     //读取CSQSFYLV表
-    val CSQSFYLVTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/CSQSFYLV/part-m-00000")
+    val CSQSFYLVTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/CSQSFYLV/part-m-00000")
     //广播出去
     val CSQSFYLVBroadcast: Broadcast[Array[String]] = sc.sparkContext.broadcast(CSQSFYLVTable.collect())
 
     //读取CSZQXX表
-    val CSZQXXTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/CSZQXX/part-m-00000")
+    val CSZQXXTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/CSZQXX/part-m-00000")
     // 广播出去
     val CSZQXXBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(CSZQXXTable.collect())
 
     //读取CSSYSYJLV表
-    val CSSYSYJLVTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/CSSYSYJLV/part-m-00000")
+    val CSSYSYJLVTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/CSSYSYJLV/part-m-00000")
     //广播出去
     val CSSYSYJLVBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(CSSYSYJLVTable.collect())
 
     //读取CSSYSXWFY表
-    val CSSYSXWFYTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/CSSYSXWFY/part-m-00000")
+    val CSSYSXWFYTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/CSSYSXWFY/part-m-00000")
     //广播出去
     val CSSYSXWFYBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(CSSYSXWFYTable.collect())
 
     //读取LSETCSSYSJJ表
-    val LSETCSSYSJJTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181107/LSETCSSYSJJ/part-m-00000")
+    val LSETCSSYSJJTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/LSETCSSYSJJ/part-m-00000")
     //广播出去
     val LSETCSSYSJJBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(LSETCSSYSJJTable.collect())
 
     //读取CSJYLV表
-    val CSJYLVTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181108/CSJYLV/part-m-00000")
+    val CSJYLVTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/CSJYLV/part-m-00000")
     //广播出去
     val CSJYLVBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(CSJYLVTable.collect())
 
@@ -116,6 +116,8 @@ object SHjsmx {
 
       val blnZqQrValue: Array[String] = getLVARLISTValue(FSETID, "新股、新债申购仅T+3制作中签确认凭证", LVARLISTBroadCast)
 
+      println(blnZqQrValue.toBuffer)
+
       var blnZqQr: Boolean = false
       if ((blnZqQrValue(0).split(",")(1)).equals("1")) {
         blnZqQr = true
@@ -136,7 +138,6 @@ object SHjsmx {
       Temp
     })
 
-    println("#######################################" + XGSGCalculateRDD.collect().toBuffer)
     if (XGSGCalculateRDD.collect().length !=0) {
       XGSGCalculate(sparkSession: SparkSession, XGSGCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
@@ -434,7 +435,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -542,12 +543,12 @@ object SHjsmx {
       val Fszsh: String = "H"
       val Fjyxwh: String = row.getAs[String]("XWH1")
       val FBS: String = "B"
-      val Fje = mul(row.getAs[String]("sl"), row.getAs[String]("Jg1"), 2)
-      val Fsl = row.getAs[String]("s1")
+      val Fje = mul(row.getAs[String]("SL"), row.getAs[String]("JG1"), 2)
+      val Fsl = row.getAs[String]("SL")
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -656,12 +657,12 @@ object SHjsmx {
       val Fszsh: String = "H"
       val Fjyxwh: String = row.getAs[String]("XWH1")
       val FBS: String = "B"
-      val Fje = mul(row.getAs[String]("sl"), row.getAs[String]("Jg1"), 2)
-      val Fsl = row.getAs[String]("s1")
+      val Fje = mul(row.getAs[String]("SL"), row.getAs[String]("JG1"), 2)
+      val Fsl = row.getAs[String]("SL")
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -735,6 +736,9 @@ object SHjsmx {
         Fbz: String
       )
     })
+
+    println(SGQRTempRDD.collect().toBuffer)
+
     save2Mysql(SGQRTempRDD,sparkSession,"CDR_wmz")
 
   }
@@ -773,7 +777,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -885,7 +889,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -997,7 +1001,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -1112,7 +1116,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -1215,7 +1219,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -1328,7 +1332,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -1431,7 +1435,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -1539,7 +1543,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -1676,7 +1680,7 @@ object SHjsmx {
 
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -1813,7 +1817,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -1953,7 +1957,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -2060,7 +2064,7 @@ object SHjsmx {
       val Fyj = "0"
       val Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
       val Fhggain = "0"
@@ -2173,7 +2177,7 @@ object SHjsmx {
 
       var Fjsf = getAbs(row, "JSF")
       val Fyhs = getAbs(row, "YHS")
-      val Fzgf = getAbs(row, "ZHF")
+      val Fzgf = getAbs(row, "ZGF")
       val Fghf = getAbs(row, "GHF")
       val Fgzlx = "0"
 
@@ -2928,7 +2932,7 @@ object SHjsmx {
     * @return
     */
   def getAbs(row: Row, String: String): String = {
-    BigDecimal(row.getAs[String]("String")).abs.toString()
+    BigDecimal(row.getAs[String](String)).abs.toString()
   }
 
   /**
@@ -2977,11 +2981,11 @@ object SHjsmx {
     * @return
     */
   def RDD2DF(targetRDD: RDD[SHjsmxHzjkqs],sparkSession: SparkSession): DataFrame = {
-    // 将费率表转换成DateFrame
+    // 将RDD转换成DateFrame
     val schemaString: String = "FSETID,Fdate,FinDate,FZqdm,FSzsh,Fjyxwh,FBS,Fje,Fyj,Fjsf,Fyhs,Fzgf,Fghf,Fgzlx,Fhggain,Ffxj,Fsssje,Fzqbz,Fywbz,Fqsbz,Fqtf,Zqdm,Fjyfs,Fsh,Fzzr,Fchk,Fzlh,Ftzbz,Fqsghf,Fgddm,Fjybz,Isrtgs,Fpartid,Fhtxh,Fcshtxh,Frzlv,Fcsghqx,Fsjly,Fbz"
     val fields: Array[StructField] = schemaString.split(",").map(fieldname => StructField(fieldname, StringType, nullable = true))
     val schema = StructType(fields)
-    val rowRDD= targetRDD.map(_.toString.split(",")).map(attributes => Row(attributes(0).trim, attributes(1).trim, attributes(2).trim, attributes(3).trim, attributes(4).trim, attributes(5).trim, attributes(6).trim, attributes(7).trim, attributes(8).trim, attributes(9).trim, attributes(10).trim, attributes(11).trim, attributes(12).trim, attributes(13).trim, attributes(14).trim, attributes(15).trim, attributes(16).trim, attributes(17).trim, attributes(18).trim, attributes(19).trim, attributes(20).trim, attributes(21).trim, attributes(22).trim, attributes(23).trim, attributes(24).trim, attributes(25).trim, attributes(26).trim, attributes(27).trim, attributes(28).trim, attributes(29).trim, attributes(30).trim, attributes(31).trim, attributes(32).trim, attributes(33).trim, attributes(34).trim, attributes(35).trim, attributes(36).trim, attributes(37).trim, attributes(38).trim, attributes(39).trim))
+    val rowRDD= targetRDD.map(_.toString.split(",")).map(attributes => Row(attributes(0).trim, attributes(1).trim, attributes(2).trim, attributes(3).trim, attributes(4).trim, attributes(5).trim, attributes(6).trim, attributes(7).trim, attributes(8).trim, attributes(9).trim, attributes(10).trim, attributes(11).trim, attributes(12).trim, attributes(13).trim, attributes(14).trim, attributes(15).trim, attributes(16).trim, attributes(17).trim, attributes(18).trim, attributes(19).trim, attributes(20).trim, attributes(21).trim, attributes(22).trim, attributes(23).trim, attributes(24).trim, attributes(25).trim, attributes(26).trim, attributes(27).trim, attributes(28).trim, attributes(29).trim, attributes(30).trim, attributes(31).trim, attributes(32).trim, attributes(33).trim, attributes(34).trim, attributes(35).trim, attributes(36).trim, attributes(37).trim, attributes(38).trim))
     val targetDF: DataFrame = sparkSession.createDataFrame(rowRDD, schema)
     targetDF
   }
