@@ -87,7 +87,7 @@ public class HDFSDataStream extends AbstractHDFSWriter {
                 }
 //            } else {
 //                if (hdfs.exists(parent)) {
-                    hdfs.delete(parent, true);
+//                    hdfs.delete(parent, true);
 //                }
 //            }
             logger.info("HDFS创建文件开始写数据:" + dstPath.toString() + "    当前时间是:" + System.currentTimeMillis());
