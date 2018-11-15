@@ -2,7 +2,7 @@ package com.yss.test.scala
 
 import java.util.Date
 
-import com.yss.scala.util.Util
+import com.yss.scala.util.BasicUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 
@@ -36,7 +36,7 @@ object ImcExchangeRate {
     ))
 
     //写出表字段与原始数据对应方式
-    val rowRDD = Util.readXML(Util.getInputFilePath(tableName), sqlContext).map(row => {
+    val rowRDD = BasicUtils.readXML(BasicUtils.getInputFilePath(tableName), sqlContext).map(row => {
       val BidRate = row(0).toString.toDouble
       val FromCurrency = row(1).toString.trim()
       val MidPointRate = row(2).toString.toDouble
@@ -56,7 +56,7 @@ object ImcExchangeRate {
 
     //数据写出到表
     val df = sqlContext.createDataFrame(rowRDD, fieldSchema)
-    Util.outputMySql(df,"imcexchangerate")
+    BasicUtils.outputMySql(df,"imcexchangerate")
 
     sqlContext.stop()
   }
