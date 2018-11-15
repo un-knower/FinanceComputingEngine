@@ -71,7 +71,7 @@ object BasicUtils {
     * 此方法用来将结果文件保存到hdfs上
     * 获取hdfs上的文件路径 prefix+fileName
     * @param fileName 文件名
-    * @param prefix 前缀 默认是 "/yss/guzhi/out/"
+    * @param prefix 前缀 默认是 "/yss/guzhi/hzjkqs/"
     * @return
     */
   def getOutputFilePath(fileName: String,prefix:String ="/yss/guzhi/hzjkqs/" ) = {
