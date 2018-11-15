@@ -3,7 +3,6 @@ package com.yss.scala.util
 import java.util.Calendar
 import java.util.concurrent.Executors
 
-import com.yss.scala.dto.Hzjkqs
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.client._
