@@ -177,16 +177,18 @@ object FceUtils {
     sc.broadcast(lsetlistMap)
   }
 
-
   /**
     * 获取业务日期后的下一个工作日，
     * 此方法应该在driver中执行，不要用在spark的一些算子中
     *
     * @param sc   ：SparkContext
     * @param findate ：业务日期 注意（yyyy-MM-dd)
+    * @param offset ：offset = 0,如果ddate不是节假日，就返回ddate，否则取下一个工作日
+    * @param ggt ：是否是港股通
     * @return 下一个工作日
     */
-  def getCsholiday(sc: SparkContext, findate: String) = {
+  def getCsholiday(sc: SparkContext, findate: String,offset:Int = 0,ggt:Boolean = false):String = {
+    //获取节假日列表
     val csholidayPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
     val csholidayList = sc.textFile(csholidayPath)
       .filter(str => {
@@ -194,14 +196,30 @@ object FceUtils {
         val fdate = fields(0)
         val fbz = fields(1)
         val fsh = fields(3)
-        if (DEFAULT_VALUE_0.equals(fbz) && FSH.equals(fsh) && fdate.compareTo(findate) >= 0) true
+        val ffbz = if(ggt) "10" else "0"
+        if (ffbz.equals(fbz) && FSH.equals(fsh) && fdate.compareTo(findate) >= 0) true
         else false
       })
       .map(str => {
         str.split(SEPARATE2)(0)
-      }).takeOrdered(1)
-    if (csholidayList.length == 0) findate
-    else csholidayList(0)
+      }).collect()
+    if(csholidayList.length == 0) return findate
+
+    //递归获取非节假日
+    def addDay( findate:String):String = {
+      var finalDate:String = findate
+      if(!csholidayList.contains(finalDate)){
+        return finalDate
+      }
+      finalDate =  DateUtils.addDays(finalDate,1,DateUtils.YYYY_MM_DD)
+      addDay(finalDate)
+    }
+    // offset = 0,如果ddate不是节假日，就返回ddate，否则直接从下一个工作日开始
+    var date = findate
+    if(offset != 0 ){
+      date =  DateUtils.addDays(findate,1,DateUtils.YYYY_MM_DD)
+    }
+    addDay(date)
   }
 
   /**

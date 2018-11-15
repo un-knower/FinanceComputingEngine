@@ -82,4 +82,15 @@ object DateUtils {
     new SimpleDateFormat(pattern).parse(formattedDate).getTime
   }
 
+
+  /**
+    * 将日期的格式进行转换
+    * @param orgDate 原始的日期 如 20180209
+    * @param orgPattern 原始的日期格式 如 YYYYMMMDD
+    * @param newPattern 需要转化成得日期格式 如 YYYY-MM-DD
+    * @return
+    */
+  def changeDateForm(orgDate: String, orgPattern: String, newPattern: String): String = {
+    formatDate(formattedDate2Long(orgDate, orgPattern), newPattern)
+  }
 }
