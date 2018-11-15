@@ -332,8 +332,8 @@ object ShFICCTriPartyRepo {
 
       Hzjkqs(
         FSETID,
-        FDate,
-        FInDate,
+        DateUtils.changeDateForm(FDate,DateUtils.YYYYMMDD,DateUtils.YYYY_MM_DD),
+        DateUtils.changeDateForm(FInDate,DateUtils.YYYYMMDD,DateUtils.YYYY_MM_DD),
         FZqdm,
         FSzsh,
         FJyxwh,

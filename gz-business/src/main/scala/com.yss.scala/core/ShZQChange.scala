@@ -4,7 +4,7 @@ import java.io.File
 import java.util.Properties
 
 import com.yss.scala.dto.{Hzjkqs, ShZQBD}
-import com.yss.scala.util.{DateUtils, RowUtils,FceUtils, BasicUtils}
+import com.yss.scala.util.{DateUtils, RowUtils, FceUtils, BasicUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -54,17 +54,19 @@ object ShZQChange {
 
   def main(args: Array[String]): Unit = {
 
+    var ywrq = DateUtils.formatDate(System.currentTimeMillis())
+
+    if (args == null || args.length != 1) {
+      throw new IllegalArgumentException("请传入业务日期")
+    }
+    ywrq = args(0)
+
     val spark = SparkSession.builder()
       .appName(getClass.getSimpleName)
       .master("local[*]")
       .getOrCreate()
-    val day = DateUtils.formatDate(System.currentTimeMillis())
-    var dataPath = ZQBD_basePath + day + "/zqbd/zqbd*.tsv"
-    var ywrq = "20180209"
-    if (args != null && args.length == 2) {
-      dataPath = args(0)
-      ywrq = args(1)
-    }
+
+    var dataPath = ZQBD_basePath + ywrq + "/zqbd/zqbd*.tsv"
 
     val zqdbOrgData: RDD[Row] = readZQBDData(spark, dataPath)
 
@@ -72,7 +74,6 @@ object ShZQChange {
     val zqbdData: RDD[Row] = filterData(zqdbOrgData, ywrq)
 
     zqbdData.persist()
-
     //读取股东账号表
     readCSGDZH(spark)
 
@@ -97,8 +98,9 @@ object ShZQChange {
     readCSJYLV(spark)
 
     //读取下一个工作日
-    NEXT_WORK_DAY = FceUtils.getCsholiday(spark.sparkContext, ywrq)
+    NEXT_WORK_DAY = FceUtils.getCsholiday(spark.sparkContext, DateUtils.changeDateForm(ywrq, DateUtils.YYYYMMDD, DateUtils.YYYY_MM_DD))
 
+    NEXT_WORK_DAY = DateUtils.changeDateForm(NEXT_WORK_DAY, DateUtils.YYYY_MM_DD, DateUtils.YYYYMMDD)
     //读取特殊科目表
     readCSSYSTSKM(spark)
     //进行计算
@@ -1202,45 +1204,45 @@ object ShZQChange {
 
       Hzjkqs(
         FSETID, //0
-        Fdate, //1
-        FinDate, //2
-        FZqdm,  //3
+        DateUtils.changeDateForm(Fdate,DateUtils.YYYYMMDD,DateUtils.YYYY_MM_DD), //1
+        DateUtils.changeDateForm(FinDate,DateUtils.YYYYMMDD,DateUtils.YYYY_MM_DD), //2
+        FZqdm, //3
         FSzsh, //4
-        Fjyxwh,//5
-        FBS,//6
-        Fje.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//7
-        Fsl.toString(),//8
-        Fyj.toString(),//9
-        Fjsf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//10
-        Fyhs.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//11
-        Fzgf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//12
-        Fghf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//13
-        Ffxj.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//14
-        FQTF.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//15
-        Fgzlx.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//16
-        Fhggain.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//17
-        Fsssje.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//18
-        FZqbz,//19
-        Fywbz,//20
-        Fjybz,//21
-        FQsbz,//22
-        ZQDM,//23
-        FJYFS,//24
-        Fsh,//25
-        FZZR,//26
-        FCHK,//27
-        fzlh,//28
-        ftzbz,//29
-        FQsghf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//30
-        fgddm,//31
-        ISRTGS,//32
-        FPARTID,//33
-        FHTXH,//34
-        FCSHTXH,//35
-        FRZLV.abs.setScale(4, BigDecimal.RoundingMode.HALF_UP).toString(),//36
-        FCSGHQX.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//37
-        FSJLY,//38
-        Fbz,//39
+        Fjyxwh, //5
+        FBS, //6
+        Fje.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //7
+        Fsl.toString(), //8
+        Fyj.toString(), //9
+        Fjsf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //10
+        Fyhs.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //11
+        Fzgf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //12
+        Fghf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //13
+        Ffxj.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //14
+        FQTF.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //15
+        Fgzlx.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //16
+        Fhggain.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //17
+        Fsssje.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //18
+        FZqbz, //19
+        Fywbz, //20
+        Fjybz, //21
+        FQsbz, //22
+        ZQDM, //23
+        FJYFS, //24
+        Fsh, //25
+        FZZR, //26
+        FCHK, //27
+        fzlh, //28
+        ftzbz, //29
+        FQsghf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //30
+        fgddm, //31
+        ISRTGS, //32
+        FPARTID, //33
+        FHTXH, //34
+        FCSHTXH, //35
+        FRZLV.abs.setScale(4, BigDecimal.RoundingMode.HALF_UP).toString(), //36
+        FCSGHQX.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(), //37
+        FSJLY, //38
+        Fbz, //39
         FBY1 = "",
         FBY2 = "",
         FBY3 = "",
@@ -1453,8 +1455,8 @@ object ShZQChange {
 
           val shZQBD = Hzjkqs(
             FSETID,
-            Fdate,
-            FinDate,
+            DateUtils.changeDateForm(Fdate,DateUtils.YYYYMMDD,DateUtils.YYYY_MM_DD),
+            DateUtils.changeDateForm(FinDate,DateUtils.YYYYMMDD,DateUtils.YYYY_MM_DD),
             FZqdm,
             FSzsh,
             Fjyxwh,
