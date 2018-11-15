@@ -4,7 +4,8 @@ import java.text.SimpleDateFormat
 
 import com.yss.scala.dto._
 import com.yss.scala.core.ExecutionContaints._
-import com.yss.scala.util.Util
+import com.yss.scala.util.{DateUtils}
+import com.yss.scala.util.BasicUtils
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -23,32 +24,39 @@ import scala.math.BigDecimal.RoundingMode
 object Execution extends Serializable {
 
   def main(args: Array[String]): Unit = {
-
-    getResult()
+    var ywrq = DateUtils.getToday(DateUtils.YYYYMMDD)//DateUtils.YYYYMMDD
+    if(args.size >= 1){
+      ywrq = args(0)
+    }
+    getResult(ywrq)
   }
 
-  def getResult() = {
+  def getResult(findate:String) = {
     val spark = SparkSession.builder().appName("SJSV5").master("local[*]").getOrCreate() //.master("local[*]")
     import spark.implicits._
-    val csb = loadLvarlist(spark.sparkContext)
-    val df = getFywbzAndFzqbz(spark, csb)
-    doExec(df.toDF, csb)
+    val csb = loadLvarlist(spark.sparkContext,findate:String)
+    val df = getFywbzAndFzqbz(spark, csb,findate:String)
+    doExec(df.toDF, csb,findate:String)
+  }
+
+  def convertDate(bcrq:String) = {
+    val yyyy = bcrq.substring(0,4)
+    val mm = bcrq.substring(4,6)
+    val dd = bcrq.substring(6)
+    yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
   }
 
   /**
     * 进行ETF
     */
 
-  def getFywbzAndFzqbz(spark: SparkSession, csb: Broadcast[collection.Map[String, String]]) = {
+  def getFywbzAndFzqbz(spark: SparkSession, csb: Broadcast[collection.Map[String, String]], ywrq:String) = {
     val sc = spark.sparkContext
-    val path = "C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_2_20180124.tsv"
-    val dateSplit1 = path.split("_")
-    val fileDate = dateSplit1(4).substring(0, 8)
+    val sourcePath = BasicUtils.getInputFilePath(ywrq+"/execution")
+    val exe = sc.textFile(sourcePath)
     val sdf1 = new SimpleDateFormat("yyyyMMdd")
-    val parseDate1 = sdf1.parse(fileDate) //解析成date
-    val dateTime1 = parseDate1.getTime
-    val exe = sc.textFile(path) //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
-
+    val parseDate1 = sdf1.parse(ywrq) //解析成date
+    val dateTime1 = parseDate1.getTime  //文件日期的时间戳
     /**
       *  1.读取原始数据表
       */
@@ -63,7 +71,7 @@ object Execution extends Serializable {
     /**
       * 2.取数据表 CSQSXW,进行map,将FQSXW为key,FXWLB为value
       */
-    val CSJYLVPath = Util.getDailyInputFilePath("CSJYLV")
+    val CSJYLVPath = BasicUtils.getDailyInputFilePath("CSJYLV")
     val xwTable = sc.textFile(CSJYLVPath)
     val xwValue = xwTable.map {
       x => {
@@ -78,7 +86,7 @@ object Execution extends Serializable {
       * 3.读取Lvarlist
       *
       */
-    val LVARLISTPath = Util.getDailyInputFilePath("LVARLIST")
+    val LVARLISTPath = BasicUtils.getDailyInputFilePath("LVARLIST")
     val varList = sc.textFile(LVARLISTPath)
     val varlistValue = varList.map {
       x => {
@@ -94,7 +102,7 @@ object Execution extends Serializable {
       * key
       *
       */
-    val A001CSTSKMPath = Util.getDailyInputFilePath("CSSYSTSKM")
+    val A001CSTSKMPath = BasicUtils.getDailyInputFilePath("CSSYSTSKM")
     val cstskm = sc.textFile(A001CSTSKMPath)
     val cstskmValue = cstskm.map {
       x => {
@@ -110,7 +118,7 @@ object Execution extends Serializable {
       * 5.读取LSetCsSysJj 这张表
       *
       */
-    val LSETCSSYSJJPath = Util.getDailyInputFilePath("LSETCSSYSJJ")
+    val LSETCSSYSJJPath = BasicUtils.getDailyInputFilePath("LSETCSSYSJJ")
     val LSETCSSYSJJ = sc.textFile(LSETCSSYSJJPath)
     val LSETCSSYSJJValue = LSETCSSYSJJ.map {
       x => {
@@ -125,7 +133,7 @@ object Execution extends Serializable {
       * 6.读取基金信息表
       */
 
-    val CSJJXXPath = Util.getDailyInputFilePath("CSJJXX")
+    val CSJJXXPath = BasicUtils.getDailyInputFilePath("CSJJXX")
     val CSJJXX = sc.textFile(CSJJXXPath)
     //hdfs://nscluster/yss/guzhi/basic_list/20180917/CSJJXX
     val CSJJXXValue = CSJJXX.map {
@@ -140,7 +148,7 @@ object Execution extends Serializable {
         //将日期转化成时间戳形式
         val sdf = new SimpleDateFormat("yyyy-MM-dd")
         val parseDate = sdf.parse(fSatrtDate) //解析成date
-        val dateTime = parseDate.getTime
+        val dateTime = parseDate.getTime //变成时间戳
         val key = FSCZQDM + "_" + FZQLX
         (key, dateTime)
       }
@@ -156,7 +164,7 @@ object Execution extends Serializable {
       * 7.读取股东账号
       *
       */
-    val CSGDZHPath = Util.getDailyInputFilePath("CSGDZH")
+    val CSGDZHPath = BasicUtils.getDailyInputFilePath("CSGDZH")
     val accountNumber = sc.textFile(CSGDZHPath )
 
     val setCode = accountNumber.map {
@@ -172,7 +180,7 @@ object Execution extends Serializable {
       * 读取 CSZQXX表
       *
       */
-    val CSZQXXPath = Util.getDailyInputFilePath("CSZQXX")
+    val CSZQXXPath = BasicUtils.getDailyInputFilePath("CSZQXX")
     val CSZQXX = sc.textFile(CSZQXXPath)
     val fzqlb = CSZQXX.map {
       x => {
@@ -216,13 +224,13 @@ object Execution extends Serializable {
           var SH=""
 
           val fsetidValue = setCodeValues.value.getOrElse(AccountID, "-1")
-      /*    if (!fsetidValue .equals( "-1")) {
+          /*    if (!fsetidValue .equals( "-1")) {
 
-            fsetid("fsetid") = fsetidValue
-          }*/
+                fsetid("fsetid") = fsetidValue
+              }*/
 
-         if (appId.equals("010") || appId.equals("120") || appId.equals("140") || appId.equals("130") || appId.equals("090") || appId.equals("029")|| appId.equals("020")) {
-           SH="S"
+          if (appId.equals("010") || appId.equals("120") || appId.equals("140") || appId.equals("130") || appId.equals("090") || appId.equals("029")|| appId.equals("020")) {
+            SH="S"
             if (key.substring(0, 2).equals("00") || key.substring(0, 2).equals( "30")) {
               //判断fzqbz
               if (key.substring(0, 4).equals("0010") || key.substring(0, 5).equals("00119")) {
@@ -371,162 +379,162 @@ object Execution extends Serializable {
             }
 
             //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
-            val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), fsetidValue,SH)
+            val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, ywrq, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), fsetidValue,SH)
             execution.append(Exe)
           }else if(appId.equals("050") || appId.equals("052") /*|| appId.equals("053")*/ || appId.equals("060") || appId.equals("061") ){
-              SH="SDZ"
-           if (key.substring(0, 2).equals("00") || key.substring(0, 2).equals( "30")) {
-             //判断fzqbz
-             if (key.substring(0, 4).equals("0010") || key.substring(0, 5).equals("00119")) {
-               fzqbz("fzqbz") = "CDRGP"
+            SH="SDZ"
+            if (key.substring(0, 2).equals("00") || key.substring(0, 2).equals( "30")) {
+              //判断fzqbz
+              if (key.substring(0, 4).equals("0010") || key.substring(0, 5).equals("00119")) {
+                fzqbz("fzqbz") = "CDRGP"
 
-             } else {
-               fzqbz("fzqbz") = "GP"
+              } else {
+                fzqbz("fzqbz") = "GP"
 
-             }
-             /**
-               * 判断fywbz
-               * 1.从席位表中根据席位字段取得value,默认值-1，如果value!=-1 ,并且value=ZS
-               * 2.从特殊参数表 取得value, 默认值-1,如果value!=-1,并且value=3
-               * 3.从参数表中取得117指数、指标股票按特殊科目设置页面处理 , 默认值为-1，如果value!=-1,并且value=1
-               *
-               */
+              }
+              /**
+                * 判断fywbz
+                * 1.从席位表中根据席位字段取得value,默认值-1，如果value!=-1 ,并且value=ZS
+                * 2.从特殊参数表 取得value, 默认值-1,如果value!=-1,并且value=3
+                * 3.从参数表中取得117指数、指标股票按特殊科目设置页面处理 , 默认值为-1，如果value!=-1,并且value=1
+                *
+                */
 
-             val FXWLB = xwValues.value.getOrElse(ReportingPBUID, -1) //PT
-             val FARVALUE = varlistValues.value.getOrElse("117指数、指标股票按特殊科目设置页面处理", -1) //-1
-             val Fbz = cstskmValues.value.getOrElse(fsetidValue+SEPARATE1+key, -1) // -1
-             val FJJLX = LSETCSSYSJJValues.value.getOrElse("117", -1) //0
-
-
-             //进行第一个判断
-             if (FARVALUE == 1 && (FXWLB.equals("ZS") || Fbz == 3)) {
-               fzqbz("fywbz") = "ZS"
-             } else if (FARVALUE == 1 && FXWLB.equals("ZS")) {
-               fywbz("fywbz") = "ZB"
-             } else if (FJJLX == 0 && (FJJLX == 1 || FJJLX == 5 || FJJLX == 7) && (FXWLB == "ZS" && FXWLB == "ZYZS") || (Fbz == 2 && Fbz == 3)) {
-               fywbz("fywbz") = "ZS"
-             } else if (FJJLX == 0 && (FJJLX == 2) && (Fbz == 2 && Fbz == 3)) {
-               fywbz("fywbz") = "ZB"
-             } else {
-               fywbz("fywbz") = "PT"
-             }
-
-           } else if (key.substring(0, 3).equals("140")) {
-             fzqbz("fzqbz") = "GP"
-             fywbz("fywbz") = "DZYXPT"
-
-           } else if (key.substring(0, 2).equals("10")) {
+              val FXWLB = xwValues.value.getOrElse(ReportingPBUID, -1) //PT
+              val FARVALUE = varlistValues.value.getOrElse("117指数、指标股票按特殊科目设置页面处理", -1) //-1
+              val Fbz = cstskmValues.value.getOrElse(fsetidValue+SEPARATE1+key, -1) // -1
+              val FJJLX = LSETCSSYSJJValues.value.getOrElse("117", -1) //0
 
 
-             if (key.substring(0, 3).equals("104") || key.substring(0, 3) .equals( "106") || key.substring(0, 3).equals( "105") ||
-               key.substring(0, 3).equals("107") || key.substring(0, 3).equals("109")) {
+              //进行第一个判断
+              if (FARVALUE == 1 && (FXWLB.equals("ZS") || Fbz == 3)) {
+                fzqbz("fywbz") = "ZS"
+              } else if (FARVALUE == 1 && FXWLB.equals("ZS")) {
+                fywbz("fywbz") = "ZB"
+              } else if (FJJLX == 0 && (FJJLX == 1 || FJJLX == 5 || FJJLX == 7) && (FXWLB == "ZS" && FXWLB == "ZYZS") || (Fbz == 2 && Fbz == 3)) {
+                fywbz("fywbz") = "ZS"
+              } else if (FJJLX == 0 && (FJJLX == 2) && (Fbz == 2 && Fbz == 3)) {
+                fywbz("fywbz") = "ZB"
+              } else {
+                fywbz("fywbz") = "PT"
+              }
 
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "DFZQ"
+            } else if (key.substring(0, 3).equals("140")) {
+              fzqbz("fzqbz") = "GP"
+              fywbz("fywbz") = "DZYXPT"
 
-             } else if (key.substring(0, 4).equals("1016")|| key.substring(0, 4).equals("1017")) {
-               fzqbz("fzqbz") = "XZ"
-               fywbz("fywbz") = "QYZQXZ"
-             } else if (key.substring(0, 4).equals("1086") || key.substring(0, 4).equals("1087") || key.substring(0, 4).equals( "1088") ||
-               key.substring(0, 4).equals("1089")) {
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "JRZQ_ZCX"
-
-             } else {
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "GZXQ"
-             }
+            } else if (key.substring(0, 2).equals("10")) {
 
 
-           } else if (key.substring(0, 2).equals(  "11") || key.substring(0, 3).equals( "133") || key.substring(0, 3).equals( "134") || key.substring(0, 3).equals(  "138")
-             || key.substring(0, 3).equals( "148") || key.substring(0, 3).equals( "149")) {
+              if (key.substring(0, 3).equals("104") || key.substring(0, 3) .equals( "106") || key.substring(0, 3).equals( "105") ||
+                key.substring(0, 3).equals("107") || key.substring(0, 3).equals("109")) {
 
-             if (key.substring(0, 3).equals( "138") || key.substring(0, 3).equals( "139") || key.substring(0,3).equals("119")) {
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "DFZQ"
 
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "ZCZQ"
-             } else if (key.substring(0, 4).equals("1189") || key.substring(0, 4).equals("1151")) {
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "CJZQ"
-             } else if (key.substring(0, 4).equals( "1174") || key.substring(0, 3).equals( "114")
-               || key.substring(0, 3).equals( "118") || key.substring(0, 4).equals( "1170") ||
-               key.substring(0, 4).equals("1171") || key.substring(0, 4).equals( "1172") || key.substring(0, 4).equals( "1173")) {
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "SMZQ"
+              } else if (key.substring(0, 4).equals("1016")|| key.substring(0, 4).equals("1017")) {
+                fzqbz("fzqbz") = "XZ"
+                fywbz("fywbz") = "QYZQXZ"
+              } else if (key.substring(0, 4).equals("1086") || key.substring(0, 4).equals("1087") || key.substring(0, 4).equals( "1088") ||
+                key.substring(0, 4).equals("1089")) {
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "JRZQ_ZCX"
 
-             } else if ((key.substring(0, 3).equals( "112" )|| key.substring(0, 4).equals( "1175")
-               || key.substring(0, 4).equals( "1176") || key.substring(0, 4).equals( "1177") ||
-               key.substring(0, 4).equals( "1178") || key.substring(0, 4).equals( "1179") || key.substring(0, 3).equals( "148")
-               ||
-               key.substring(0, 3).equals( "149" )|| key.substring(0, 3).equals( "133") || key.substring(0, 3).equals( "134")) && fzqlbValues.value.getOrElse(key,"-1")!="可分离债券" && key.substring(0, 3) != "119"){
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "QYZQ"
-             }else if(fzqlbValues.value.getOrElse(key,"-1").equals("可分离债券")){
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "FLKZZ"
-             } else {
-               fzqbz("fzqbz") = "ZQ"
-               fywbz("fywbz") = "KZZ"
-             }
+              } else {
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "GZXQ"
+              }
 
-           } else if (key.substring(0, 2).equals( "12")) {
-             fzqbz("fzqbz") = "ZQ"
-             fywbz("fywbz") = "KZZ"
-           } else if (key.substring(0, 2).equals( "13")) {
 
-             if (appId.substring(0, 3).equals( "010") || appId.substring(0, 3).equals( "020") || appId.substring(0, 3).equals( "050") ||
-               appId.substring(0, 3).equals( "060")  || appId.substring(0, 3).equals( "052") || appId.substring(0, 3).equals( "053") ||
-               appId.substring(0, 3).equals( "061") ) {
-               if (Side == "1") {
-                 fzqbz("fzqbz") = "HG"
-                 fywbz("fywbz") = "MRHG"
-               } else if (Side == "2") {
-                 fzqbz("fzqbz") = "HG"
-                 fywbz("fywbz") = "MCHG"
-               }
-             }
+            } else if (key.substring(0, 2).equals(  "11") || key.substring(0, 3).equals( "133") || key.substring(0, 3).equals( "134") || key.substring(0, 3).equals(  "138")
+              || key.substring(0, 3).equals( "148") || key.substring(0, 3).equals( "149")) {
 
-           } else if (key.substring(0, 2).equals( "16")) {
-             fzqbz("fzqbz") = "JJ"
-             fywbz("fywbz") = "LOF"
-           } else if (key.substring(0, 2) .equals("18")) {
-             fzqbz("fzqbz") = "JJ"
-             fywbz("fywbz") = "FBS"
-           } else if (key.substring(0, 2).equals("03")) {
-             if (key.substring(0, 3).toInt >= 30 && key.substring(0, 3).toInt <= 32) {
-               //RGQZ
-               fzqbz("fzqbz") = "QZ"
-               fywbz("fywbz") = "RGQZ"
-             } else if (key.substring(0, 3).toInt >= 38 && key.substring(0, 3).toInt <= 39) {
-               fzqbz("fzqbz") = "QZ"
-               fywbz("fywbz") = "RZQZ"
-             }
-           } else if (key.substring(0, 2).equals( "15")) {
+              if (key.substring(0, 3).equals( "138") || key.substring(0, 3).equals( "139") || key.substring(0,3).equals("119")) {
 
-             val dateLong = CSJJXXValues.value.get(key + "_" + "HB")
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "ZCZQ"
+              } else if (key.substring(0, 4).equals("1189") || key.substring(0, 4).equals("1151")) {
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "CJZQ"
+              } else if (key.substring(0, 4).equals( "1174") || key.substring(0, 3).equals( "114")
+                || key.substring(0, 3).equals( "118") || key.substring(0, 4).equals( "1170") ||
+                key.substring(0, 4).equals("1171") || key.substring(0, 4).equals( "1172") || key.substring(0, 4).equals( "1173")) {
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "SMZQ"
 
-             if (dateLong.isDefined) {
-               val jjDate = dateLong.get(0)
+              } else if ((key.substring(0, 3).equals( "112" )|| key.substring(0, 4).equals( "1175")
+                || key.substring(0, 4).equals( "1176") || key.substring(0, 4).equals( "1177") ||
+                key.substring(0, 4).equals( "1178") || key.substring(0, 4).equals( "1179") || key.substring(0, 3).equals( "148")
+                ||
+                key.substring(0, 3).equals( "149" )|| key.substring(0, 3).equals( "133") || key.substring(0, 3).equals( "134")) && fzqlbValues.value.getOrElse(key,"-1")!="可分离债券" && key.substring(0, 3) != "119"){
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "QYZQ"
+              }else if(fzqlbValues.value.getOrElse(key,"-1").equals("可分离债券")){
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "FLKZZ"
+              } else {
+                fzqbz("fzqbz") = "ZQ"
+                fywbz("fywbz") = "KZZ"
+              }
 
-               if (key.substring(0, 3) .equals("159") && jjDate!=0 && dateTime1.toString >= jjDate.toString) {
-                 fzqbz("fzqbz") = "JJ"
-                 fywbz("fywbz") = "HBETF"
-               }
-             }
-             if (key.substring(0, 4) .equals("1599")) {
-               fzqbz("fzqbz") = "JJ"
-               fywbz("fywbz") = "ETF"
-             } else {
-               fzqbz("fzqbz") = "JJ"
-               fywbz("fywbz") = "LOF"
-             }
-           }
+            } else if (key.substring(0, 2).equals( "12")) {
+              fzqbz("fzqbz") = "ZQ"
+              fywbz("fywbz") = "KZZ"
+            } else if (key.substring(0, 2).equals( "13")) {
 
-           //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
-           val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), fsetidValue,SH)
-           execution.append(Exe)
-         }
-       }
+              if (appId.substring(0, 3).equals( "010") || appId.substring(0, 3).equals( "020") || appId.substring(0, 3).equals( "050") ||
+                appId.substring(0, 3).equals( "060")  || appId.substring(0, 3).equals( "052") || appId.substring(0, 3).equals( "053") ||
+                appId.substring(0, 3).equals( "061") ) {
+                if (Side == "1") {
+                  fzqbz("fzqbz") = "HG"
+                  fywbz("fywbz") = "MRHG"
+                } else if (Side == "2") {
+                  fzqbz("fzqbz") = "HG"
+                  fywbz("fywbz") = "MCHG"
+                }
+              }
+
+            } else if (key.substring(0, 2).equals( "16")) {
+              fzqbz("fzqbz") = "JJ"
+              fywbz("fywbz") = "LOF"
+            } else if (key.substring(0, 2) .equals("18")) {
+              fzqbz("fzqbz") = "JJ"
+              fywbz("fywbz") = "FBS"
+            } else if (key.substring(0, 2).equals("03")) {
+              if (key.substring(0, 3).toInt >= 30 && key.substring(0, 3).toInt <= 32) {
+                //RGQZ
+                fzqbz("fzqbz") = "QZ"
+                fywbz("fywbz") = "RGQZ"
+              } else if (key.substring(0, 3).toInt >= 38 && key.substring(0, 3).toInt <= 39) {
+                fzqbz("fzqbz") = "QZ"
+                fywbz("fywbz") = "RZQZ"
+              }
+            } else if (key.substring(0, 2).equals( "15")) {
+
+              val dateLong = CSJJXXValues.value.get(key + "_" + "HB")
+
+              if (dateLong.isDefined) {
+                val jjDate = dateLong.get(0)
+
+                if (key.substring(0, 3) .equals("159") && jjDate!=0 && dateTime1.toString >= jjDate.toString) {
+                  fzqbz("fzqbz") = "JJ"
+                  fywbz("fywbz") = "HBETF"
+                }
+              }
+              if (key.substring(0, 4) .equals("1599")) {
+                fzqbz("fzqbz") = "JJ"
+                fywbz("fywbz") = "ETF"
+              } else {
+                fzqbz("fzqbz") = "JJ"
+                fywbz("fywbz") = "LOF"
+              }
+            }
+
+            //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
+            val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, ywrq, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), fsetidValue,SH)
+            execution.append(Exe)
+          }
+        }
         execution
       }
     }
@@ -540,25 +548,31 @@ object Execution extends Serializable {
     * 返回值: 广播变量 key 参数  value : 0 1 是否开启
     *
     * */
-  def loadLvarlist(sc: SparkContext) = {
+  def loadLvarlist(sc: SparkContext, ywrq:String) = {
+    val convertedFindate = convertDate(ywrq)
     //公共的参数表
-    val csbPath = Util.getDailyInputFilePath("LVARLIST")
+    val csbPath = BasicUtils.getDailyInputFilePath("LVARLIST")
     val csb = sc.textFile(csbPath)
 
     //将参数表转换成map结构
-    val csbMap = csb.map(row => {
-      val fields = row.split(SEPARATE2)
-      val key = fields(0)
-      val value = fields(1)
-      (key, value)
-    })
+    val csbMap =  csb
+      .filter(row => {
+        val fields = row.split(SEPARATE2)
+        if(fields(5).compareTo(convertedFindate)<=0) true else false
+      })
+      .map(row => {
+        val fields = row.split(SEPARATE2)
+        val key = fields(0)
+        val value = fields(1)
+        (key, value)
+      })
       .collectAsMap()
     sc.broadcast(csbMap)
   }
 
 
   /** 汇总然后进行计算 */
-  def doExec(df: DataFrame, csb: Broadcast[collection.Map[String, String]]) = {
+  def doExec(df: DataFrame, csb: Broadcast[collection.Map[String, String]],ywrq:String) = {
 
     val spark = SparkSession.builder().appName("SJSV5").master("local[*]").getOrCreate()
 
@@ -574,10 +588,10 @@ object Execution extends Serializable {
       * */
     def loadFeeTables() = {
       //公共的费率表
-      val flbPath = Util.getDailyInputFilePath("CSJYLV")
+      val flbPath = BasicUtils.getDailyInputFilePath("CSJYLV")
       val flb = sc.textFile(flbPath)
       //117的佣金利率表
-      val yjPath = Util.getDailyInputFilePath("CSSYSYJLV")
+      val yjPath = BasicUtils.getDailyInputFilePath("CSSYSYJLV")
       val yjb = sc.textFile(yjPath)
 
       //将佣金表转换成map结构
@@ -624,7 +638,7 @@ object Execution extends Serializable {
         .collectAsMap()
 
       //交易费用表（佣金的三种模式）
-      val csbPath = Util.getDailyInputFilePath("CSSYSXWFY")
+      val csbPath = BasicUtils.getDailyInputFilePath("CSSYSXWFY")
       val jyfy = sc.textFile(csbPath)
       //同一个席位号只能选一个JSF,ZGF
       val jyfyMap = jyfy.map {
@@ -646,7 +660,7 @@ object Execution extends Serializable {
         *
         */
 
-      val CSQSFYLV = Util.getDailyInputFilePath("CSQSFYLV")
+      val CSQSFYLV = BasicUtils.getDailyInputFilePath("CSQSFYLV")
       val CSQSFYLVMap = sc.textFile(CSQSFYLV)
       //同一个席位号只能选一个JSF,ZGF
       val qsghf = CSQSFYLVMap.map {
@@ -665,9 +679,8 @@ object Execution extends Serializable {
 
 
       /** * 读取基金信息表csjjxx */
-      val csjjxxPath = Util.getDailyInputFilePath("CSJJXX")
+      val csjjxxPath = BasicUtils.getDailyInputFilePath("CSJJXX")
       val jjxxb = sc.textFile(csjjxxPath)
-
 
       //过滤基金信息表
       val jjxxAarry = jjxxb
@@ -703,7 +716,7 @@ object Execution extends Serializable {
 
     def getZCDM() = {
       //交易费用表（佣金的三种模式）
-      val listPath = Util.getDailyInputFilePath("LSETLIST")
+      val listPath = BasicUtils.getDailyInputFilePath("LSETLIST")
       val lSetList = sc.textFile(listPath)
       //同一个席位号只能选一个JSF,ZGF
       val listMap = lSetList.map {
@@ -761,7 +774,7 @@ object Execution extends Serializable {
       (key, row)
     }).groupByKey()
 
-  //  value1.foreach(println(_))
+    //  value1.foreach(println(_))
 
 
     def getRate(SH:String,fsetid:String,zqdm: String, gsdm: String, gddm: String, bcrq: String, ywbz1: String, zqbz1: String, zyzch: String, gyzch: String) = {
@@ -896,15 +909,15 @@ object Execution extends Serializable {
       case (key, values) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-        val gsdm = fields(2) //交易席位
-        val bcrq = fields(0) //本次日期
-        val zqdm = fields(1) //证券代码
-        val gddm = fields(4) //股东代码
-        val tzh = fields(5) //套账号
-        val zqbz = fields(6) //证券标志
-        val ywbz = fields(7) //业务标志
-        val fsetid=fields(8) //资产代码
-        val SH=fields(9)
+      val gsdm = fields(2) //交易席位
+      val bcrq = fields(0) //本次日期
+      val zqdm = fields(1) //证券代码
+      val gddm = fields(4) //股东代码
+      val tzh = fields(5) //套账号
+      val zqbz = fields(6) //证券标志
+      val ywbz = fields(7) //业务标志
+      val fsetid=fields(8) //资产代码
+      val SH=fields(9)
 
 
 
@@ -954,7 +967,7 @@ object Execution extends Serializable {
         val csResults = getGgcs(tzh)
         val cs1 = csResults._1
         var cs2 = csResults._2 //深圳佣金计算费用保留位数
-        val cs3 = csResults._3
+      val cs3 = csResults._3
         val cs4 = csResults._4
         val cs5 = csResults._5
         val cs6 = csResults._6 //深交所证管费和经手费分别计算
@@ -1113,12 +1126,12 @@ object Execution extends Serializable {
       case (key, fee1) =>
         val fields = key.split(SEPARATE1)
         val bs = fields(3) //买卖方向
-        val gsdm = fields(2) //交易席位
-        val bcrq = fields(0) //本次日期
-        val zqdm = fields(1) //证券代码
-        val gddm = fields(4)
+      val gsdm = fields(2) //交易席位
+      val bcrq = fields(0) //本次日期
+      val zqdm = fields(1) //证券代码
+      val gddm = fields(4)
         val tzh = fields(5) //套账号
-        val zqbz = fields(6)
+      val zqbz = fields(6)
         val ywbz = fields(7)
         val zcdm = fields(8)
         val SH=fields(9)
@@ -1141,15 +1154,15 @@ object Execution extends Serializable {
         val jsResult = getJsgz(tzh)
         val con8 = getJsgz(tzh)
         //判断取值逻辑
-          realJsf = fee1.sumJsf
-          realZgf = fee1.sumZgf
-          realGhf = fee1.sumGhf
-          realYhs = fee1.sumYhs
-          realYj = fee1.sumYj
-          realFxj = fee1.sumFxj
-          realSxf = fee1.sumSXF
-          realQsghf = fee1.sumQSGHF
-          realHgsy=fee1.sumhGSY
+        realJsf = fee1.sumJsf
+        realZgf = fee1.sumZgf
+        realGhf = fee1.sumGhf
+        realYhs = fee1.sumYhs
+        realYj = fee1.sumYj
+        realFxj = fee1.sumFxj
+        realSxf = fee1.sumSXF
+        realQsghf = fee1.sumQSGHF
+        realHgsy=fee1.sumhGSY
 
         var fsfje=BigDecimal(0)
 
@@ -1197,7 +1210,7 @@ object Execution extends Serializable {
     }
     //将结果输出
     import spark.implicits._
-    Util.outputMySql(result.toDF(), "SZSTOCKK")
+    BasicUtils.outputMySql(result.toDF(), "SZSTOCKK")
     //Util.outputHdfs(result.toDF(),"/yss/guzhi/hzjkqs/20181106/Execution/")
     result.toDF.show(100)
   }
