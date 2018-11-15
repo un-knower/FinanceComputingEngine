@@ -19,6 +19,9 @@ object BasicUtils {
   val driver = pro.getProperty("driver")
   val jdbc = pro.getProperty("jdbc")
   val masterType = pro.getProperty("master_type")
+  val zookeeperClientPort = pro.getProperty("zookeeper_clientPort")
+  val zookeeperQuorum = pro.getProperty("zookeeper_quorum")
+  val zookeeperParent = pro.getProperty("zookeeper_parent")
   val properties = pro
 
   /**
