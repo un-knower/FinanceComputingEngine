@@ -4,7 +4,7 @@ import java.io.File
 import java.util.Properties
 
 import com.yss.scala.dto.SHFICCTriPartyRepoETLDto
-import com.yss.scala.util.{DateUtils, RowUtils, Util}
+import com.yss.scala.util.{DateUtils, RowUtils, BasicUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -20,16 +20,10 @@ object ShFICCTriPartyRepoETL {
   //源数据文件所在的hdfs路径
   private val DATA_FILE_PATH = "hdfs://192.168.102.120:8020/yss/guzhi/interface/"
 
-  //明细文件文件名的前缀
-  private val JSMXFILENAME_PRE = "jsmx03_jsjc1"
-  //未到期文件前缀
-  private val WDQFILENAME_PRE = "wdqjsjc1"
-
-  private val ETL_HDFS_NAMENODE = "hdfs://192.168.21.110:9000"
-  private val ETL_HDFS_PATH = "hdfs://192.168.21.110:9000/guzhi/etl/sfgu/"
-
-
   def main(args: Array[String]): Unit = {
+
+
+    if (args == null || args.length != 1) throw new IllegalArgumentException("参数错误")
 
     val spark = SparkSession.builder()
       .appName(ShFICCTriPartyRepoETL.getClass.getSimpleName)
@@ -37,18 +31,17 @@ object ShFICCTriPartyRepoETL {
       //.config("user", "hadoop")
       .getOrCreate()
 
-    //目录路径: hdfs://192.168.102.120:8020/yss/guzhi/interface/20181024/shsfhg-gdsy
-    val day = DateUtils.formatDate(System.currentTimeMillis())
-    //var jsmxpath = DATA_FILE_PATH + day + File.separator + "shsfhg-gdsy/2018-08-02/" + JSMXFILENAME_PRE + "*"
-    var jsmxpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/20181024/shsfhg-gdsy/jsmxjs614.*"
-    //var wdqpath = DATA_FILE_PATH + day + File.separator + "shsfhg-gdsy/2018-08-02/" + WDQFILENAME_PRE + "*"
-    var wdqpath = "hdfs://192.168.102.120:8020/yss/guzhi/interface/20181024/shsfhg-gdsy/emmjsmxjs614.*"
+    //val day = DateUtils.formatDate(System.currentTimeMillis())
+    val day = args(1)
 
-    if (args != null && args.length == 2) {
+
+    var jsmxpath = DATA_FILE_PATH + day + File.separator + "jsmxjsjc03" + File.separator + "*"
+    var wdqpath = DATA_FILE_PATH + day + File.separator + "wdq" + File.separator + "*"
+
+    /*if (args != null && args.length == 2) {
       jsmxpath = args(0)
       wdqpath = args(1)
-    }
-
+    }*/
     val jsmxRDD: RDD[Row] = readJsmxFileAndFilted(spark, jsmxpath)
 
     val jsmx013FiltedRDD = jsmxRDD.filter(row => {
@@ -67,7 +60,7 @@ object ShFICCTriPartyRepoETL {
 
     val res = jsmx013SFHGETL.union(jsmx2SFHGETL)
 
-    val path = ETL_HDFS_PATH + day
+    //val path = ETL_HDFS_PATH + day
 
 
     //    val fs = FileSystem.get(new URI(ETL_HDFS_NAMENODE), spark.sparkContext.hadoopConfiguration)
@@ -75,10 +68,9 @@ object ShFICCTriPartyRepoETL {
     //      fs.delete(new Path(path), true)
     //    }
 
-    res.collect().foreach(println(_))
+    //res.collect().foreach(println(_))
     //saveAsCSV(spark, res, path)
-    saveMySQL(spark, res, path)
-
+    //saveMySQL(spark, res, path)
     import spark.implicits._
     ShFICCTriPartyRepo.exec(spark, res.toDF())
     spark.stop()
@@ -448,7 +440,7 @@ object ShFICCTriPartyRepoETL {
     * @return
     */
   private def readJsmxFileAndFilted(spark: SparkSession, jsmxFilePath: String): RDD[Row] = {
-    val jsmxRDD: RDD[Row] = Util.readCSV(jsmxFilePath, spark).rdd
+    val jsmxRDD: RDD[Row] = BasicUtils.readCSV(jsmxFilePath, spark).rdd
     //val jsmxRDD: RDD[Row] = spark.sqlContext.dbfFile("/Users/lijiayan/Desktop/dbf/jsmx/jsmx03_jsjc1.802.1.dbf").rdd
     jsmxRDD.filter(row => {
       val JLLX = RowUtils.getRowFieldAsString(row, "JLLX")
@@ -464,7 +456,7 @@ object ShFICCTriPartyRepoETL {
 
   private def readWdqFileAndFilted(spark: SparkSession, wdqFilePath: String): RDD[Row] = {
     try {
-      val wdqRDD: RDD[Row] = Util.readCSV(wdqFilePath, spark).rdd
+      val wdqRDD: RDD[Row] = BasicUtils.readCSV(wdqFilePath, spark).rdd
       //val wdqRDD: RDD[Row]  = spark.sqlContext.dbfFile("/Users/lijiayan/Desktop/dbf/test").rdd
       //过滤数据,wdq（未到期）文件中：scdm=‘01’and wdqlb=‘008’的所有数据
       wdqRDD.filter(row => {
@@ -480,8 +472,5 @@ object ShFICCTriPartyRepoETL {
     }
 
   }
-
-
-  
 
 }

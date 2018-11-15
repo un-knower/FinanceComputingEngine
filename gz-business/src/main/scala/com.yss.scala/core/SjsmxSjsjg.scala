@@ -5,7 +5,7 @@ import java.util.Properties
 
 import com.yss.scala.dbf.dbf._
 import com.yss.scala.dto.{JGETL, MXETL, SZSETriPartyRepoDto}
-import com.yss.scala.util.{DateUtils, Util}
+import com.yss.scala.util.{DateUtils, BasicUtils}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
@@ -613,7 +613,7 @@ object SjsmxSjsjg {
     })
 
     import spark.implicits._
-    Util.outputMySql(sjsmxXzxkRDD.toDF(), "mxfdTest_wmz")
+    BasicUtils.outputMySql(sjsmxXzxkRDD.toDF(), "mxfdTest_wmz")
 
     //    return
     //明细-到期续作前期合约了结数据取值规则
@@ -800,7 +800,7 @@ object SjsmxSjsjg {
       )
     })
     import spark.implicits._
-    Util.outputMySql(sjsmxXzljRDD.toDF(), "mxdTest_wmz")
+    BasicUtils.outputMySql(sjsmxXzljRDD.toDF(), "mxdTest_wmz")
 
     var jgywlb: String = ""
 
@@ -1053,7 +1053,7 @@ object SjsmxSjsjg {
     })
 
     import spark.implicits._
-    Util.outputMySql(sjsjgXzxkRDD.toDF(), "jgfdTest_wmz")
+    BasicUtils.outputMySql(sjsjgXzxkRDD.toDF(), "jgfdTest_wmz")
 
     //结果-到期续作前期合约了结数据取值规则
     val sjsjgFilterRDD = sjsjgDF.rdd.filter(row => {
@@ -1222,7 +1222,7 @@ object SjsmxSjsjg {
 
     })
     import spark.implicits._
-    Util.outputMySql(sjsjgXzljRDD.toDF(), "jgdTest_wmz")
+    BasicUtils.outputMySql(sjsjgXzljRDD.toDF(), "jgdTest_wmz")
   }
 
 }

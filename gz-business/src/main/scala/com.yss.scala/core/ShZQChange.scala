@@ -4,7 +4,7 @@ import java.io.File
 import java.util.Properties
 
 import com.yss.scala.dto.{Hzjkqs, ShZQBD}
-import com.yss.scala.util.{DateUtils, RowUtils, Util}
+import com.yss.scala.util.{DateUtils, RowUtils,FceUtils, BasicUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -49,6 +49,9 @@ object ShZQChange {
 
   var CSSYSTSKM_data: Array[(String, String, String, String)] = _
 
+  var NEXT_WORK_DAY: String = _
+
+
   def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder()
@@ -57,7 +60,7 @@ object ShZQChange {
       .getOrCreate()
     val day = DateUtils.formatDate(System.currentTimeMillis())
     var dataPath = ZQBD_basePath + day + "/zqbd/zqbd*.tsv"
-    var ywrq = "20180208"
+    var ywrq = "20180209"
     if (args != null && args.length == 2) {
       dataPath = args(0)
       ywrq = args(1)
@@ -93,6 +96,9 @@ object ShZQChange {
     //读取交易费率表
     readCSJYLV(spark)
 
+    //读取下一个工作日
+    NEXT_WORK_DAY = FceUtils.getCsholiday(spark.sparkContext, ywrq)
+
     //读取特殊科目表
     readCSSYSTSKM(spark)
     //进行计算
@@ -104,7 +110,7 @@ object ShZQChange {
 
 
   private def readCSSYSTSKM(spark: SparkSession): Unit = {
-    CSSYSTSKM_data = Util.readCSV(getTableDataPath("CSSYSTSKM"), spark, header = false, sep = ",").toDF(
+    CSSYSTSKM_data = BasicUtils.readCSV(getTableDataPath("CSSYSTSKM"), spark, header = false, sep = ",").toDF(
       "FSETCODE",
       "FSETID",
       "FZQDM",
@@ -112,7 +118,8 @@ object ShZQChange {
       "FSH",
       "FZZR",
       "FCHK",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val FZQDM = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FBZ = RowUtils.getRowFieldAsString(row, "FBZ")
@@ -149,7 +156,7 @@ object ShZQChange {
 
 
   private def readCSJYLV(spark: SparkSession): Unit = {
-    CSJYLV_data = Util.readCSV(getTableDataPath("CSJYLV"), spark, header = false, sep = ",").toDF(
+    CSJYLV_data = BasicUtils.readCSV(getTableDataPath("CSJYLV"), spark, header = false, sep = ",").toDF(
       "FZQLB",
       "FSZSH",
       "FFVLB",
@@ -170,7 +177,8 @@ object ShZQChange {
       "FGDSXF",
       "FSXFLX",
       "FJSZX",
-      "FJXTS"
+      "FJXTS",
+      "IP/DB"
     ).rdd.map(row => {
       val flv = RowUtils.getRowFieldAsString(row, "FLV", "0")
       val fzqlb = RowUtils.getRowFieldAsString(row, "FZQLB")
@@ -208,7 +216,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readLSETLIST(spark: SparkSession): Unit = {
-    fsetcode2Fsetid = Util.readCSV(getTableDataPath("LSETLIST"), spark, header = false, sep = ",").toDF(
+    fsetcode2Fsetid = BasicUtils.readCSV(getTableDataPath("LSETLIST"), spark, header = false, sep = ",").toDF(
       "FYEAR",
       "FSETID",
       "FSETCODE",
@@ -224,11 +232,12 @@ object ShZQChange {
       "FSETLEVEL",
       "FTSETCODE",
       "FSH",
-      "FZZR ",
+      "FZZR",
       "FCHK",
       "FTZJC",
       "FZYDM",
-      "FTZZHDM"
+      "FTZZHDM",
+      "IP/DB"
     ).rdd.map(row => {
       val fsetcode = RowUtils.getRowFieldAsString(row, "FSETCODE")
       val fsetid = RowUtils.getRowFieldAsString(row, "FSETID")
@@ -257,7 +266,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readCSGDZH(spark: SparkSession): Unit = {
-    fgddm2Fsetcode = Util.readCSV(getTableDataPath("CSGDZH"), spark, header = false, sep = ",").toDF(
+    fgddm2Fsetcode = BasicUtils.readCSV(getTableDataPath("CSGDZH"), spark, header = false, sep = ",").toDF(
       "FGDDM",
       "FGDXM",
       "FSZSH",
@@ -266,7 +275,8 @@ object ShZQChange {
       "FSETCODE",
       "FCHK",
       "FSTARTDATE",
-      "FACCOUNTTYPT"
+      "FACCOUNTTYPT",
+      "IP/DB"
     ).rdd.map(row => {
       val fgddm = RowUtils.getRowFieldAsString(row, "FGDDM")
       val fsetcode = RowUtils.getRowFieldAsString(row, "FSETCODE")
@@ -297,7 +307,7 @@ object ShZQChange {
     */
 
   private def readCSKZZHS(spark: SparkSession): Unit = {
-    CSKZZHS_data = Util.readCSV(getTableDataPath("CSKZZHS"), spark, header = false, sep = ",").toDF(
+    CSKZZHS_data = BasicUtils.readCSV(getTableDataPath("CSKZZHS"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FHSJG",
       "FBDATE",
@@ -307,7 +317,8 @@ object ShZQChange {
       "FZZR",
       "FCHK",
       "FSZSH",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val fzqdm = RowUtils.getRowFieldAsString(row, "FZQDM")
       val fsh = RowUtils.getRowFieldAsString(row, "FSH")
@@ -380,7 +391,7 @@ object ShZQChange {
   }
 
   private def readCSZQXX(spark: SparkSession): Unit = {
-    zqdm2Fscdm = Util.readCSV(getTableDataPath("CSZQXX"), spark, header = false, sep = ",").toDF(
+    zqdm2Fscdm = BasicUtils.readCSV(getTableDataPath("CSZQXX"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FZQMC",
       "FJJDM",
@@ -417,7 +428,8 @@ object ShZQChange {
       "FFXR",
       "FTSFXR",
       "FHFXR",
-      "FUPDATE"
+      "FUPDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val zqdm = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FSCDM = RowUtils.getRowFieldAsString(row, "FSCDM")
@@ -439,13 +451,14 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readLVARLIST(spark: SparkSession): Unit = {
-    selectKey2Value = Util.readCSV(getTableDataPath("LVARLIST"), spark, header = false, sep = ",").toDF(
+    selectKey2Value = BasicUtils.readCSV(getTableDataPath("LVARLIST"), spark, header = false, sep = ",").toDF(
       "FVARNAME",
       "FVARVALUE",
       "FSH",
       "FZZR",
       "FCHK",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val name = RowUtils.getRowFieldAsString(row, "FVARNAME")
       val value = RowUtils.getRowFieldAsString(row, "FVARVALUE")
@@ -474,7 +487,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readCSQYXX(spark: SparkSession): Unit = {
-    CSQYXX_data = Util.readCSV(getTableDataPath("CSQYXX"), spark, header = false, sep = ",").toDF(
+    CSQYXX_data = BasicUtils.readCSV(getTableDataPath("CSQYXX"), spark, header = false, sep = ",").toDF(
       "FZQDM",
       "FQYLX",
       "FQYBL",
@@ -486,7 +499,8 @@ object ShZQChange {
       "FZZR",
       "FCHK",
       "FSZSH",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val FZQDM = RowUtils.getRowFieldAsString(row, "FZQDM")
       val FQYLX = RowUtils.getRowFieldAsString(row, "FQYLX")
@@ -675,13 +689,14 @@ object ShZQChange {
 
 
   private def readJJGZLX(spark: SparkSession): Unit = {
-    JJGZLX_data = Util.readCSV(getTableDataPath("JJGZLX"), spark, header = false, sep = ",").toDF(
+    JJGZLX_data = BasicUtils.readCSV(getTableDataPath("JJGZLX"), spark, header = false, sep = ",").toDF(
       "FGZDM",
       "FJXRQ",
       "FYJLX",
       "FLXTS",
       "FPMLL",
-      "FSZSH"
+      "FSZSH",
+      "IP/DB"
     ).rdd.map(row => {
       val FYJLX = RowUtils.getRowFieldAsString(row, "FYJLX", "0")
       val FGZDM = RowUtils.getRowFieldAsString(row, "FGZDM")
@@ -771,7 +786,7 @@ object ShZQChange {
       .option("charset", "UTF-8")
       .csv(path)*/
     import spark.implicits._
-    Util.outputHdfs(shZQBDData.toDF(), path)
+    BasicUtils.outputHdfs(shZQBDData.toDF(), path)
 
   }
 
@@ -801,7 +816,7 @@ object ShZQChange {
     * @return
     */
   private def caculateNot151(spark: SparkSession, rowNot151Data: RDD[Row], ywrq: String): RDD[Hzjkqs] = {
-    rowNot151Data.map(row => {
+    val calRes: RDD[(String, String)] = rowNot151Data.map(row => {
       val bdlx = RowUtils.getRowFieldAsString(row, "BDLX")
       val bdsl = BigDecimal(RowUtils.getRowFieldAsString(row, "BDSL", "0"))
       val qylb = RowUtils.getRowFieldAsString(row, "QYLB")
@@ -841,7 +856,7 @@ object ShZQChange {
       val Fgzlx = BigDecimal(0)
       val Fhggain = BigDecimal(0)
       val Ffxj = BigDecimal(0)
-      val Fsssje = BigDecimal(0)
+      var Fsssje = BigDecimal(0)
 
       var FZqbz = ""
       var Fywbz = ""
@@ -869,6 +884,7 @@ object ShZQChange {
       val Fbz = "RMB"
 
       if ("00G".equals(bdlx) && bdsl > 0) {
+        Fdate = NEXT_WORK_DAY
         if (FZqdm.startsWith("60")) {
           Fsl = bdsl
         } else {
@@ -879,6 +895,7 @@ object ShZQChange {
           FZqbz = "XGLT"
           if ("PS".equals(zqlb)) {
             //2 指标
+            Fywbz = "ZF"
             if (queryZhiShuOrZhiBiao(FZqdm, "2", ywrq)) {
               Fywbz = "ZBZF"
             }
@@ -888,6 +905,7 @@ object ShZQChange {
             }
 
           } else {
+            Fywbz = "PT"
             //2 指标
             if (queryZhiShuOrZhiBiao(FZqdm, "2", ywrq)) {
               Fywbz = "ZB"
@@ -918,8 +936,10 @@ object ShZQChange {
         }
 
       } else if ("HL".equals(qylb)) {
+        Fdate = NEXT_WORK_DAY
         FBS = "S"
-        Fje = bdsl * BigDecimal(queryPxJg(FZqdm, zqlb, ywrq, fsetcode)).abs.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+        Fje = bdsl * BigDecimal(queryPxJg(FZqdm, zqlb, ywrq, fsetcode))
+        Fsssje = Fje
         FZqbz = "QY"
         if (queryPxJg(FZqdm, zqlb, ywrq, fsetcode, null) != null) {
           if (Fje != 0) {
@@ -942,6 +962,7 @@ object ShZQChange {
           }
         }
       } else if ("S".equals(qylb) || ("XL".equals(zqlb) && "F".equals(ltlx) && "00J".equals(bdlx))) {
+        Fdate = NEXT_WORK_DAY
         Fsl = bdsl
         FZqbz = "QY"
         if ("S".equals(qylb)) {
@@ -965,11 +986,13 @@ object ShZQChange {
         }
 
       } else if ("PZ".equals(zqlb) && "N".equals(ltlx) && "00J".equals(bdlx) && "".equals(qylb)) {
+        Fdate = NEXT_WORK_DAY
         Fsl = bdsl.abs
         FZqbz = "QY"
         Fywbz = "QZ"
 
       } else if ("DX".equals(qylb)) {
+        Fdate = NEXT_WORK_DAY
         FSzsh = queryFscdmByFZQDM(FZqdm)
         FBS = "S"
         Fsl = bdsl.abs * 100
@@ -977,12 +1000,16 @@ object ShZQChange {
         val bygzlx = BigDecimal(0) //TODO 百元国债利息 待做
         val dGzlx = queryFYJLXByZqdmAndYwrq(FZqdm, ywrq)
 
-        Fje = Fsl * bygzlx.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+        Fje = Fsl * bygzlx
+
+
         if (!"0".equals(dGzlx)) {
           if ("1".equals(queryVarValueByVarName(fsetcode + "债券派息到账时派息金额按照税前利率计算"))) {
-            Fje = Fsl * BigDecimal(dGzlx).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+            Fje = Fsl * BigDecimal(dGzlx)
           }
         }
+
+        Fsssje = Fje
 
         FZqbz = "QY"
         if ("00J".equals(bdlx)) {
@@ -992,17 +1019,19 @@ object ShZQChange {
         }
 
       } else if ("PT".equals(zqlb) && "P".equals(qylb) && "00J".equals(bdlx)) {
+        Fdate = ywrq
         Fsl = bdsl
         FZqbz = "QY"
         Fywbz = "KPSL"
 
       } else if ("00C".equals(bdlx) && queryCSKZZHSInfo(fgddm, ywrq)) {
+        Fdate = ywrq
         FBS = "S"
         Fsl = bdsl.abs * 100
 
         Fje = Fsl * 100 * BigDecimal(queryFhsjgByZqdmAndYwrq(FZqdm, ywrq))
-        Fjsf = Fje * BigDecimal(queryFlvFromCSJYLVByTzh(fsetcode, "JSF")).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-        Fzgf = Fje * BigDecimal(queryFlvFromCSJYLVByTzh(fsetcode, "ZGF")).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+        Fjsf = Fje * BigDecimal(queryFlvFromCSJYLVByTzh(fsetcode, "JSF"))
+        Fzgf = Fje * BigDecimal(queryFlvFromCSJYLVByTzh(fsetcode, "ZGF"))
 
         FZqbz = "ZQ"
         if (FZqdm.startsWith("1")) {
@@ -1014,65 +1043,229 @@ object ShZQChange {
             Fywbz = "QYZQHS"
           }
         }
+        Fsssje = Fje + Fjsf + Fzgf
+
       } else if ("100".equals(bdlx) && "JJ".equals(zqlb) && "".equals(qylb)) {
         Fdate = RowUtils.getRowFieldAsString(row, "BDRQ")
         Fsl = bdsl
         FZqbz = "JJ"
         Fywbz = "SYJZ"
       }
-      val FinDate = Fdate
+      val FinDate = ywrq
+
+      //结果根据FSETID,FDate,FInDate,FZqdm,FSzsh,FJyxwh,fzqbz，Fywbz，zqdm 列汇总
+
+      val key = contactString("#", FSETID, Fdate, FinDate, FZqdm, FSzsh, Fjyxwh, FZqbz, Fywbz, ZQDM)
+
+      val value = contactString("#",
+        FSETID, //0
+        Fdate, //1
+        FinDate, //2
+        FZqdm, //3
+        FSzsh, //4
+        Fjyxwh, //5
+        FBS, //6
+        Fje, //7
+        Fsl, //8
+        Fyj, //9
+        Fjsf, //10
+        Fyhs, //11
+        Fzgf, //12
+        Fghf, //13
+        Ffxj, //14
+        FQTF, //15
+        Fgzlx, //16
+        Fhggain, //17
+        Fsssje, //18
+        FZqbz, //19
+        Fywbz, //20
+        Fjybz, //21
+        FQsbz, //22
+        ZQDM, //23
+        FJYFS, //24
+        Fsh, //25
+        FZZR, //26
+        FCHK, //27
+        fzlh, //28
+        ftzbz, //29
+        FQsghf, //30
+        fgddm, //31
+        ISRTGS, //32
+        FPARTID, //33
+        FHTXH, //34
+        FCSHTXH, //35
+        FRZLV, //36
+        FCSGHQX, //37
+        FSJLY, //38
+        Fbz //39
+      )
+
+      (key, value)
+
+
+    })
+
+    calRes.groupByKey().map(item => {
+      val it = item._2.iterator
+      var FSETID: String = null //0
+      var Fdate: String = null //1
+      var FinDate: String = null //2
+      var FZqdm: String = null //3
+      var FSzsh: String = null //4
+      var Fjyxwh: String = null //5
+      var FBS: String = null //6
+      var Fje = BigDecimal(0) //7
+      var Fsl = BigDecimal(0) //8
+      var Fyj = BigDecimal(0) //9
+      var Fjsf = BigDecimal(0) //10
+      var Fyhs = BigDecimal(0) //11
+      var Fzgf = BigDecimal(0) //12
+      var Fghf = BigDecimal(0) //13
+      var Ffxj = BigDecimal(0) //14
+      var FQTF = BigDecimal(0) //15
+      var Fgzlx = BigDecimal(0) //16
+      var Fhggain = BigDecimal(0) //17
+      var Fsssje = BigDecimal(0) //18
+      var FZqbz: String = null //19
+      var Fywbz: String = null //20
+      var Fjybz: String = null //21
+      var FQsbz: String = null //22
+      var ZQDM: String = null //23
+      var FJYFS: String = null //24
+      var Fsh: String = null //25
+      var FZZR: String = null //26
+      var FCHK: String = null //27
+      var fzlh: String = null //28
+      var ftzbz: String = null //28
+      var FQsghf = BigDecimal(0) //30
+      var fgddm: String = null //31
+      var ISRTGS: String = null //32
+      var FPARTID: String = null //33
+      var FHTXH: String = null //34
+      var FCSHTXH: String = null //35
+
+      var FRZLV = BigDecimal(0) //36
+      var FCSGHQX = BigDecimal(0) //37
+
+      var FSJLY: String = null //38
+      var Fbz: String = null //39
+
+      for (item <- it) {
+        val fields = item.split("#")
+        if (FSETID == null) FSETID = fields(0)
+        if (Fdate == null) Fdate = fields(1)
+        if (FinDate == null) FinDate = fields(2)
+        if (FZqdm == null) FZqdm = fields(3)
+        if (FSzsh == null) FSzsh = fields(4)
+        if (Fjyxwh == null) Fjyxwh = fields(5)
+        if (FBS == null) FBS = fields(6)
+
+        Fje += BigDecimal(fields(7))
+        Fsl += BigDecimal(fields(8))
+        Fyj += BigDecimal(fields(9))
+        Fjsf += BigDecimal(fields(10))
+        Fyhs += BigDecimal(fields(11))
+        Fzgf += BigDecimal(fields(12))
+        Fghf += BigDecimal(fields(13))
+        Ffxj += BigDecimal(fields(14))
+        FQTF += BigDecimal(fields(15))
+        Fgzlx += BigDecimal(fields(16))
+        Fhggain += BigDecimal(fields(17))
+        Fsssje += BigDecimal(fields(18))
+
+        if (FZqbz == null) FZqbz = fields(19)
+        if (Fywbz == null) Fywbz = fields(20)
+        if (Fjybz == null) Fjybz = fields(21)
+        if (FQsbz == null) FQsbz = fields(22)
+        if (ZQDM == null) ZQDM = fields(23)
+        if (FJYFS == null) FJYFS = fields(24)
+        if (Fsh == null) Fsh = fields(25)
+        if (FZZR == null) FZZR = fields(26)
+        if (FCHK == null) FCHK = fields(27)
+        if (fzlh == null) fzlh = fields(28)
+        if (ftzbz == null) ftzbz = fields(29)
+
+        FQsghf += BigDecimal(fields(30))
+
+        if (fgddm == null) fgddm = fields(31)
+        if (ISRTGS == null) ISRTGS = fields(32)
+        if (FPARTID == null) FPARTID = fields(33)
+        if (FHTXH == null) FHTXH = fields(34)
+        if (FCSHTXH == null) FCSHTXH = fields(35)
+
+        FRZLV += BigDecimal(fields(36))
+        FCSGHQX += BigDecimal(fields(37))
+
+        if (FSJLY == null) FSJLY = fields(38)
+        if (Fbz == null) Fbz = fields(39)
+      }
 
       Hzjkqs(
-        FSETID,
-        Fdate,
-        FinDate,
-        FZqdm,
-        FSzsh,
-        Fjyxwh,
-        FBS,
-        Fje.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        Fsl.toString(),
-        Fyj.toString(),
-        Fjsf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        Fyhs.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        Fzgf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        Fghf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        Ffxj.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FQTF.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        Fgzlx.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        Fhggain.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        Fsssje.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FZqbz,
-        Fywbz,
-        Fjybz,
-        FQsbz,
-        ZQDM,
-        FJYFS,
-        Fsh,
-        FZZR,
-        FCHK,
-        fzlh,
-        ftzbz,
-        FQsghf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        fgddm,
-        ISRTGS,
-        FPARTID,
-        FHTXH,
-        FCSHTXH,
-        FRZLV.abs.setScale(4, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FCSGHQX.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FSJLY,
-        Fbz,
+        FSETID, //0
+        Fdate, //1
+        FinDate, //2
+        FZqdm,  //3
+        FSzsh, //4
+        Fjyxwh,//5
+        FBS,//6
+        Fje.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//7
+        Fsl.toString(),//8
+        Fyj.toString(),//9
+        Fjsf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//10
+        Fyhs.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//11
+        Fzgf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//12
+        Fghf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//13
+        Ffxj.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//14
+        FQTF.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//15
+        Fgzlx.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//16
+        Fhggain.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//17
+        Fsssje.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//18
+        FZqbz,//19
+        Fywbz,//20
+        Fjybz,//21
+        FQsbz,//22
+        ZQDM,//23
+        FJYFS,//24
+        Fsh,//25
+        FZZR,//26
+        FCHK,//27
+        fzlh,//28
+        ftzbz,//29
+        FQsghf.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//30
+        fgddm,//31
+        ISRTGS,//32
+        FPARTID,//33
+        FHTXH,//34
+        FCSHTXH,//35
+        FRZLV.abs.setScale(4, BigDecimal.RoundingMode.HALF_UP).toString(),//36
+        FCSGHQX.abs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),//37
+        FSJLY,//38
+        Fbz,//39
         FBY1 = "",
         FBY2 = "",
         FBY3 = "",
         FBY4 = "",
         FBY5 = ""
       )
-
-
     })
   }
+
+  /**
+    * 拼接字符串
+    *
+    * @param sep    拼接符
+    * @param fields 要拼接得字符串
+    * @return
+    */
+  private def contactString(sep: String, fields: AnyRef*): String = {
+    if (fields.length < 0) return null
+    val sb = new StringBuilder
+    for (item <- fields) {
+      sb.append(item).append(sep)
+    }
+    sb.delete(sb.length - 1, sb.length).toString()
+  }
+
 
   /**
     * 计算分级基金配对转换
@@ -1267,7 +1460,7 @@ object ShZQChange {
             Fjyxwh,
             FBS,
             Fje,
-            Fsl.toString(),
+            Fsl.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
             Fyj,
             Fjsf,
             Fyhs,
@@ -1357,7 +1550,7 @@ object ShZQChange {
     * @param spark SparkSession
     */
   private def readZQBDData(spark: SparkSession, dataPath: String): RDD[Row] = {
-    Util.readCSV(dataPath, spark).rdd
+    BasicUtils.readCSV(dataPath, spark).rdd
   }
 
 

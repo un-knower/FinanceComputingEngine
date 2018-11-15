@@ -22,7 +22,7 @@ object FceUtils {
     *         value = 启用日期+利率+折扣+最低佣金值
     */
   def loadYjb(sc: SparkContext, findate: String) = {
-    val yjPath = Util.getDailyInputFilePath(TABLE_NAME_A117CSJYLV)
+    val yjPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_A117CSJYLV)
     val yjb = sc.textFile(yjPath)
     //将佣金表转换成map结构
     val yjbMap = yjb
@@ -67,7 +67,7 @@ object FceUtils {
     */
   def loadflb(sc: SparkContext, findate: String) = {
     //公共的费率表
-    val flbPath = Util.getDailyInputFilePath(TATABLE_NAME_JYLV)
+    val flbPath = BasicUtils.getDailyInputFilePath(TATABLE_NAME_JYLV)
     val flb = sc.textFile(flbPath)
 
     //将费率表转换成map结构
@@ -117,7 +117,7 @@ object FceUtils {
     */
   def loadGgcsb(sc: SparkContext, findate: String) = {
 
-    val csbPath = Util.getDailyInputFilePath(TABLE_NAME_GGCS)
+    val csbPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_GGCS)
     val csb = sc.textFile(csbPath)
 
     //将参数表转换成map结构
@@ -146,7 +146,7 @@ object FceUtils {
     */
   def loadCsgdzh(sc: SparkContext) = {
     //读取股东账号表，
-    val csgdzhPath = Util.getDailyInputFilePath(TABLE_NAME_GDZH)
+    val csgdzhPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_GDZH)
     val csgdzhMap = sc.textFile(csgdzhPath)
       .map(row => {
         val fields = row.split(SEPARATE2)
@@ -165,7 +165,7 @@ object FceUtils {
     *         value = 资产id
     */
   def loadLsetlist(sc: SparkContext) = {
-    val lsetlistPath = Util.getDailyInputFilePath(TABLE_NAME_ZCXX)
+    val lsetlistPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_ZCXX)
     val lsetlistMap = sc.textFile(lsetlistPath)
       .map(row => {
         val fields = row.split(SEPARATE2)
@@ -187,7 +187,7 @@ object FceUtils {
     * @return 下一个工作日
     */
   def getCsholiday(sc: SparkContext, findate: String) = {
-    val csholidayPath = Util.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
+    val csholidayPath = BasicUtils.getDailyInputFilePath(TABLE_NAME_HOLIDAY)
     val csholidayList = sc.textFile(csholidayPath)
       .filter(str => {
         val fields = str.split(SEPARATE2)

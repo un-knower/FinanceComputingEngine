@@ -3,8 +3,8 @@ package com.yss.scala.core
 import java.io.File
 import java.util.Properties
 
-import com.yss.scala.dto.SHFICCTriPartyRepoDto
-import com.yss.scala.util.{DateUtils, RowUtils, Util}
+import com.yss.scala.dto.Hzjkqs
+import com.yss.scala.util.{DateUtils, RowUtils, BasicUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
@@ -17,6 +17,7 @@ import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
   */
 object ShFICCTriPartyRepo {
 
+  private val RES_HDFS_PATH = "hdfs://192.168.102.120:8020//yss/guzhi/hzjkqs/"
   //存储结果数据的数据库链接
   private val MYSQL_JDBC_URL = "jdbc:mysql://192.168.21.110:3306/yss"
   //存储结果数据的表名
@@ -31,7 +32,7 @@ object ShFICCTriPartyRepo {
   val ETL_DATA_PATH = "hdfs://192.168.21.110:9000/guzhi/etl/sfgu/"
 
   //佣金利率表
-  private val YJLL_TABLE = "A001CSYJLV"
+  private val YJLL_TABLE = "CSSYSYJLV"
 
   //参数列表表，比如某个参数是否选中 如 交易所回购计算佣金选项是否选中，选中为1，其他为0
   private val PARAMS_LIST_TABLE = "LVARLIST"
@@ -49,7 +50,7 @@ object ShFICCTriPartyRepo {
   private val TABLE_HDFS_PATH = "hdfs://192.168.102.120:8020/yss/guzhi/basic_list/"
 
 
-  def main(args: Array[String]): Unit = {
+  /*def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder().appName(getClass.getSimpleName)
       //.master("local[*]")
@@ -62,7 +63,7 @@ object ShFICCTriPartyRepo {
     exec(spark, dataDF)
     spark.stop()
 
-  }
+  }*/
 
 
   def exec(spark: SparkSession, dataDF: DataFrame): Unit = {
@@ -105,7 +106,7 @@ object ShFICCTriPartyRepo {
     //<套账号,数据,选项结果,佣金利率>
     val rowDataAndTzhAndSelectedAndYjFV: RDD[(String, (Row, Boolean, String))] = zqlbAndXwhAndSC2RowDataAndTzhAndSelected.leftOuterJoin(zqlbAndXwhAndSC2YjFV).map(item => {
       //(item._2._1._1, item._2._1._2, item._2._1._3, item._2._2.getOrElse("0"))
-      (item._2._1._2,(item._2._1._1, item._2._1._3, item._2._2.getOrElse("0")))
+      (item._2._1._2, (item._2._1._1, item._2._1._3, item._2._2.getOrElse("0")))
     })
 
     //读取资产表 得到<套账号,资产id>
@@ -117,9 +118,7 @@ object ShFICCTriPartyRepo {
 
 
     //开始计算
-    val resSFHGRDD: RDD[SHFICCTriPartyRepoDto] = calculate(rowDataAndTzhAndSelectedAndYjFVAndZCId)
-
-    import spark.implicits._
+    val resSFHGRDD: RDD[Hzjkqs] = calculate(rowDataAndTzhAndSelectedAndYjFVAndZCId)
 
     // val properties = new Properties()
     // properties.put("user", MYSQL_USER)
@@ -127,12 +126,28 @@ object ShFICCTriPartyRepo {
     // properties.setProperty("driver", DRIVER_CLASS)
     // resSFHGRDD.toDF().write.mode(SaveMode.Overwrite).jdbc(MYSQL_JDBC_URL, MYSQL_RESULT_TABLE_NAME, properties)
     //
-    resSFHGRDD.toDF().show()
+    //resSFHGRDD.toDF().show()
 
     saveToMySQL(spark, resSFHGRDD)
+    saveToHDFS(spark, resSFHGRDD)
   }
 
-  def saveToMySQL(spark: SparkSession, resSFHGRDD: RDD[SHFICCTriPartyRepoDto]): Unit = {
+
+  /**
+    * 将结果数据保存到HDFS
+    *
+    * @param spark      SparkSession
+    * @param shZQBDData 结果数据
+    */
+  private def saveToHDFS(spark: SparkSession, shZQBDData: RDD[Hzjkqs]): Unit = {
+    val date = DateUtils.formatDate(System.currentTimeMillis())
+    val path = RES_HDFS_PATH + date + File.separator + "shgdsysfhg/"
+    import spark.implicits._
+    BasicUtils.outputHdfs(shZQBDData.repartition(1).toDF(), path)
+
+  }
+
+  def saveToMySQL(spark: SparkSession, resSFHGRDD: RDD[Hzjkqs]): Unit = {
     import spark.implicits._
     val properties = new Properties()
     properties.put("user", "root")
@@ -161,7 +176,7 @@ object ShFICCTriPartyRepo {
     * @return
     *
     */
-  def calculate(rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String,String)]): RDD[SHFICCTriPartyRepoDto] = {
+  def calculate(rowDataAndTzhAndSelectedAndYjFV: RDD[(Row, String, Boolean, String, String)]): RDD[Hzjkqs] = {
     rowDataAndTzhAndSelectedAndYjFV.map(item => {
       val row = item._1
       val tzh = item._2
@@ -315,47 +330,52 @@ object ShFICCTriPartyRepo {
 
       val FHggain = Fje * FRZLV / 100 * FCSGHQX / 365
 
-      SHFICCTriPartyRepoDto(
+      Hzjkqs(
+        FSETID,
         FDate,
         FInDate,
         FZqdm,
         FSzsh,
         FJyxwh,
+        FBS,
         Fje.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
+        FSL.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         Fyj.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         Fjsf.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FHggain.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FSSSFJE.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FZqbz,
-        Fjybz,
-        ZqDm,
-        FJyFs,
-        Fsh,
-        Fzzr,
-        Fchk,
-        FHTXH,
-        FSETID,
-        FCSGHQX.setScale(0, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FRZLV.setScale(4, BigDecimal.RoundingMode.HALF_UP).toString(),
-        FSJLY,
-        FCSHTXH,
-        FBS,
-        FSL.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         Fyhs.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         Fzgf.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         Fghf.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         FFxj.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         FQtf.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         Fgzlx.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
+        FHggain.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
+        FSSSFJE.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
+        FZqbz,
+        FYwbz,
+        Fjybz,
         FQsbz,
+        ZqDm,
+        FJyFs,
+        Fsh,
+        Fzzr,
+        Fchk,
+        fzlh,
         ftzbz,
         FQsghf.setScale(2, BigDecimal.RoundingMode.HALF_UP).toString(),
         FGddm,
-        fzlh,
         ISRTGS,
         FPARTID,
-        FYwbz,
-        Fbz
+        FHTXH,
+        FCSHTXH,
+        FRZLV.setScale(4, BigDecimal.RoundingMode.HALF_UP).toString(),
+        FCSGHQX.setScale(0, BigDecimal.RoundingMode.HALF_UP).toString(),
+        FSJLY,
+        Fbz,
+        FBY1 = "",
+        FBY2 = "",
+        FBY3 = "",
+        FBY4 = "",
+        FBY5 = ""
       )
 
     })
@@ -368,7 +388,9 @@ object ShFICCTriPartyRepo {
     * @return <证券类别|席位号|市场号,佣金>
     */
   def readA117CSYJLV(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(YJLL_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(YJLL_TABLE), spark, header = false, ",").toDF(
+      "FSETCODE",
+      "FSETID",
       "FID",
       "FZQLB",
       "FSZSH",
@@ -385,7 +407,8 @@ object ShFICCTriPartyRepo {
       "FCHK",
       "FSTARTDATE",
       "FJJDM",
-      "FGDJE"
+      "FGDJE",
+      "IP/DB"
     ).rdd.map(row => {
       val FZQLB = RowUtils.getRowFieldAsString(row, "FZQLB")
       val FSZSH = RowUtils.getRowFieldAsString(row, "FSZSH")
@@ -405,13 +428,14 @@ object ShFICCTriPartyRepo {
     * @return <选项名称,是否选中(true/false)>
     */
   def readLVARLIST(spark: SparkSession): RDD[(String, Boolean)] = {
-    Util.readCSV(getTableDataPath(PARAMS_LIST_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(PARAMS_LIST_TABLE), spark, header = false, ",").toDF(
       "FVARNAME",
       "FVARVALUE",
       "FSH",
       "FZZR",
       "FCHK",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val FVARNAME = RowUtils.getRowFieldAsString(row, "FVARNAME")
       val FVARVALUE = RowUtils.getRowFieldAsString(row, "FVARVALUE")
@@ -430,7 +454,7 @@ object ShFICCTriPartyRepo {
     * @return 返回<席位号,套账号>
     */
   def readCSQSXW(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(XHW_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(XHW_TABLE), spark, header = false, ",").toDF(
       "FQSDM",
       "FQSMC",
       "FSZSH",
@@ -440,7 +464,8 @@ object ShFICCTriPartyRepo {
       "FSH",
       "FZZR",
       "FCHK",
-      "FSTARTDATE"
+      "FSTARTDATE",
+      "IP/DB"
     ).rdd.map(row => {
       val xwh = RowUtils.getRowFieldAsString(row, "FQSXW")
       val tzh = RowUtils.getRowFieldAsString(row, "FSETCODE")
@@ -462,7 +487,7 @@ object ShFICCTriPartyRepo {
     * @return 放回<股东代码,套账号>
     */
   def readCSGDZH(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(GUDM_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(GUDM_TABLE), spark, header = false, ",").toDF(
       "FGDDM",
       "FGDXM",
       "FSZSH",
@@ -471,7 +496,8 @@ object ShFICCTriPartyRepo {
       "FSETCODE",
       "FCHK",
       "FSTARTDATE",
-      "FACCOUNTTYPT"
+      "FACCOUNTTYPT",
+      "IP/DB"
     ).rdd.map(row => {
       val gddm = RowUtils.getRowFieldAsString(row, "FGDDM")
       val tzh = RowUtils.getRowFieldAsString(row, "FSETCODE")
@@ -493,7 +519,7 @@ object ShFICCTriPartyRepo {
     * @return
     */
   def readLSETLIST(spark: SparkSession): RDD[(String, String)] = {
-    Util.readCSV(getTableDataPath(ZC_TABLE), spark, header = false, ",").toDF(
+    BasicUtils.readCSV(getTableDataPath(ZC_TABLE), spark, header = false, ",").toDF(
       "FYEAR",
       "FSETID",
       "FSETCODE",
@@ -513,7 +539,8 @@ object ShFICCTriPartyRepo {
       "FCHK",
       "FTZJC",
       "FZYDM",
-      "FTZZHDM"
+      "FTZZHDM",
+      "IP/DB"
     ).rdd.map(row => {
       val zhid = RowUtils.getRowFieldAsString(row, "FSETID")
       val tzh = RowUtils.getRowFieldAsString(row, "FSETCODE")
@@ -532,5 +559,5 @@ object ShFICCTriPartyRepo {
     val date = DateUtils.formatDate(System.currentTimeMillis())
     TABLE_HDFS_PATH + date + File.separator + tName
   }
-  
+
 }

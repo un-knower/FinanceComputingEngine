@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 
 import com.yss.scala.dto._
 import com.yss.scala.core.ExecutionContaints._
-import com.yss.scala.util.{DateUtils, Util}
+import com.yss.scala.util.Util
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -23,39 +23,32 @@ import scala.math.BigDecimal.RoundingMode
 object Execution extends Serializable {
 
   def main(args: Array[String]): Unit = {
-    var ywrq = DateUtils.getToday("20180704")//DateUtils.YYYYMMDD
-    if(args.size >= 1){
-      ywrq = args(0)
-    }
-    getResult(ywrq)
+
+    getResult()
   }
 
-  def getResult(findate:String) = {
+  def getResult() = {
     val spark = SparkSession.builder().appName("SJSV5").master("local[*]").getOrCreate() //.master("local[*]")
     import spark.implicits._
-    val csb = loadLvarlist(spark.sparkContext,findate:String)
-    val df = getFywbzAndFzqbz(spark, csb,findate:String)
-    doExec(df.toDF, csb,findate:String)
-  }
-
-  def convertDate(bcrq:String) = {
-    val yyyy = bcrq.substring(0,4)
-    val mm = bcrq.substring(4,6)
-    val dd = bcrq.substring(6)
-    yyyy.concat(SEPARATE3).concat(mm).concat(SEPARATE3).concat(dd)
+    val csb = loadLvarlist(spark.sparkContext)
+    val df = getFywbzAndFzqbz(spark, csb)
+    doExec(df.toDF, csb)
   }
 
   /**
     * 进行ETF
     */
 
-  def getFywbzAndFzqbz(spark: SparkSession, csb: Broadcast[collection.Map[String, String]], ywrq:String) = {
+  def getFywbzAndFzqbz(spark: SparkSession, csb: Broadcast[collection.Map[String, String]]) = {
     val sc = spark.sparkContext
-    val sourcePath = Util.getInputFilePath("20181114"+"/execution")
-    val exe = sc.textFile(sourcePath)
+    val path = "C:/Users/hgd/Desktop/估值资料/execution_aggr_tgwid_2_20180124.tsv"
+    val dateSplit1 = path.split("_")
+    val fileDate = dateSplit1(4).substring(0, 8)
     val sdf1 = new SimpleDateFormat("yyyyMMdd")
-    val parseDate1 = sdf1.parse("20181114") //解析成date
-    val dateTime1 = parseDate1.getTime  //文件日期的时间戳
+    val parseDate1 = sdf1.parse(fileDate) //解析成date
+    val dateTime1 = parseDate1.getTime
+    val exe = sc.textFile(path) //C:/Users/hgd/Desktop/execution_aggr_tgwid_1_20180124.tsv
+
     /**
       *  1.读取原始数据表
       */
@@ -147,7 +140,7 @@ object Execution extends Serializable {
         //将日期转化成时间戳形式
         val sdf = new SimpleDateFormat("yyyy-MM-dd")
         val parseDate = sdf.parse(fSatrtDate) //解析成date
-        val dateTime = parseDate.getTime //变成时间戳
+        val dateTime = parseDate.getTime
         val key = FSCZQDM + "_" + FZQLX
         (key, dateTime)
       }
@@ -378,7 +371,7 @@ object Execution extends Serializable {
             }
 
             //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
-            val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, ywrq, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), fsetidValue,SH)
+            val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), fsetidValue,SH)
             execution.append(Exe)
           }else if(appId.equals("050") || appId.equals("052") /*|| appId.equals("053")*/ || appId.equals("060") || appId.equals("061") ){
               SH="SDZ"
@@ -530,7 +523,7 @@ object Execution extends Serializable {
            }
 
            //将iterable进行for循环，将要的数据放到case calss中，将所有数据放到list中
-           val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, ywrq, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), fsetidValue,SH)
+           val Exe = ExecutionOriginalObj(TransactTime, appId, ReportingPBUID, key, LastPx, LastQty, Side, AccountID, fileDate, sqbh, fzqbz("fzqbz"), fywbz("fywbz"), fsetidValue,SH)
            execution.append(Exe)
          }
        }
@@ -547,23 +540,17 @@ object Execution extends Serializable {
     * 返回值: 广播变量 key 参数  value : 0 1 是否开启
     *
     * */
-  def loadLvarlist(sc: SparkContext, ywrq:String) = {
-    val convertedFindate = convertDate(ywrq)
+  def loadLvarlist(sc: SparkContext) = {
     //公共的参数表
     val csbPath = Util.getDailyInputFilePath("LVARLIST")
     val csb = sc.textFile(csbPath)
 
     //将参数表转换成map结构
-    val csbMap =  csb
-      .filter(row => {
-        val fields = row.split(SEPARATE2)
-        if(fields(5).compareTo(convertedFindate)<=0) true else false
-      })
-      .map(row => {
-        val fields = row.split(SEPARATE2)
-        val key = fields(0)
-        val value = fields(1)
-        (key, value)
+    val csbMap = csb.map(row => {
+      val fields = row.split(SEPARATE2)
+      val key = fields(0)
+      val value = fields(1)
+      (key, value)
     })
       .collectAsMap()
     sc.broadcast(csbMap)
@@ -571,7 +558,7 @@ object Execution extends Serializable {
 
 
   /** 汇总然后进行计算 */
-  def doExec(df: DataFrame, csb: Broadcast[collection.Map[String, String]],ywrq:String) = {
+  def doExec(df: DataFrame, csb: Broadcast[collection.Map[String, String]]) = {
 
     val spark = SparkSession.builder().appName("SJSV5").master("local[*]").getOrCreate()
 
@@ -680,6 +667,7 @@ object Execution extends Serializable {
       /** * 读取基金信息表csjjxx */
       val csjjxxPath = Util.getDailyInputFilePath("CSJJXX")
       val jjxxb = sc.textFile(csjjxxPath)
+
 
       //过滤基金信息表
       val jjxxAarry = jjxxb

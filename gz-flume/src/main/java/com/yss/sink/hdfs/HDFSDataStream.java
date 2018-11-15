@@ -24,16 +24,14 @@ import org.apache.flume.Event;
 import org.apache.flume.serialization.EventSerializer;
 import org.apache.flume.serialization.EventSerializerFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 public class HDFSDataStream extends AbstractHDFSWriter {
 
@@ -79,13 +77,20 @@ public class HDFSDataStream extends AbstractHDFSWriter {
             appending = true;
         } else {
             //删除已存在的文件
-            String filePath = dstPath.toString();
-            String path = filePath.substring(0, filePath.length() - 4);
-            Path fs = new Path(path);
-            if (hdfs.exists(fs)) {
-                hdfs.delete(fs, false);
+            Path parent = dstPath.getParent();
+            if (parent.getName().equals(LocalDate.now().toString().replaceAll("-", ""))) {
+                String filePath = dstPath.toString();
+                String path = filePath.substring(0, filePath.length() - 4);
+                Path fs = new Path(path);
+                if (hdfs.exists(fs)) {
+                    hdfs.delete(fs, false);
+                }
+            } else {
+                if (hdfs.exists(parent)) {
+                    hdfs.delete(parent, true);
+                }
             }
-            logger.info("HDFS创建文件开始写数据:" + filePath + "    当前时间是:" + System.currentTimeMillis());
+            logger.info("HDFS创建文件开始写数据:" + dstPath.toString() + "    当前时间是:" + System.currentTimeMillis());
             outStream = hdfs.create(dstPath);
         }
 
