@@ -35,6 +35,7 @@ object SHjsmx {
 
     //读取源文件
     val SHjsmxFileDF: DataFrame = BasicUtils.readCSV("hdfs://192.168.102.120:8020/yss/guzhi/interface/20181114/jsmxjs/jsmxjs20180108.dbf.tsv", spark)
+    SHjsmxFileDF.show()
 
     //读取CSGDZH表
     val CSGDZHTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/CSGDZH/part-m-00000")
@@ -47,7 +48,7 @@ object SHjsmx {
     val LSETLISTBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(LSETLISTTable.collect())
 
     //读取LVARLIST表
-    val LVARLISTTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181114/LVARLIST/part-m-00000")
+    val LVARLISTTable: RDD[String] = sc.sparkContext.textFile("hdfs://192.168.102.120:8020/yss/guzhi/basic_list/20181115/LVARLIST/part-m-00000")
     //广播出去
     val LVARLISTBroadCast: Broadcast[Array[String]] = sc.sparkContext.broadcast(LVARLISTTable.collect())
 
@@ -84,10 +85,13 @@ object SHjsmx {
 
     //过滤原始数据
     val SHjsmxFileRDD: RDD[Row] = FilterDF2RDD(SHjsmxFileDF)
+    println(SHjsmxFileRDD.collect().toBuffer)
 
     val QSJEArr = SHjsmxFileRDD.filter(row => {
       "278".equals(row.getAs[String]("QSBZ"))
     }).collect()
+
+
 
     val QSJEBroadcast: Broadcast[Array[Row]] = sc.sparkContext.broadcast(QSJEArr)
 
@@ -97,9 +101,9 @@ object SHjsmx {
       */
     val CDRCalculateRDD: RDD[Row] = SHjsmxFileRDD.filter(row => {
       ("360".equals(row.getAs[String]("YWLX")) && "C01".equals("QSBZ") && "003".equals("JYFS")) &&
-        "20181106".equals(row.getAs[String]("QSRQ"))
+        getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (CDRCalculateRDD != null) {
+    if (CDRCalculateRDD.collect().length != 0) {
       CDRCalculate(sparkSession:SparkSession, CDRCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
 
@@ -108,33 +112,32 @@ object SHjsmx {
       * 可转债、可交换债预发行；新股预发行，新股申购ETL
       */
     val XGSGCalculateRDD: RDD[Row] = SHjsmxFileRDD.filter(row => {
-      var FSETID = ""
-      try {
-         FSETID = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
-      } catch {
-        case exception: ArrayIndexOutOfBoundsException => println("csgdzh表或lsetList表数据无相关数据")
-      }
-
+      val FSETID = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
 
       val blnZqQrValue: Array[String] = getLVARLISTValue(FSETID, "新股、新债申购仅T+3制作中签确认凭证", LVARLISTBroadCast)
+
       var blnZqQr: Boolean = false
-      if (blnZqQrValue(1).equals("1")) {
+      if ((blnZqQrValue(0).split(",")(1)).equals("1")) {
         blnZqQr = true
       }
 
-      ("035".equals(row.getAs[String]("YWLX")) &&
+      val Temp = ("035".equals(row.getAs[String]("YWLX")) &&
         "73A".equals(row.getAs[String]("QSBZ")) &&
         "01".equals(row.getAs[String]("SCDM")) &&
         "002".equals(row.getAs[String]("JSFS")) &&
-        !(row.getAs[String]("ZQDM").startsWith("733") ||
-          row.getAs[String]("ZQDM").startsWith("785") ||
-          row.getAs[String]("ZQDM").startsWith("754") ||
-          row.getAs[String]("ZQDM").startsWith("759"))) &&
-        getYWDate.equals(row.getAs[String]("QSRQ")) &&
+        !((row.getAs[String]("ZQDM1").startsWith("733") ||
+          row.getAs[String]("ZQDM1").startsWith("785") ||
+          row.getAs[String]("ZQDM1").startsWith("754") ||
+          row.getAs[String]("ZQDM1").startsWith("759"))) &&
+        getYWDate.equals(row.getAs[String]("QSRQ"))) &&
         "002".equals(row.getAs[String]("JLLX")) &&
         !blnZqQr
+
+      Temp
     })
-    if (XGSGCalculateRDD != null) {
+
+    println("#######################################" + XGSGCalculateRDD.collect().toBuffer)
+    if (XGSGCalculateRDD.collect().length !=0) {
       XGSGCalculate(sparkSession: SparkSession, XGSGCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
 
@@ -146,14 +149,14 @@ object SHjsmx {
         "73A".equals(row.getAs[String]("QSBZ")) &&
         "01".equals(row.getAs[String]("SCDM")) &&
         "002".equals(row.getAs[String]("JSFS")) &&
-        !(row.getAs[String]("ZQDM").startsWith("733") ||
-          row.getAs[String]("ZQDM").startsWith("785") ||
-          row.getAs[String]("ZQDM").startsWith("754") ||
-          row.getAs[String]("ZQDM").startsWith("759"))) &&
+        !(row.getAs[String]("ZQDM1").startsWith("733") ||
+          row.getAs[String]("ZQDM1").startsWith("785") ||
+          row.getAs[String]("ZQDM1").startsWith("754") ||
+          row.getAs[String]("ZQDM1").startsWith("759"))) &&
         getYWDate.equals(row.getAs[String]("JSRQ")) &&
         "003".equals(row.getAs[String]("JLLX"))
     })
-    if (SGQRCalculateRDD != null){
+    if (SGQRCalculateRDD.collect().length != 0){
       SGQRCalculate(sparkSession: SparkSession, SGQRCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
 
@@ -164,8 +167,10 @@ object SHjsmx {
 
       val FSETID: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
       val blnZqQrValue: Array[String] = getLVARLISTValue(FSETID, "新股、新债申购仅T+3制作中签确认凭证", LVARLISTBroadCast)
+
+
       var blnZqQr: Boolean = false
-      if (blnZqQrValue(1).equals("1")) {
+      if (blnZqQrValue(0).split(",")(1).equals("1")) {
         blnZqQr = true
       }
 
@@ -173,15 +178,15 @@ object SHjsmx {
         "73A".equals(row.getAs[String]("QSBZ")) &&
         "01".equals(row.getAs[String]("SCDM")) &&
         "002".equals(row.getAs[String]("JSFS")) &&
-        (row.getAs[String]("ZQDM").startsWith("733") ||
-          row.getAs[String]("ZQDM").startsWith("785") ||
-          row.getAs[String]("ZQDM").startsWith("754") ||
-          row.getAs[String]("ZQDM").startsWith("759"))) &&
+        (row.getAs[String]("ZQDM1").startsWith("733") ||
+          row.getAs[String]("ZQDM1").startsWith("785") ||
+          row.getAs[String]("ZQDM1").startsWith("754") ||
+          row.getAs[String]("ZQDM1").startsWith("759"))) &&
         getYWDate.equals(row.getAs[String]("QSRQ")) &&
         "002".equals(row.getAs[String]("JLLX")) &&
         !blnZqQr
     })
-    if (XZSGCalculateRDD != null){
+    if (XZSGCalculateRDD.collect().length !=0){
       XZSGCalculate(sparkSession: SparkSession, XZSGCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
 
@@ -193,14 +198,14 @@ object SHjsmx {
         "73A".equals(row.getAs[String]("QSBZ")) &&
         "01".equals(row.getAs[String]("SCDM")) &&
         "002".equals(row.getAs[String]("JSFS")) &&
-        (row.getAs[String]("ZQDM").startsWith("733") ||
-          row.getAs[String]("ZQDM").startsWith("785") ||
-          row.getAs[String]("ZQDM").startsWith("754") ||
-          row.getAs[String]("ZQDM").startsWith("759"))) &&
+        (row.getAs[String]("ZQDM1").startsWith("733") ||
+          row.getAs[String]("ZQDM1").startsWith("785") ||
+          row.getAs[String]("ZQDM1").startsWith("754") ||
+          row.getAs[String]("ZQDM1").startsWith("759"))) &&
         getYWDate.equals(row.getAs[String]("JSRQ")) &&
         "003".equals(row.getAs[String]("JLLX"))
     })
-    if (XZSGQRCalculateRDD != null){
+    if (XZSGQRCalculateRDD.collect().length !=0){
       XZSGQRCalculate(sparkSession: SparkSession, XZSGQRCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
 
@@ -209,24 +214,19 @@ object SHjsmx {
       */
     val PGCalculateRDD: RDD[Row] = SHjsmxFileRDD.filter(row => {
       val FSETID: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
-      val tmp6Value: Array[String] = getLVARLISTValue(FSETID, "上交所质押式回购停牌", LVARLISTBroadCast)
-      var blnShZytp = false
-      if ("1".equals(tmp6Value(1)) && DateUtils.formattedDate2Long(tmp6Value(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
-        blnShZytp = true
-      }
-      blnShZytp &&
-        "012".equals(row.getAs[String]("YWLX")) &&
+
+      "012".equals(row.getAs[String]("YWLX")) &&
         "PG".equals(row.getAs[String]("ZQLB")) &&
         "070".equals(row.getAs[String]("QSBZ")) &&
         "01".equals(row.getAs[String]("SCDM")) &&
-        (row.getAs[String]("ZQDM").startsWith("70") ||
-          row.getAs[String]("ZQDM").startsWith("76")) &&
-        !(row.getAs[String]("ZQDM").startsWith("704") ||
-          row.getAs[String]("ZQDM").startsWith("762") ||
-          row.getAs[String]("ZQDM").startsWith("764")) &&
+        (row.getAs[String]("ZQDM1").startsWith("70") ||
+          row.getAs[String]("ZQDM1").startsWith("76")) &&
+        !(row.getAs[String]("ZQDM1").startsWith("704") ||
+          row.getAs[String]("ZQDM1").startsWith("762") ||
+          row.getAs[String]("ZQDM1").startsWith("764")) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (PGCalculateRDD != null){
+    if (PGCalculateRDD.collect().length!=0){
       PGCalculate(sparkSession: SparkSession, PGCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
     /**
@@ -234,24 +234,19 @@ object SHjsmx {
       */
     val PZCalculateRDD: RDD[Row] = SHjsmxFileRDD.filter { row => {
       val FSETID: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
-      val tmp6Value: Array[String] = getLVARLISTValue(FSETID, "上交所质押式回购停牌", LVARLISTBroadCast)
-      var blnShZytp = false
-      if ("1".equals(tmp6Value(1)) && DateUtils.formattedDate2Long(tmp6Value(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
-        blnShZytp = true
-      }
-      blnShZytp &&
-        "012".equals(row.getAs[String]("YWLX")) &&
+
+      "012".equals(row.getAs[String]("YWLX")) &&
         "PG".equals(row.getAs[String]("ZQLB")) &&
         "070".equals(row.getAs[String]("QSBZ")) &&
         "01".equals(row.getAs[String]("SCDM")) &&
-        (row.getAs[String]("ZQDM").startsWith("704") ||
-          row.getAs[String]("ZQDM").startsWith("762") ||
-          row.getAs[String]("ZQDM").startsWith("764")) &&
+        (row.getAs[String]("ZQDM1").startsWith("704") ||
+          row.getAs[String]("ZQDM1").startsWith("762") ||
+          row.getAs[String]("ZQDM1").startsWith("764")) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
 
     }
     }
-    if (PZCalculateRDD != null){
+    if (PZCalculateRDD.collect().length!=0){
       PZCalculate(sparkSession: SparkSession, PZCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
 
@@ -261,9 +256,11 @@ object SHjsmx {
     val ZZGZQCalculateRDD: RDD[Row] = SHjsmxFileRDD.filter(row => {
 
       val FSETID: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
-      val tmp3Value: Array[String] = getLVARLISTValue(FSETID, "上海证券交易所债转股业务数据使用上海结算明细数据启用日期(YYYYMMDD)", LVARLISTBroadCast)
+      val tmp3Value: Array[String] = getLVARLISTValue2("上海证券交易所债转股业务数据使用上海结算明细数据启用日期(YYYYMMDD)", LVARLISTBroadCast)
+
+
       var bDoZzg = false
-      if ("1".equals(tmp3Value(1)) && DateUtils.formattedDate2Long(tmp3Value(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
+      if ((!"0".equals(tmp3Value(0).split(",")(1))) && DateUtils.formattedDate2Long(tmp3Value(0).split(",")(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
         bDoZzg = true
       }
 
@@ -273,7 +270,7 @@ object SHjsmx {
         !("278".equals(row.getAs[String]("QSBZ"))) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (ZZGZQCalculateRDD != null){
+    if (ZZGZQCalculateRDD.collect().length!=0){
       ZZGZQCalculate(sparkSession: SparkSession, ZZGZQCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
     }
 
@@ -282,9 +279,9 @@ object SHjsmx {
       */
     val ZZGGPCalculateRDD: RDD[Row] = SHjsmxFileRDD.filter(row => {
       val FSETID: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
-      val tmp3Value: Array[String] = getLVARLISTValue(FSETID, "上海证券交易所债转股业务数据使用上海结算明细数据启用日期(YYYYMMDD)", LVARLISTBroadCast)
+      val tmp3Value: Array[String] = getLVARLISTValue2("上海证券交易所债转股业务数据使用上海结算明细数据启用日期(YYYYMMDD)", LVARLISTBroadCast)
       var bDoZzg = false
-      if ("1".equals(tmp3Value(1)) && DateUtils.formattedDate2Long(tmp3Value(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
+      if ((!"0".equals(tmp3Value(0).split(",")(1))) && DateUtils.formattedDate2Long(tmp3Value(0).split(",")(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
         bDoZzg = true
       }
 
@@ -294,7 +291,7 @@ object SHjsmx {
         !("278".equals(row.getAs[String]("QSBZ"))) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (ZZGGPCalculateRDD != null){
+    if (ZZGGPCalculateRDD.collect().length !=0){
       ZZGGPCalculate(sparkSession: SparkSession, ZZGGPCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]], QSJEBroadcast: Broadcast[Array[Row]])
     }
 
@@ -303,9 +300,9 @@ object SHjsmx {
       */
     val ZZGZQ2CalculateRDD: RDD[Row] = SHjsmxFileRDD.filter(row => {
       val FSETID: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
-      val tmp3Value: Array[String] = getLVARLISTValue(FSETID, "上海证券交易所债转股业务数据使用上海结算明细数据启用日期(YYYYMMDD)", LVARLISTBroadCast)
+      val tmp3Value: Array[String] = getLVARLISTValue2("上海证券交易所债转股业务数据使用上海结算明细数据启用日期(YYYYMMDD)", LVARLISTBroadCast)
       var bDoZzg = false
-      if ("1".equals(tmp3Value(1)) && DateUtils.formattedDate2Long(tmp3Value(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
+      if ("1".equals(tmp3Value(0).split(",")(1)) && DateUtils.formattedDate2Long(tmp3Value(0).split(",")(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
         bDoZzg = true
       }
 
@@ -317,7 +314,7 @@ object SHjsmx {
         "179".equals(row.getAs[String]("QSBZ")) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (ZZGZQ2CalculateRDD != null){
+    if (ZZGZQ2CalculateRDD.collect().length !=0){
       ZZGZQ2Calculate(sparkSession: SparkSession, ZZGZQ2CalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
 
     }
@@ -327,9 +324,9 @@ object SHjsmx {
       */
     val ZZGGP2CalculateRDD: RDD[Row] = SHjsmxFileRDD.filter(row => {
       val FSETID: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
-      val tmp3Value: Array[String] = getLVARLISTValue(FSETID, "上海证券交易所债转股业务数据使用上海结算明细数据启用日期(YYYYMMDD)", LVARLISTBroadCast)
+      val tmp3Value: Array[String] = getLVARLISTValue2("上海证券交易所债转股业务数据使用上海结算明细数据启用日期(YYYYMMDD)", LVARLISTBroadCast)
       var bDoZzg = false
-      if ("1".equals(tmp3Value(1)) && DateUtils.formattedDate2Long(tmp3Value(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
+      if ("1".equals(tmp3Value(0).split(",")(1)) && DateUtils.formattedDate2Long(tmp3Value(0).split(",")(5), DateUtils.YYYYMMDD).compareTo(DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)) >= 0) {
         bDoZzg = true
       }
 
@@ -341,7 +338,7 @@ object SHjsmx {
         "178".equals(row.getAs[String]("QSBZ")) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (ZZGGP2CalculateRDD != null){
+    if (ZZGGP2CalculateRDD.collect().length !=0){
       ZZGGP2Calculate(sparkSession: SparkSession, ZZGGP2CalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
 
     }
@@ -354,7 +351,7 @@ object SHjsmx {
         row.getAs[String]("ZQDM1").startsWith("6") &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (YYSGCalculateRDD != null){
+    if (YYSGCalculateRDD.collect().length !=0){
       YYSGCalculate(sparkSession: SparkSession, YYSGCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]], LVARLISTBroadCast: Broadcast[Array[String]], CSQSFYLVBroadcast: Broadcast[Array[String]], CSSYSYJLVBroadCast: Broadcast[Array[String]])
 
     }
@@ -367,7 +364,7 @@ object SHjsmx {
         !(row.getAs[String]("ZQDM1").startsWith("6")) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (HSCalculateRDD != null){
+    if (HSCalculateRDD.collect().length !=0){
       HSCalculate(sparkSession: SparkSession, HSCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]], CSZQXXBroadCast: Broadcast[Array[String]], LVARLISTBroadCast: Broadcast[Array[String]])
 
     }
@@ -380,7 +377,7 @@ object SHjsmx {
         "001".equals(row.getAs[String]("JLLX")) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (GDSYGYHGCalculateRDD != null){
+    if (GDSYGYHGCalculateRDD.collect().length !=0){
       GDSYGYHGCalculate(sparkSession: SparkSession, GDSYGYHGCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
 
     }
@@ -393,7 +390,7 @@ object SHjsmx {
         "001".equals(row.getAs[String]("JLLX")) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (GDSYGYHGDQCalculateRDD != null){
+    if (GDSYGYHGDQCalculateRDD.collect().length!=0){
       GDSYGYHGDQCalculate(sparkSession: SparkSession, GDSYGYHGDQCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
 
     }
@@ -406,8 +403,8 @@ object SHjsmx {
         "003".equals(row.getAs[String]("JLLX")) &&
         getYWDate.equals(row.getAs[String]("QSRQ"))
     })
-    if (MRMCHGCalculateRDD != null){
-  MRMCHGCalculate(sparkSession: SparkSession, MRMCHGCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]], CSSYSYJLVBroadCast: Broadcast[Array[String]], LVARLISTBroadCast: Broadcast[Array[String]], CSSYSXWFYBroadCast: Broadcast[Array[String]], LSETCSSYSJJBroadCast: Broadcast[Array[String]], CSJYLVBroadCast: Broadcast[Array[String]])
+    if (MRMCHGCalculateRDD.collect().length !=0){
+      MRMCHGCalculate(sparkSession: SparkSession, MRMCHGCalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]], CSSYSYJLVBroadCast: Broadcast[Array[String]], LVARLISTBroadCast: Broadcast[Array[String]], CSSYSXWFYBroadCast: Broadcast[Array[String]], LSETCSSYSJJBroadCast: Broadcast[Array[String]], CSJYLVBroadCast: Broadcast[Array[String]])
     }
     sc.sparkSession.stop()
 
@@ -1418,7 +1415,7 @@ object SHjsmx {
     * @param LSETLISTBroadCast
     */
   def ZZGZQ2Calculate(sparkSession: SparkSession, ZZGZQ2CalculateRDD: RDD[Row], CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]]): Unit = {
-   val ZZGZQ2TempRDD = ZZGZQ2CalculateRDD.map(row => {
+    val ZZGZQ2TempRDD = ZZGZQ2CalculateRDD.map(row => {
       val Zqzh: String = row.getAs[String]("ZQZH")
       //获取资产代码
       val FSETID: String = getFSETID(Zqzh, CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]])
@@ -1642,11 +1639,11 @@ object SHjsmx {
 
       val FSETID: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
       val GPMZArr: Array[String] = getLVARLISTValue(FSETID, "股票面值" + Fzqdm, LVARLISTBroadCast)
-      val GPMZ = GPMZArr(1)
+      val GPMZ = GPMZArr(0).split(",")(1)
 
       val FSETID2: String = getFSETID(row.getAs[String]("ZQZH"), CSGDZHBroadCast, LSETLISTBroadCast)
       val bqsghfghfArr: Array[String] = getLVARLISTValue(FSETID2, "计算券商过户费减去过户费" + Fzqdm, LVARLISTBroadCast)
-      val bqsghfghfValue = bqsghfghfArr(1)
+      val bqsghfghfValue = bqsghfghfArr(0).split(",")(1)
       var bqsghfghf = false
       if (bqsghfghfValue == 1) {
         bqsghfghf = true
@@ -1657,12 +1654,12 @@ object SHjsmx {
       val Fszsh: String = "H"
 
       val LvArr: Array[String] = CSQSFYLVBroadcast.value.filter(lines => {
-        lines(2).equals(Fzqbz) &&
-          lines(3).equals(Fszsh)
+        lines.split(",")(2).equals(Fzqbz) &&
+          lines.split(",")(3).equals(Fszsh)
       })
-      val FLV = BigDecimal(LvArr(8)) //券商过户费率
-      val FLVZK = BigDecimal(LvArr(10)) //折扣率
-      val FFYMIN = BigDecimal(LvArr(9)) //最小值
+      val FLV = BigDecimal(LvArr(0).split(",")(8)) //券商过户费率
+      val FLVZK = BigDecimal(LvArr(0).split(",")(10)) //折扣率
+      val FFYMIN = BigDecimal(LvArr(0).split(",")(9)) //最小值
 
       val Fywbz = "YYSell"
 
@@ -1714,12 +1711,12 @@ object SHjsmx {
       val Fje = row.getAs[String]("QSJE")
       var Fyj = ""
       val YJLV: String = CSSYSYJLVBroadCast.value.filter(lines => {
-        lines(3).equals(Fywbz)
+        lines.split(",")(3).equals(Fywbz)
       })(5) // 佣金利率
 
       val QSCDFSFY: String = CSQSFYLVBroadcast.value.filter(lines => {
-        lines(2).equals("GP") &&
-          lines(4).equals("QSGHD")
+        lines.split(",")(2).equals("GP") &&
+          lines.split(",")(4).equals("QSGHD")
       })(5)
 
       if (QSCDFSFY == 0) {
@@ -1847,7 +1844,7 @@ object SHjsmx {
       var Fzqbz = "ZQ"
 
       val FZQLB: String = CSZQXXBroadCast.value.filter(lines => {
-        lines(0).equals(Zqdm)
+        lines.split(",")(0).equals(Zqdm)
       })(11)
 
       // FYWBZ计算逻辑
@@ -2213,13 +2210,13 @@ object SHjsmx {
       var Flvzk = BigDecimal(0)
 
       val YjArr1 = CSSYSYJLVBroadCast.value.filter(lines => {
-        lines(3).equals("HG" + Zqdm)
+        lines.split(",")(3).equals("HG" + Zqdm)
       })
       val YjArr2 = CSSYSYJLVBroadCast.value.filter(lines => {
-        lines(3).equals("HG") && lines(8).equals(Fgddm)
+        lines.split(",")(3).equals("HG") && lines.split(",")(8).equals(Fgddm)
       })
       val YjArr3 = CSSYSYJLVBroadCast.value.filter(lines => {
-        lines(3).equals("HG") && lines(8).equals(Fjyxwh)
+        lines.split(",")(3).equals("HG") && lines.split(",")(8).equals(Fjyxwh)
       })
       if (YjArr1 != null) {
         FLV = BigDecimal(YjArr1(5))
@@ -2243,27 +2240,27 @@ object SHjsmx {
 
       //回购经手费
       val HGJSF = CSSYSXWFYBroadCast.value.filter(lines => {
-        (lines(0).equals(Fgddm) || lines(0).equals(Fjyxwh)) &&
-          lines(2).equals("HG") &&
-          lines(3).equals("JSF")
+        (lines.split(",")(0).equals(Fgddm) || lines.split(",")(0).equals(Fjyxwh)) &&
+          lines.split(",")(2).equals("HG") &&
+          lines.split(",")(3).equals("JSF")
       })(4)
       //回购征管费
       val HGZGF = CSSYSXWFYBroadCast.value.filter(lines => {
-        (lines(0).equals(Fgddm) || lines(0).equals(Fjyxwh)) &&
-          lines(2).equals("HG") &&
-          lines(3).equals("ZGF")
+        (lines.split(",")(0).equals(Fgddm) || lines.split(",")(0).equals(Fjyxwh)) &&
+          lines.split(",")(2).equals("HG") &&
+          lines.split(",")(3).equals("ZGF")
       })(4)
       //回购过户费
       val HGGHF = CSSYSXWFYBroadCast.value.filter(lines => {
-        (lines(0).equals(Fgddm) || lines(0).equals(Fjyxwh)) &&
-          lines(2).equals("HG") &&
-          lines(3).equals("GHF")
+        (lines.split(",")(0).equals(Fgddm) || lines.split(",")(0).equals(Fjyxwh)) &&
+          lines.split(",")(2).equals("HG") &&
+          lines.split(",")(3).equals("GHF")
       })(4)
       //回购手续费
       val HGSXF = CSSYSXWFYBroadCast.value.filter(lines => {
-        (lines(0).equals(Fgddm) || lines(0).equals(Fjyxwh)) &&
-          lines(2).equals("HG") &&
-          lines(3).equals("SXF")
+        (lines.split(",")(0).equals(Fgddm) || lines.split(",")(0).equals(Fjyxwh)) &&
+          lines.split(",")(2).equals("HG") &&
+          lines.split(",")(3).equals("SXF")
       })(4)
 
 
@@ -2335,11 +2332,11 @@ object SHjsmx {
 
       //获取套账号
       val FSETCODE = CSGDZHBroadCast.value.filter(lines => {
-        Zqzh.equals(lines(0))
+        Zqzh.equals(lines.split(",")(0))
       })(5)
 
       val LSETCSSYSJJArr = LSETCSSYSJJBroadCast.value.filter(lines => {
-        lines(0).equals(FSETCODE)
+        lines.split(",")(0).equals(FSETCODE)
       })
 
       val bHgYjValue: Array[String] = getLVARLISTValue(FSETID, "交易所回购计算佣金", LVARLISTBroadCast)
@@ -2348,7 +2345,7 @@ object SHjsmx {
         bHgYj = true
       }
 
-      if ("1 2 6".contains(LSETCSSYSJJArr(1)) && "0".equals(LSETCSSYSJJArr(3))) {
+      if ("1 2 6".contains(LSETCSSYSJJArr(0).split(",")(1)) && "0".equals(LSETCSSYSJJArr(0).split(",")(3))) {
         if (!bHgYj) {
           Fjsf = FyjTemp1.toString()
           FyjTemp1 = 0
@@ -2368,17 +2365,17 @@ object SHjsmx {
 
       //回购收益计算规则
 
-      val fhgjewsValue: Array[String] = getLVARLISTValue(FSETID, "上海回购价格位数", LVARLISTBroadCast)
+      val fhgjewsValue: Array[String] = getLVARLISTValue2("上海回购价格位数", LVARLISTBroadCast)
       val fhgjews = fhgjewsValue(1).toInt
 
       var Fhggain = ""
 
       val YWDate = DateUtils.formattedDate2Long(getYWDate, DateUtils.YYYYMMDD)
-       HGDay = CSJYLVBroadCast.value.filter(lines => {
-        lines(0).equals("HG" + Zqdm) && lines(2).equals("SXF") && lines(1).equals("H")
+      HGDay = CSJYLVBroadCast.value.filter(lines => {
+        lines.split(",")(0).equals("HG" + Zqdm) && lines.split(",")(2).equals("SXF") && lines.split(",")(1).equals("H")
       })(6)
 
-       iFts = subDay(getYWDate, getNextWorkDay(sparkSession, addDay(getYWDate, HGDay)))
+      iFts = subDay(getYWDate, getNextWorkDay(sparkSession, addDay(getYWDate, HGDay)))
 
       val JG2 = BigDecimal(row.getAs[String]("JG2"))
       if (Zqdm.startsWith("204")) {
@@ -2801,10 +2798,37 @@ object SHjsmx {
     * @return
     */
   def getLVARLISTValue(FSETCODE: String, Str: String, LVARLISTBroadCast: Broadcast[Array[String]]): Array[String] = {
-    LVARLISTBroadCast.value.filter(lines => {
-      (FSETCODE + Str).equals(lines(0))
+
+
+    val LVARLISTArr = LVARLISTBroadCast.value.filter(lines => {
+
+      (FSETCODE + Str).equals(lines.split(",")(0))
     })
+
+    //    println(LVARLISTArr.toBuffer)
+
+    LVARLISTArr
   }
+
+
+  /**
+    * 根据套账号及参数名称获取默认值
+    *
+    * @param FSETCODE
+    * @param Str
+    * @param LVARLISTBroadCast
+    * @return
+    */
+  def getLVARLISTValue2(Str: String, LVARLISTBroadCast: Broadcast[Array[String]]): Array[String] = {
+
+    val LVARLISTArr = LVARLISTBroadCast.value.filter(lines => {
+
+      Str.equals(lines.split(",")(0))
+    })
+
+    LVARLISTArr
+  }
+
 
 
   /**
@@ -2913,7 +2937,7 @@ object SHjsmx {
     * @return
     */
   def getYWDate: String = {
-    ""
+    "20180108"
   }
 
 
@@ -2928,17 +2952,23 @@ object SHjsmx {
   def getFSETID(Zqzh: String, CSGDZHBroadCast: Broadcast[Array[String]], LSETLISTBroadCast: Broadcast[Array[String]]): String = {
     //println(CSGDZHBroadCast.value.toBuffer)
     val CSGDZHFilterArr: Array[String] = CSGDZHBroadCast.value.filter(lines => {
-      Zqzh.equals(lines(0))
+
+      Zqzh.equals(lines.split(",")(0))
     })
-    //println(CSGDZHFilterArr.toBuffer)
-    var FSETID = " "
-    val LSETLISTFilterArr: Array[String] = LSETLISTBroadCast.value.filter(lines => {
-      CSGDZHFilterArr(5).equals(lines(2))
+
+    val LSETLISTFilterArr: Array[String] = LSETLISTBroadCast.value.filter(lines2 => {
+      CSGDZHFilterArr(0).split(",")(5).equals(lines2.split(",")(2))
     })
-    FSETID = LSETLISTFilterArr(1)
+
+    var FSETID: String = LSETLISTFilterArr(0).split(",")(1)
+
+    if (!FSETID.matches(".*[a-zA-z].*")){
+      FSETID = String.valueOf(Integer.parseInt(FSETID))
+    }
 
     FSETID
-}
+
+  }
 
   /**
     * RDD转换DF
@@ -2979,9 +3009,9 @@ object SHjsmx {
     */
   def FilterDF2RDD(SHjsmxFileDF: DataFrame): RDD[Row] = {
     val SHjsmxFileRDD: RDD[Row] = SHjsmxFileDF.rdd.filter(row => {
-      "20121105".equals(row.getAs[String]("QSRQ")) ||
-        ("20121106".equals(row.getAs[String]("JSRQ")) && "003".equals(row.getAs[String]("JLLX")) && "001".equals(row.getAs[String]("YWLX"))) ||
-        ("20181106".equals(row.getAs[String]("QTRQ")) && "990".equals(row.getAs[String]("JLLX")) && "802".equals(row.getAs[String]("YWLX"))) ||
+      getYWDate.equals(row.getAs[String]("QSRQ")) ||
+        (getYWDate.equals(row.getAs[String]("JSRQ")) && "003".equals(row.getAs[String]("JLLX")) && "001".equals(row.getAs[String]("YWLX"))) ||
+        (getYWDate.equals(row.getAs[String]("QTRQ")) && "990".equals(row.getAs[String]("JLLX")) && "802".equals(row.getAs[String]("YWLX"))) ||
         (row.getAs[String]("FJSM").contains("恢复交收"))
     })
     SHjsmxFileRDD
