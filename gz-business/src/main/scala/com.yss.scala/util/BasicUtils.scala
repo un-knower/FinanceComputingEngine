@@ -4,24 +4,25 @@ import java.io.FileInputStream
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
+
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import java.net.InetAddress
 
 object BasicUtils {
 
 
-  private val pro = new Properties()
-  pro.load(BasicUtils.getClass.getResourceAsStream("/basic.properties"))
-  val namenodePath = pro.getProperty("namenode_path")
-  val gzInterfaceDir = pro.getProperty("gz_interfacedir")
-  val gzOutputDir = pro.getProperty("gz_outputdir")
-  val gzBasicList = pro.getProperty("gz_basic_list")
-  val user = pro.getProperty("user")
-  val password = pro.getProperty("password")
-  val driver = pro.getProperty("driver")
-  val jdbc = pro.getProperty("jdbc")
-  val masterType = pro.getProperty("master_type")
-  val properties = pro
+      private val pro = new Properties()
+      pro.load(BasicUtils.getClass.getResourceAsStream("/basic.properties"))
+      val namenodePath = pro.getProperty("namenode_path")
+      val gzInterfaceDir = pro.getProperty("gz_interfacedir")
+      val gzOutputDir = pro.getProperty("gz_outputdir")
+      val gzBasicList = pro.getProperty("gz_basic_list")
+      val user = pro.getProperty("user")
+      val password = pro.getProperty("password")
+      val driver = pro.getProperty("driver")
+      val jdbc = pro.getProperty("jdbc")
+      val masterType = pro.getProperty("master_type")
+      val properties = pro
 
   /**
     * 读取XML文件，解析成Row类型的RDD
@@ -62,7 +63,7 @@ object BasicUtils {
     */
   def getInputFilePath(fileName: String,prefix:String ="/yss/guzhi/interface/" ) = {
 //    val hdfsDir = "hdfs://nscluster/yss/guzhi/"
-    val hdfsDir = "hdfs://192.168.102.120:8020" + prefix
+    val hdfsDir = namenodePath + prefix
     val inputFilePath = hdfsDir + fileName
     inputFilePath
   }
@@ -112,6 +113,7 @@ object BasicUtils {
     */
   def outputMySql(DF: DataFrame, tableName: String) = {
     val properties = new Properties()
+
     properties.setProperty("user", "root")
     properties.setProperty("password", "root1234")
     properties.setProperty("driver", "com.mysql.jdbc.Driver") //这句话一定要加上不然报错缺少jdbc驱动
